@@ -25,7 +25,7 @@ Hooks.once("init", () => {
         hint: "WSTKNCTRL.websocketHostHint",
         scope: "world",
         type: String,
-        default: "127.0.0.1",
+        default: "192.168.0.8",
         config: true,
         onChange: () => {
             location.reload();
@@ -38,7 +38,7 @@ Hooks.once("init", () => {
         hint: "WSTKNCTRL.websocketPortHint",
         scope: "world",
         type: String,
-        default: "42069",
+        default: "1880",
         config: true,
         onChange: () => {
             location.reload();
@@ -82,9 +82,14 @@ export class TokenController {
         let wsInterval; // Interval timer to detect disconnections
         let ip = game.settings.get("websocket-token-controller", "websocketHost");
         let port = game.settings.get("websocket-token-controller", "websocketPort");
-        socket = new WebSocket("ws://" + ip + ":" + port + "/vtt");
+        socket = new WebSocket("ws://" + ip + ":" + port + "/ws/vtt");
 
-        ws.onopen = function () {
+        socket.onmessage = function (content) {
+            console.log("Token Controller: received message");
+            console.dir(content);
+        }
+
+        socket.onopen = function () {
             ui.notifications.info("Token Controller: " + game.i18n.localize("WebsocketTokenController.Notifications.Connected") + ip + ":" + port);
             // do stuff
         }
