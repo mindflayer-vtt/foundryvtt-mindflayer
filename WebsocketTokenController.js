@@ -81,6 +81,7 @@ export class TokenController {
     _initializeWebsocket() {
         let wsInterval; // Interval timer to detect disconnections
         let ip = game.settings.get("websocket-token-controller", "websocketHost");
+        let port = game.settings.get("websocket-token-controller", "websocketPort");
         socket = new WebSocket("ws://" + ip + ":" + port + "/vtt");
 
         ws.onopen = function () {
