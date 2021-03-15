@@ -1,0 +1,42 @@
+{
+    "name": "websocket-token-controller",
+    "title": "Websocket Token Controller",
+    "description": "Adds a websocket for third party applications to control tokens.",
+    "version": "1.0.0",
+    "minimumCoreVersion": "0.7.9",
+    "compatibleCoreVersion": "0.7.9",
+    "author": "749, shawly",
+    "authors": [
+        {
+            "name": "shawly",
+            "email": "shawlyde@gmail.com",
+            "url": "https://github.com/749"
+        },
+        {
+            "name": "749",
+            "url": "https://github.com/749"
+        }
+    ],
+    "esmodules": [
+        "./WebsocketTokenController.js"
+    ],
+    "scripts": [],
+    "socket": true,
+    "styles": [
+        "./style.css"
+    ],
+    "languages": [
+        {
+            "lang": "en",
+            "name": "English",
+            "path": "./lang/en.json"
+        }
+    ],
+    "media": [],
+    "url": "https://github.com/shawly/FoundryVTT-Websocket-Token-Controller",
+    "manifest": "https://github.com/shawly/FoundryVTT-Websocket-Token-Controller/raw/main/module/module.json",
+    "download": "https://github.com/shawly/FoundryVTT-Websocket-Token-Controller/releases/download/1.0.0/websocket-token-controller.zip",
+    "bugs": "https://github.com/shawly/FoundryVTT-Websocket-Token-Controller/issues",
+    "license": "https://github.com/shawly/FoundryVTT-Websocket-Token-Controller/blob/main/LICENSE",
+    "readme": "https://github.com/shawly/FoundryVTT-Websocket-Token-Controller/blob/main/README.md"
+}
