@@ -19,7 +19,7 @@ Hooks.once("init", () => {
     // write init code (e.g. register settings for module menu)
     console.log("Loading WebsocketTokenController Module.");
 
-    game.settings.registerMenu("websocket-token-controller", "websocketHost", {
+    /*game.settings.registerMenu("websocket-token-controller", "websocketHost", {
         name: "WSTKNCTRL.websocketHost",
         label: "WSTKNCTRL.websocketHostTitle",
         hint: "WSTKNCTRL.websocketHostHint",
@@ -43,7 +43,7 @@ Hooks.once("init", () => {
         onChange: () => {
             location.reload();
         }
-    });
+    });*/
 });
 
 /**
@@ -59,6 +59,16 @@ Hooks.once("ready", () => {
 // Classes
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+Keyboard layout:
+
+ NW | N  | NE
+-------------
+ W  | R  | E
+-------------
+ SW | S  | SE
+*/
 
 /**
  * Main class
@@ -79,14 +89,17 @@ export class TokenController {
      * @private
      */
     _initializeWebsocket() {
+        const $this = this;
         let wsInterval; // Interval timer to detect disconnections
-        let ip = game.settings.get("websocket-token-controller", "websocketHost");
-        let port = game.settings.get("websocket-token-controller", "websocketPort");
-        socket = new WebSocket("ws://" + ip + ":" + port + "/ws/vtt");
+        let ip = "node-red.home.viromania.com"; // game.settings.get("websocket-token-controller", "websocketHost");
+        let port = "443"; //game.settings.get("websocket-token-controller", "websocketPort");
+        socket = new WebSocket("wss://" + ip + ":" + port + "/ws/vtt");
 
-        socket.onmessage = function (content) {
+        socket.onmessage = function (message) {
             console.log("Token Controller: received message");
-            console.dir(content);
+            const data = JSON.parse(message.data)
+            console.dir(data);
+            $this._handleMovement(data);
         }
 
         socket.onopen = function () {
@@ -94,4 +107,26 @@ export class TokenController {
             // do stuff
         }
     }
+
+    _handleMovement(message) {
+        if ( !message.key ) return;
+        if ( message.state != 'down') return;
+    
+        // Get controlled objects
+        //TODO: find currently selected token for the keyboard that sent the command
+    
+        // Define movement offsets and get moved directions
+        const directions = message.key.split('');
+        let dx = 0;
+        let dy = 0;
+    
+        // Assign movement offsets
+        if ( directions.includes('W') ) dx -= 1;
+        if ( directions.includes('S') ) dy += 1;
+        if ( directions.includes('E') ) dx += 1;
+        if ( directions.includes('N') ) dy -= 1;
+    
+        // Perform the shift or rotation
+        canvas.tokens.moveMany({dx, dy});
+      }
 }
