@@ -5,8 +5,7 @@
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const MODULE_NAME = 'websocket-token-constoller'
-    const LOCALIZATION_NAMESPACE = 'WebsocketTokenController'
+    const VTT_MODULE_NAME = 'websocket-token-controller'
     const LOG_PREFIX = 'WebsocketTokenController | '
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,9 +19,9 @@
      */
     Hooks.once('init', () => {
 
-        game.settings.register(MODULE_NAME, 'enabled', {
-            name: `${LOCALIZATION_NAMESPACE}.moduleEnabled`,
-            hint: `${LOCALIZATION_NAMESPACE}.moduleEnabledHint`,
+        game.settings.register(VTT_MODULE_NAME, 'enabled', {
+            name: 'WebsocketTokenController.moduleEnabled',
+            hint: 'WebsocketTokenController.moduleEnabledHint',
             scope: 'client',
             type: Boolean,
             default: false,
@@ -33,9 +32,9 @@
             }
         })
 
-        game.settings.register(MODULE_NAME, 'websocketHost', {
-            name: `${LOCALIZATION_NAMESPACE}.websocketHost`,
-            hint: `${LOCALIZATION_NAMESPACE}.websocketHostHint`,
+        game.settings.register(VTT_MODULE_NAME, 'websocketHost', {
+            name: 'WebsocketTokenController.websocketHost',
+            hint: 'WebsocketTokenController.websocketHostHint',
             scope: 'world',
             type: String,
             default: 'node-red.home.viromania.com',
@@ -45,9 +44,9 @@
             }
         })
 
-        game.settings.register(MODULE_NAME, 'websocketPort', {
-            name: `${LOCALIZATION_NAMESPACE}.websocketPort`,
-            hint: `${LOCALIZATION_NAMESPACE}.websocketPortHint`,
+        game.settings.register(VTT_MODULE_NAME, 'websocketPort', {
+            name: 'WebsocketTokenController.websocketPort',
+            hint: 'WebsocketTokenController.websocketPortHint',
             scope: 'world',
             type: String,
             default: '443',
@@ -57,17 +56,16 @@
             }
         })
 
-        game.settings.registerMenu(MODULE_NAME, MODULE_NAME, {
-            name: `${LOCALIZATION_NAMESPACE}.config`,
-            label: `${LOCALIZATION_NAMESPACE}.configTitle`,
-            hint: `${LOCALIZATION_NAMESPACE}.configHint`,
+        game.settings.registerMenu(VTT_MODULE_NAME, VTT_MODULE_NAME, {
+            name: 'WebsocketTokenController.config',
+            label: 'WebsocketTokenController.configTitle',
+            hint: 'WebsocketTokenController.configHint',
             icon: 'fas fa-keyboard',
-            type: TokenControllerConfig,
-            restricted: false
+            type: TokenControllerConfig
         })
 
-        game.settings.register(MODULE_NAME, 'mappings', {
-            name: 'Mappings',
+        game.settings.register(VTT_MODULE_NAME, 'mappings', {
+            name: 'WebsocketTokenController.mappings',
             scope: 'world',
             type: Object,
             config: false
@@ -80,7 +78,7 @@
      * Ready hook
      */
     Hooks.once('ready', () => {
-        if (game.settings.get(MODULE_NAME, 'enabled')) {
+        if (game.settings.get(VTT_MODULE_NAME, 'enabled')) {
             console.log(LOG_PREFIX + 'Starting websocket connection')
             game.wstokenctrl = new TokenController()
         }
@@ -111,10 +109,12 @@
          * Constructor. Initialize LOCALIZATION_NAMESPACE.
          */
         constructor() {
-            Hooks.call(`${LOCALIZATION_NAMESPACE}Init`, this)
+            Hooks.call('WebsocketTokenControllerInit', this)
+
             game.users.entities.forEach(user => {
-                user.setFlag(MODULE_NAME, 'currentTokenId', user.character ? user.character.id : null)
+                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + user.id, user.character ? user.character.id : null)
             })
+            
             this._initializeWebsocket()
         }
 
@@ -126,8 +126,8 @@
         _initializeWebsocket() {
             const $this = this
             let wsInterval // Interval timer to detect disconnections
-            let ip = game.settings.get(MODULE_NAME, 'websocketHost')
-            let port = game.settings.get(MODULE_NAME, 'websocketPort')
+            let ip = game.settings.get(VTT_MODULE_NAME, 'websocketHost')
+            let port = game.settings.get(VTT_MODULE_NAME, 'websocketPort')
             let socket = new WebSocket('wss://' + ip + ':' + port + '/ws/vtt')
 
             socket.onmessage = function (message) {
@@ -143,12 +143,12 @@
             }
 
             socket.onopen = function () {
-                ui.notifications.info('Websocket Token Controller: ' + game.i18n.localize(`${LOCALIZATION_NAMESPACE}.Notifications.Connected`) + ip + ':' + port)
+                ui.notifications.info('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.Connected') + ip + ':' + port)
                 // do stuff
             }
 
             socket.onerror = function (error) {
-                ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize(`${LOCALIZATION_NAMESPACE}.Notifications.Error`))
+                ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.Error'))
                 console.error(LOG_PREFIX + 'Error: ', error)
             }
         }
@@ -160,18 +160,18 @@
             const player = this._getPlayerFor(message['controller-id'])
             const tokens = this._findAllTokensFor(player)
 
-
-            if (!player.getFlag(MODULE_NAME, 'currentTokenId')) {
-                player.setFlag(MODULE_NAME, 'currentTokenId', tokens[0].id);
+            if (!game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)) {
+                const selectedToken = player.character ? player.character.id : tokens[0].id
+                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, selectedToken);
             } else {
                 let i = 0
                 for (; i < tokens.length; i++) {
-                    if (player.getFlag(MODULE_NAME, 'currentTokenId') == tokens[i].id) {
+                    if (player.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id) == tokens[i].id) {
                         break
                     }
                 }
                 i = (i + 1) % tokens.length
-                player.setFlag(MODULE_NAME, 'currentTokenId', tokens[i].id);
+                player.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, tokens[i].id);
                 console.debug(LOG_PREFIX + 'Selected token ' + tokens[i].name + ' for player ' + player.name)
             }
         }
@@ -207,7 +207,7 @@
         }
 
         _getTokenFor(player) {
-            return canvas.tokens.placeables.find(token => token.id == player.getFlag(MODULE_NAME, 'currentTokenId'))
+            return canvas.tokens.placeables.find(token => token.id == game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id))
         }
 
         _findAllTokensFor(player) {
@@ -226,8 +226,8 @@
 
         static get defaultOptions() {
             return mergeObject(super.defaultOptions, {
-                title: game.i18n.localize(`${LOCALIZATION_NAMESPACE}.configTitle`),
-                id: `${MODULE_NAME}-config`,
+                title: game.i18n.localize('WebsocketTokenController.configTitle'),
+                id: 'websocket-token-controller-config',
                 template: 'modules/websocket-token-controller/templates/keyboard-config.html',
                 width: 500,
                 height: 'auto',
@@ -249,12 +249,12 @@
         async _updateObject(event, formData) {
             formData = this._parseInputs(formData);
 
-            let mappings = mergeObject(TokenControllerConfig.CONFIG, formData, { insertKeys: false, insertValues: false });
+            let mappings = mergeObject({}, formData, { insertKeys: false, insertValues: false });
 
-            await game.settings.set(MODULE_NAME, 'mappings', mappings);
+            await game.settings.set(VTT_MODULE_NAME, 'mappings', mappings);
 
-            game.socket.emit(`module.${MODULE_NAME}`, { type: 'update', user: game.user.id });
-            ui.notifications.info(game.i18n.localize(`${LOCALIZATION_NAMESPACE}.saveMessage`));
+            game.socket.emit('module.websocket-token-controller', { type: 'update', user: game.user.id });
+            ui.notifications.info(game.i18n.localize('WebsocketTokenController.saveMessage'));
         }
 
         _parseInputs(data) {

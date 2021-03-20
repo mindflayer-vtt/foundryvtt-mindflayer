@@ -1,12 +1,20 @@
 {
+    "WebsocketTokenController.mappings": "Mappings",
+
     "WebsocketTokenController.config": "Keyboard Assignments",
     "WebsocketTokenController.configTitle": "Keyboard Assignments",
-    "WebsocketTokenController.configHint": "Keyboard Assignments",
+    "WebsocketTokenController.configHint": "Keyboard to user assignments",
 
     "WebsocketTokenController.websocketHost": "Websocket Host",
     "WebsocketTokenController.websocketHostHint": "A websocket that the module will connect to",
     "WebsocketTokenController.websocketPort": "Websocket Port",
     "WebsocketTokenController.websocketPortHint": "The port of the websocket that the module will connect to",
+
+    "WebsocketTokenController.moduleEnabled": "Enabled",
+    "WebsocketTokenController.moduleEnabledHint": "Enables the module for this browser",
+
+    "WebsocketTokenController.Save": "Save",
+    "WebsocketTokenController.Reset": "Reset",
 
     "WebsocketTokenController.Notifications.Connected": "Connected to ",
     "WebsocketTokenController.Notifications.Error": "An error ocurred, look at the log for more information"
