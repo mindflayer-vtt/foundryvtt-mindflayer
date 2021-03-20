@@ -1,6 +1,6 @@
 <form autocomplete="off" class="websocket-token-controller flexcol">
     <nav class="sheet-tabs tabs">
-        <a class="item active" data-tab="general"><i class="fas fa-keyboard"></i> {{localize "WebsocketTokenController.mappings"}}</a>
+        <a class="item active" data-tab="general"><i class="fas fa-keyboard"></i> {{localize "WebsocketTokenController.settings"}}</a>
     </nav>
     <section id="config-tabs" class="content">
         <div class="tab active" data-tab="general">
@@ -10,7 +10,7 @@
                     <div class="form-group">
                         <label>{{name}}</label>
                         <div class="form-fields">
-                            <input type="text" name="mappings[{{key}}]" value="{{mappings.[key]}}" data-dtype="String"/>
+                            <input type="text" name="mappings[{{key}}]" value="{{mappings[key]}}" data-dtype="String"/>
                         </div>
                     </div>
                     {{/each}}

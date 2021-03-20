@@ -169,12 +169,12 @@
             } else {
                 let i = 0
                 for (; i < tokens.length; i++) {
-                    if (player.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id) == tokens[i].id) {
+                    if (game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id) == tokens[i].id) {
                         break
                     }
                 }
                 i = (i + 1) % tokens.length
-                player.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, tokens[i].id);
+                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, tokens[i].id);
                 console.debug(LOG_PREFIX + 'Selected token ' + tokens[i].name + ' for player ' + player.name)
             }
         }
@@ -205,12 +205,14 @@
         }
 
         _getPlayerFor(controllerId) {
-            //TODO: add mapping
-            return game.users.players.find(player => player.name == 'Beamer')
+            const settings = game.settings.get(VTT_MODULE_NAME, 'settings')
+            const playerId = Object.keys(settings.mappings).find(key => settings.mappings[key] === controllerId)
+            return game.users.players.find(player => player.id == playerId)
         }
 
         _getTokenFor(player) {
-            return canvas.tokens.placeables.find(token => token.id == game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id))
+            const selectedToken = game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)
+            return canvas.tokens.placeables.find(token => token.id == selectedToken)
         }
 
         _findAllTokensFor(player) {
@@ -242,7 +244,7 @@
         getData(options) {
             const existingSettings = game.settings.get(VTT_MODULE_NAME, 'settings')
             let data = mergeObject({
-                userList: game.users.entities.reduce((acc, user) => {
+                playerList: game.users.entities.reduce((acc, user) => {
                     acc[user.id] = user.name
                     return acc;
                 }, {})
