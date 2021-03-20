@@ -114,11 +114,23 @@
         constructor() {
             Hooks.call('WebsocketTokenControllerInit', this)
 
-            game.users.entities.forEach(user => {
-                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + user.id, user.character ? user.character.id : null)
-            })
+            this.setDefaultTokens()
             
             this._initializeWebsocket()
+        }
+
+        setDefaultTokens() {
+            const $this = this
+            game.users.entities.forEach(user => {
+                let selectedToken = null
+                if (user.character) {
+                    selectedToken = $this._findAllTokensFor(user, true).find(token => token.actor.id == user.character.id)
+                    if(selectedToken) {
+                        selectedToken = selectedToken.id
+                    }
+                }
+                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + user.id, selectedToken)
+            })
         }
 
         /**
@@ -164,7 +176,10 @@
             const tokens = this._findAllTokensFor(player)
 
             if (!game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)) {
-                const selectedToken = player.character ? player.character.id : tokens[0].id
+                let selectedToken = tokens[0].id
+                if(player.character) {
+                    selectedToken = tokens.find(token => token.actor.id == player.character.id)
+                }
                 game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, selectedToken);
             } else {
                 let i = 0
@@ -207,7 +222,11 @@
         _getPlayerFor(controllerId) {
             const settings = game.settings.get(VTT_MODULE_NAME, 'settings')
             const playerId = Object.keys(settings.mappings).find(key => settings.mappings[key] === controllerId)
-            return game.users.players.find(player => player.id == playerId)
+            const selectedPlayer = game.users.entities.find(player => player.id == playerId)
+            if (!selectedPlayer) {
+                throw new Error('Could not find any player with id ' + playerId)
+            }
+            return selectedPlayer
         }
 
         _getTokenFor(player) {
@@ -215,9 +234,9 @@
             return canvas.tokens.placeables.find(token => token.id == selectedToken)
         }
 
-        _findAllTokensFor(player) {
+        _findAllTokensFor(player, ignoreEmpty) {
             const tokens = canvas.tokens.placeables.filter(token => token.actor.data.permission[player.id] >= 3).sort((a, b) => a.id.localeCompare(b.id))
-            if (!tokens.length) {
+            if (!ignoreEmpty && !tokens.length) {
                 throw new Error('Could not find any tokens for player ' + player.name)
             }
             return tokens
@@ -246,22 +265,24 @@
             let data = mergeObject({
                 playerList: game.users.entities.reduce((acc, user) => {
                     acc[user.id] = user.name
-                    return acc;
+                    return acc
                 }, {})
             }, existingSettings)
-            return data;
+            return data
         }
 
         async _updateObject(event, formData) {
-            formData = this._parseInputs(formData);
+            formData = this._parseInputs(formData)
 
             const existingSettings = game.settings.get(VTT_MODULE_NAME, 'settings')
-            let settings = mergeObject(existingSettings, formData);
+            let settings = mergeObject(existingSettings, formData)
 
-            await game.settings.set(VTT_MODULE_NAME, 'settings', settings);
+            await game.settings.set(VTT_MODULE_NAME, 'settings', settings)
 
-            game.socket.emit('module.websocket-token-controller', { type: 'update', user: game.user.id });
-            ui.notifications.info(game.i18n.localize('WebsocketTokenController.saveMessage'));
+            game.socket.emit('module.websocket-token-controller', { type: 'update', user: game.user.id })
+            ui.notifications.info(game.i18n.localize('WebsocketTokenController.saveMessage'))
+
+            game.wstokenctrl.setDefaultTokens()
         }
 
         _parseInputs(data) {
