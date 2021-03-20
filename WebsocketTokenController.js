@@ -64,11 +64,14 @@
             type: TokenControllerConfig
         })
 
-        game.settings.register(VTT_MODULE_NAME, 'mappings', {
-            name: 'WebsocketTokenController.mappings',
+        game.settings.register(VTT_MODULE_NAME, 'settings', {
+            name: 'WebsocketTokenController.settings',
             scope: 'world',
             type: Object,
-            config: false
+            config: false,
+            default: {
+                'mappings': {}
+            }
         });
 
         console.log(LOG_PREFIX + 'Loaded settings')
@@ -237,21 +240,23 @@
         }
 
         getData(options) {
-            return {
+            const existingSettings = game.settings.get(VTT_MODULE_NAME, 'settings')
+            let data = mergeObject({
                 userList: game.users.entities.reduce((acc, user) => {
                     acc[user.id] = user.name
                     return acc;
-                }, {}),
-                controllerList: ['timo']
-            };
+                }, {})
+            }, existingSettings)
+            return data;
         }
 
         async _updateObject(event, formData) {
             formData = this._parseInputs(formData);
 
-            let mappings = mergeObject({}, formData, { insertKeys: false, insertValues: false });
+            const existingSettings = game.settings.get(VTT_MODULE_NAME, 'settings')
+            let settings = mergeObject(existingSettings, formData);
 
-            await game.settings.set(VTT_MODULE_NAME, 'mappings', mappings);
+            await game.settings.set(VTT_MODULE_NAME, 'settings', settings);
 
             game.socket.emit('module.websocket-token-controller', { type: 'update', user: game.user.id });
             ui.notifications.info(game.i18n.localize('WebsocketTokenController.saveMessage'));

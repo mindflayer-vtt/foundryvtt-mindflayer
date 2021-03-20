@@ -1,5 +1,5 @@
 {
-    "WebsocketTokenController.mappings": "Mappings",
+    "WebsocketTokenController.settings": "Module Settings",
 
     "WebsocketTokenController.config": "Keyboard Assignments",
     "WebsocketTokenController.configTitle": "Keyboard Assignments",
