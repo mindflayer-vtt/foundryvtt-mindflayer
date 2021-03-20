@@ -7,7 +7,7 @@
 /**
  * Init hook
  */
-Hooks.once("init", () => {
+ Hooks.once("init", () => {
 
     game.settings.register("websocket-token-controller", "enabled", {
         scope: "world",
@@ -83,11 +83,19 @@ Keyboard layout:
  */
 export class TokenController {
 
+    LOG_PREFIX
+
     /**
      * Constructor. Initialize websocketTokenController.
      */
     constructor() {
+        this.LOG_PREFIX = 'WebsocketTokenController | '
         Hooks.call("websocketTokenControllerInit", this)
+        game.users.entities.forEach(user => {
+            user.data.flags['websocket-token-controller'] = {
+                currentTokenId: user.character? user.character.id : null
+            }
+        })
         this._initializeWebsocket()
     }
 
@@ -104,10 +112,15 @@ export class TokenController {
         let socket = new WebSocket("wss://" + ip + ":" + port + "/ws/vtt")
 
         socket.onmessage = function (message) {
-            console.log("WebsocketTokenController | Received message: ")
+            console.log(this.LOG_PREFIX + "Received message: ")
             const data = JSON.parse(message.data)
             console.dir(data)
-            $this._handleMovement(data)
+            try {
+                $this._handleTokenSelect(data)
+                $this._handleMovement(data)
+            } catch (error) {
+                console.error(this.LOG_PREFIX + 'KeyParseError: ', error)
+            }
         }
 
         socket.onopen = function () {
@@ -117,7 +130,28 @@ export class TokenController {
 
         socket.onerror = function (error) {
             ui.notifications.error("Websocket Token Controller: " + game.i18n.localize("WebsocketTokenController.Notifications.Error"))
-            console.error("WebsocketTokenController | Error: ", error)
+            console.error(this.LOG_PREFIX + "Error: ", error)
+        }
+    }
+
+    _handleTokenSelect(message) {
+        if (message.key != 'TAB') return
+        if (message.state != 'down') return
+
+        const player = this._getCurrentPlayer(message['controller-id'])
+        const tokens = this._findAllTokensFor(player)
+        if (!player.data.flags['websocket-token-controller'].currentTokenId) {
+            player.data.flags['websocket-token-controller'].currentTokenId = tokens[0].id
+        } else {
+            let i = 0
+            for (; i < tokens.length; i++) {
+                if (player.data.flags['websocket-token-controller'].currentTokenId == tokens[i].id) {
+                    break
+                }
+            }
+            i = (i + 1) % tokens.length
+            player.data.flags['websocket-token-controller'].currentTokenId = tokens[i].id
+            console.debug(this.LOG_PREFIX + 'Selected token ' + tokens[i].name + ' for player ' + player.name)
         }
     }
 
@@ -126,8 +160,11 @@ export class TokenController {
         if (message.state != 'down') return
 
         // Get controlled objects
-        //TODO: find currently selected token for the keyboard that sent the command
-
+        const player = this._getCurrentPlayer(message['controller-id'])
+        let token = this._getCurrentToken(player)
+        if (!token) {
+            return
+        }
         // Define movement offsets and get moved directions
         const directions = message.key.split('')
         let dx = 0
@@ -140,7 +177,24 @@ export class TokenController {
         if (directions.includes('W')) dx -= 1
 
         // Perform the shift or rotation
-        canvas.tokens.moveMany({ dx, dy })
+        canvas.tokens.moveMany({ dx, dy, ids: [token.id] })
+    }
+
+    _getCurrentPlayer(controllerId) {
+        //TODO: add mapping
+        return game.users.players.find(player => player.name == 'Beamer')
+    }
+
+    _getCurrentToken(currentPlayer) {
+        return canvas.tokens.placeables.find(token => token.id == currentPlayer.data.flags['websocket-token-controller'].currentTokenId)
+    }
+
+    _findAllTokensFor(player) {
+        const tokens = canvas.tokens.placeables.filter(token => token.actor.data.permission[player.id] >= 3).sort((a, b) => a.id.localeCompare(b.id))
+        if (!tokens.length) {
+            throw new Error('no tokens for player: "' + player.name + '"')
+        }
+        return tokens
     }
 }
 
