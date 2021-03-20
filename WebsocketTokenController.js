@@ -153,7 +153,7 @@ class TokenControllerConfig extends FormApplication {
         return mergeObject(super.defaultOptions, {
             title: game.i18n.localize("WebsocketTokenController.configTitle"),
             id: "websocket-token-controller-config",
-            template: "/home/ths/Projects/FoundryVTT-Websocket-Token-Controller/chrome-overrides/modules/websocket-token-controller/templates/keyboard-config.html",
+            template: "modules/websocket-token-controller/templates/keyboard-config.html",
             width: 500,
             height: "auto",
             closeOnSubmit: true,
@@ -174,4 +174,7 @@ class TokenControllerConfig extends FormApplication {
     // vlad.can(timo, "control") = false
     //
     // if timo is gm it will always return true
+
+    // to check who owns the token
+    // token.actor.data.permission
 }
