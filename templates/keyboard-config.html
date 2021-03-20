@@ -10,7 +10,7 @@
                     <div class="form-group">
                         <label>{{name}}</label>
                         <div class="form-fields">
-                            <input type="text" name="mappings[{{key}}]" value="{{../mappings.[|key|]}}" data-dtype="String"/>
+                            <input type="text" name="mappings[{{key}}]" value="{{lookup ../mappings @key }}" data-dtype="String"/>
                         </div>
                     </div>
                     {{/each}}
