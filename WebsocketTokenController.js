@@ -35,7 +35,7 @@
         game.settings.register(VTT_MODULE_NAME, 'websocketHost', {
             name: 'WebsocketTokenController.websocketHost',
             hint: 'WebsocketTokenController.websocketHostHint',
-            scope: 'world',
+            scope: 'client',
             type: String,
             default: 'node-red.home.viromania.com',
             config: true,
@@ -47,9 +47,21 @@
         game.settings.register(VTT_MODULE_NAME, 'websocketPort', {
             name: 'WebsocketTokenController.websocketPort',
             hint: 'WebsocketTokenController.websocketPortHint',
-            scope: 'world',
+            scope: 'client',
             type: String,
             default: '443',
+            config: true,
+            onChange: () => {
+                location.reload()
+            }
+        })
+
+        game.settings.register(VTT_MODULE_NAME, 'websocketPath', {
+            name: 'WebsocketTokenController.websocketPath',
+            hint: 'WebsocketTokenController.websocketPathHint',
+            scope: 'client',
+            type: String,
+            default: '/ws/vtt',
             config: true,
             onChange: () => {
                 location.reload()
@@ -65,14 +77,14 @@
         })
 
         game.settings.register(VTT_MODULE_NAME, 'settings', {
-            name: 'WebsocketTokenController.settings',
+            name: 'WebsocketTokenController.config',
             scope: 'world',
             type: Object,
             config: false,
             default: {
                 'mappings': {}
             }
-        });
+        })
 
         console.log(LOG_PREFIX + 'Loaded settings')
     })
@@ -93,16 +105,6 @@
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*
-    Keyboard layout:
-     
-     NW | N  | NE
-    -------------
-     W  | R  | E
-    -------------
-     SW | S  | SE
-    */
-
     /**
      * Main class
      */
@@ -113,9 +115,7 @@
          */
         constructor() {
             Hooks.call('WebsocketTokenControllerInit', this)
-
             this.setDefaultTokens()
-            
             this._initializeWebsocket()
         }
 
@@ -125,7 +125,7 @@
                 let selectedToken = null
                 if (user.character) {
                     selectedToken = $this._findAllTokensFor(user, true).find(token => token.actor.id == user.character.id)
-                    if(selectedToken) {
+                    if (selectedToken) {
                         selectedToken = selectedToken.id
                     }
                 }
@@ -141,30 +141,51 @@
         _initializeWebsocket() {
             const $this = this
             let wsInterval // Interval timer to detect disconnections
-            let ip = game.settings.get(VTT_MODULE_NAME, 'websocketHost')
+            let host = game.settings.get(VTT_MODULE_NAME, 'websocketHost')
             let port = game.settings.get(VTT_MODULE_NAME, 'websocketPort')
-            let socket = new WebSocket('wss://' + ip + ':' + port + '/ws/vtt')
+            let path = game.settings.get(VTT_MODULE_NAME, 'websocketPath')
+            let socket = new WebSocket('wss://' + host + ':' + port + path)
 
             socket.onmessage = function (message) {
-                console.log(LOG_PREFIX + 'Received message: ')
                 const data = JSON.parse(message.data)
-                console.dir(data)
+                console.debug(LOG_PREFIX + 'Received message: ', data)
                 try {
+                    $this._handleStatus(data)
                     $this._handleTokenSelect(data)
                     $this._handleMovement(data)
+                    $this._handleTorch(data)
                 } catch (error) {
-                    console.error(LOG_PREFIX + 'KeyParseError: ', error)
+                    console.error(LOG_PREFIX + 'Error: ', error)
                 }
             }
 
-            socket.onopen = function () {
-                ui.notifications.info('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.Connected') + ip + ':' + port)
-                // do stuff
+            socket.onopen = function (data) {
+                ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.Connected', { host: host, port: port, path: path }))
+                console.log(LOG_PREFIX + 'Connected to websocket: ', data)
+            }
+
+            socket.onclose = function (e) {
+                ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.ConnectionClosed'))
+                console.warn(LOG_PREFIX + 'Websocket connection closed, attempting to reconnect in 5 seconds...', data)
+                setTimeout(function () {
+                    $this._initializeWebsocket()
+                }, 5000)
             }
 
             socket.onerror = function (error) {
                 ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.Error'))
                 console.error(LOG_PREFIX + 'Error: ', error)
+                socket.close()
+            }
+        }
+
+        _handleStatus(message) {
+            if (message.status == undefined) return
+
+            if (message.status == 'connected') {
+                const controllerId = message['controller-id']
+                const player = this._getPlayerFor(controllerId)
+                ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.NewClient', { controller: controllerId, player: player.name }))
             }
         }
 
@@ -177,10 +198,11 @@
 
             if (!game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)) {
                 let selectedToken = tokens[0].id
-                if(player.character) {
+                if (player.character) {
                     selectedToken = tokens.find(token => token.actor.id == player.character.id)
                 }
-                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, selectedToken);
+                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, selectedToken)
+                console.debug(LOG_PREFIX + 'Selected token ' + selectedToken.name + ' for player ' + player.name)
             } else {
                 let i = 0
                 for (; i < tokens.length; i++) {
@@ -189,21 +211,23 @@
                     }
                 }
                 i = (i + 1) % tokens.length
-                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, tokens[i].id);
+                game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, tokens[i].id)
                 console.debug(LOG_PREFIX + 'Selected token ' + tokens[i].name + ' for player ' + player.name)
             }
         }
 
         _handleMovement(message) {
             if (!message.key) return
+            if (!message.key.match(/^[NESW]+$/g)) return
             if (message.state != 'down') return
 
             // Get controlled objects
             const player = this._getPlayerFor(message['controller-id'])
             let token = this._getTokenFor(player)
-            if (!token) {
-                return
-            }
+
+            // Logging movement action
+            console.debug(LOG_PREFIX + player.name + ': ' + (message.modifier ? 'Rotating ' : 'Moving ') + token.name + ' to direction ' + message.key)
+
             // Define movement offsets and get moved directions
             const directions = message.key.split('')
             let dx = 0
@@ -216,12 +240,29 @@
             if (directions.includes('W')) dx -= 1
 
             // Perform the shift or rotation
-            canvas.tokens.moveMany({ dx, dy, ids: [token.id] })
+            canvas.tokens.moveMany({ dx, dy, rotate: message.modifier, ids: [token.id] })
+        }
+
+        _handleTorch(message) {
+            if (!message.key) return
+            if (!message.key.match(/^[T]+$/g)) return
+            if (message.state != 'down') return
+
+            let player = this._getPlayerFor(message['controller-id'])
+            let token = this._getTokenFor(player)
+
+            if (!token.emitsLight) {
+                console.debug(LOG_PREFIX + player.name + ': Turn on torch for ' + token.name)
+                token.update({ brightLight: 20, dimLight: 40, lightAlpha: 0.12, lightColor: '#ffad58', lightAnimation: { type: "torch", speed: 5, intensity: 5 } })
+            } else {
+                console.debug(LOG_PREFIX + player.name + ': Turn off torch for ' + token.name)
+                token.update({ brightLight: 0, dimLight: 0 })
+            }
         }
 
         _getPlayerFor(controllerId) {
             const settings = game.settings.get(VTT_MODULE_NAME, 'settings')
-            const playerId = Object.keys(settings.mappings).find(key => settings.mappings[key] === controllerId)
+            const playerId = Object.keys(settings.mappings).find(key => settings.mappings[key] == controllerId)
             const selectedPlayer = game.users.entities.find(player => player.id == playerId)
             if (!selectedPlayer) {
                 throw new Error('Could not find any player with id ' + playerId)
@@ -231,7 +272,11 @@
 
         _getTokenFor(player) {
             const selectedToken = game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)
-            return canvas.tokens.placeables.find(token => token.id == selectedToken)
+            const token = canvas.tokens.placeables.find(token => token.id == selectedToken)
+            if (!token) {
+                throw new Error('Could not find token ' + selectedToken + ' for player ' + player.name)
+            }
+            return token
         }
 
         _findAllTokensFor(player, ignoreEmpty) {
@@ -267,7 +312,7 @@
                     acc[user.id] = user.name
                     return acc
                 }, {})
-            }, existingSettings)
+            }, this.reset ? { 'mappings': {} } : existingSettings)
             return data
         }
 
@@ -285,31 +330,42 @@
             game.wstokenctrl.setDefaultTokens()
         }
 
+        activateListeners(html) {
+            super.activateListeners(html)
+            html.find('button[name="reset"]').click(this.onReset.bind(this))
+            this.reset = false
+        }
+
+        onReset() {
+            this.reset = true
+            this.render()
+        }
+
         _parseInputs(data) {
-            var ret = {};
+            var ret = {}
             retloop:
             for (var input in data) {
-                var val = data[input];
+                var val = data[input]
 
-                var parts = input.split('[');
-                var last = ret;
+                var parts = input.split('[')
+                var last = ret
 
                 for (var i in parts) {
-                    var part = parts[i];
+                    var part = parts[i]
                     if (part.substr(-1) == ']') {
-                        part = part.substr(0, part.length - 1);
+                        part = part.substr(0, part.length - 1)
                     }
 
                     if (i == parts.length - 1) {
-                        last[part] = val;
-                        continue retloop;
+                        last[part] = val
+                        continue retloop
                     } else if (!last.hasOwnProperty(part)) {
-                        last[part] = {};
+                        last[part] = {}
                     }
-                    last = last[part];
+                    last = last[part]
                 }
             }
-            return ret;
+            return ret
         }
 
     }
