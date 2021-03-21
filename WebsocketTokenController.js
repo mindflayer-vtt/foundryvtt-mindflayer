@@ -143,7 +143,6 @@
          */
         _initializeWebsocket() {
             const $this = this
-            let wsInterval // Interval timer to detect disconnections
             let host = game.settings.get(VTT_MODULE_NAME, 'websocketHost')
             let port = game.settings.get(VTT_MODULE_NAME, 'websocketPort')
             let path = game.settings.get(VTT_MODULE_NAME, 'websocketPath')
@@ -280,7 +279,7 @@
 
             if (!token.emitsLight) {
                 console.debug(LOG_PREFIX + player.name + ': Turn on torch for ' + token.name)
-                token.update({ brightLight: 20, dimLight: 40, lightAlpha: 0.12, lightColor: '#ffad58', lightAnimation: { type: "torch", speed: 5, intensity: 5 } })
+                token.update({ brightLight: 20, dimLight: 40, lightAlpha: 0.12, lightColor: '#ffad58', lightAnimation: { type: 'torch', speed: 5, intensity: 5 } })
             } else {
                 console.debug(LOG_PREFIX + player.name + ': Turn off torch for ' + token.name)
                 token.update({ brightLight: 0, dimLight: 0 })
