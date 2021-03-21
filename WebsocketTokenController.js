@@ -111,7 +111,7 @@
     class TokenController {
 
         /**
-         * Constructor. Initialize LOCALIZATION_NAMESPACE.
+         * Constructor. Initialize WebsocketTokenController.
          */
         constructor() {
             Hooks.call('WebsocketTokenControllerInit', this)
@@ -119,6 +119,9 @@
             this._initializeWebsocket()
         }
 
+        /**
+         * Sets the users default characters as preselected tokens.
+         */
         setDefaultTokens() {
             const $this = this
             game.users.entities.forEach(user => {
@@ -135,7 +138,7 @@
 
         /**
          * Setup the websocket.
-         *
+         * 
          * @private
          */
         _initializeWebsocket() {
@@ -179,6 +182,12 @@
             }
         }
 
+        /**
+         * Handles status messages from other clients.
+         * 
+         * @param {*} message the data object from the websocket message
+         * @private
+         */
         _handleStatus(message) {
             if (message.status == undefined) return
 
@@ -189,6 +198,12 @@
             }
         }
 
+        /**
+         * Handles token selection by cycling through the available tokens for the player assigned to the controller.
+         * 
+         * @param {*} message a data object from the websocket message containing the TAB kay and state down
+         * @private 
+         */
         _handleTokenSelect(message) {
             if (message.key != 'TAB') return
             if (message.state != 'down') return
@@ -216,6 +231,12 @@
             }
         }
 
+        /**
+         * Handles token movement and rotation.
+         * 
+         * @param {*} message a data object from the websocket message containing a direction key and state down
+         * @private 
+         */
         _handleMovement(message) {
             if (!message.key) return
             if (!message.key.match(/^[NESW]+$/g)) return
@@ -243,6 +264,12 @@
             canvas.tokens.moveMany({ dx, dy, rotate: message.modifier, ids: [token.id] })
         }
 
+        /**
+         * Handles torch enabling or disabling depending on whether the token already emits light or not.
+         * 
+         * @param {*} message a data object from the websocket message containing the T key and state down
+         * @private
+         */
         _handleTorch(message) {
             if (!message.key) return
             if (!message.key.match(/^[T]+$/g)) return
@@ -260,6 +287,14 @@
             }
         }
 
+        /**
+         * Returns an assigned player for the given controller id.
+         * 
+         * @param {*} controllerId an id matching a controller that is assigned to a player
+         * @returns the assigned player
+         * @throws an Error object if no assigned player could be found
+         * @private
+         */
         _getPlayerFor(controllerId) {
             const settings = game.settings.get(VTT_MODULE_NAME, 'settings')
             const playerId = Object.keys(settings.mappings).find(key => settings.mappings[key] == controllerId)
@@ -270,6 +305,13 @@
             return selectedPlayer
         }
 
+        /**
+         * Returns the currently selected token of the given player.
+         * 
+         * @param {*} player the player to search through
+         * @throws an Error object if no selected token could be found
+         * @private
+         */
         _getTokenFor(player) {
             const selectedToken = game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)
             const token = canvas.tokens.placeables.find(token => token.id == selectedToken)
@@ -279,6 +321,15 @@
             return token
         }
 
+        /**
+         * Returns all controllable tokens of a player.
+         * 
+         * @param {*} player the player to search through
+         * @param {*} ignoreEmpty if no exception should be thrown (necessary for initialization)
+         * @returns all controllable tokens of a player
+         * @throws an Error object if no tokens could be found and ignoreEmpty is false
+         * @private
+         */
         _findAllTokensFor(player, ignoreEmpty) {
             const tokens = canvas.tokens.placeables.filter(token => token.actor.data.permission[player.id] >= 3).sort((a, b) => a.id.localeCompare(b.id))
             if (!ignoreEmpty && !tokens.length) {
@@ -289,7 +340,7 @@
     }
 
     /**
-     * Form application to assign keyboards to players.
+     * Form application to assign controllers to players.
      */
     class TokenControllerConfig extends FormApplication {
 
@@ -332,11 +383,11 @@
 
         activateListeners(html) {
             super.activateListeners(html)
-            html.find('button[name="reset"]').click(this.onReset.bind(this))
+            html.find('button[name="reset"]').click(this._onReset.bind(this))
             this.reset = false
         }
 
-        onReset() {
+        _onReset() {
             this.reset = true
             this.render()
         }
