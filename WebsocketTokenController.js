@@ -37,7 +37,7 @@
             hint: 'WebsocketTokenController.websocketHostHint',
             scope: 'client',
             type: String,
-            default: 'node-red.home.viromania.com',
+            default: 'localhost',
             config: true,
             onChange: () => {
                 location.reload()
