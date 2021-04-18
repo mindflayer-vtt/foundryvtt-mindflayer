@@ -164,6 +164,7 @@
             socket.onopen = function (data) {
                 ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.Connected', { host: host, port: port, path: path }))
                 console.log(LOG_PREFIX + 'Connected to websocket: ', data)
+                socket.send(JSON.stringify({receiver: true}));
             }
 
             socket.onclose = function (e) {
