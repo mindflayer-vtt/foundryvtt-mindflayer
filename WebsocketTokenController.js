@@ -152,7 +152,7 @@
                 const data = JSON.parse(message.data)
                 console.debug(LOG_PREFIX + 'Received message: ', data)
                 try {
-                    $this._handleStatus(data)
+                    $this._handleStatus(socket, data)
                     $this._handleTokenSelect(data)
                     $this._handleMovement(data)
                     $this._handleTorch(data)
@@ -164,12 +164,16 @@
             socket.onopen = function (data) {
                 ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.Connected', { host: host, port: port, path: path }))
                 console.log(LOG_PREFIX + 'Connected to websocket: ', data)
-                socket.send(JSON.stringify({receiver: true}));
+                socket.send(JSON.stringify({
+                    type: 'registration',
+                    status: 'connected',
+                    receiver: true
+                }));
             }
 
             socket.onclose = function (e) {
                 ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.ConnectionClosed'))
-                console.warn(LOG_PREFIX + 'Websocket connection closed, attempting to reconnect in 5 seconds...', data)
+                console.warn(LOG_PREFIX + 'Websocket connection closed, attempting to reconnect in 5 seconds...')
                 setTimeout(function () {
                     $this._initializeWebsocket()
                 }, 5000)
@@ -182,19 +186,35 @@
             }
         }
 
+        _hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
         /**
          * Handles status messages from other clients.
          * 
+         * @param {WebSocket} socket the websocket to which to send response
          * @param {*} message the data object from the websocket message
          * @private
          */
-        _handleStatus(message) {
+        _handleStatus(socket, message) {
             if (message.status == undefined) return
 
             if (message.status == 'connected') {
                 const controllerId = message['controller-id']
                 const player = this._getPlayerFor(controllerId)
                 ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.NewClient', { controller: controllerId, player: player.name }))
+                socket.send(JSON.stringify({
+                    type: 'configuration',
+                    controllerId: controllerId,
+                    led1: this._hexToRgb(player.color),
+                    led2: this._hexToRgb(player.color)
+                }))
             }
         }
 
