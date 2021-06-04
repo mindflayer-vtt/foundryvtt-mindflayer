@@ -105,6 +105,63 @@
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    class Key {
+
+        state
+        id
+
+        constructor(id, state) {
+            this.id = id
+            this.state = state
+        }
+    }
+
+    class Keypad {
+
+        controllerId
+        tokenController
+        callbacks // TODO: Refactor this stuff, I think there is a better way than having to pass tokenController and callbacks
+
+        keys = [
+            new Key('Q', 'up'), new Key('W', 'up'), new Key('E', 'up'),
+            new Key('A', 'up'), new Key('S', 'up'), new Key('D', 'up'),
+            new Key('Z', 'up'), new Key('X', 'up'), new Key('C', 'up'),
+            new Key('SHI', 'up'), new Key('SPA', 'up')
+        ]
+
+        directionKeyMap = {
+            'W': 'N',
+            'A': 'W',
+            'S': 'S',
+            'D': 'E'
+        }
+
+        constructor(data, tokenController, ...callbacks) {
+            this.tokenController = tokenController
+            this.controllerId = data['controller-id']
+            console.debug(LOG_PREFIX + 'Initialized keypad for controller ' + this.controllerId)
+            this.callbacks = callbacks
+            callbacks.forEach(callback => console.debug(LOG_PREFIX + 'Registered callback ' + callback.name))
+        }
+
+        _registerKeyEvent(data) {
+            let key = this.keys.find(key => key.id === data.key)
+            key.state = data.state
+            if (data.state === 'down') this._handleKeyPress()
+        }
+
+        _handleKeyPress() {
+            if (this.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g)).length <= 1) {
+                let _handleMovement = this.callbacks.find(callback => callback.name === '_handleMovement')
+                if (_handleMovement) {
+                    console.debug(LOG_PREFIX + 'Handling movement key event...')
+                    setTimeout(_handleMovement, 50, this, this.tokenController)
+                }
+            }
+        }
+
+    }
+
     /**
      * Main class
      */
@@ -147,15 +204,23 @@
             let port = game.settings.get(VTT_MODULE_NAME, 'websocketPort')
             let path = game.settings.get(VTT_MODULE_NAME, 'websocketPath')
             let socket = new WebSocket('wss://' + host + ':' + port + path)
+            let seenKeypads = new Array()
 
             socket.onmessage = function (message) {
                 const data = JSON.parse(message.data)
                 console.debug(LOG_PREFIX + 'Received message: ', data)
                 try {
                     $this._handleStatus(socket, data)
-                    $this._handleTokenSelect(data)
-                    $this._handleMovement(data)
-                    $this._handleTorch(data)
+                    if (data.type === "key-event") {
+                        let keypad = seenKeypads.find(keypad => keypad.controllerId === data['controller-id'])
+                        if (keypad) {
+                            keypad._registerKeyEvent(data)
+                        } else {
+                            keypad = new Keypad(data, $this, $this._handleMovement, $this._handleTokenSelect, $this._handleTorch)
+                            keypad._registerKeyEvent(data)
+                            seenKeypads.push(keypad)
+                        }
+                    }
                 } catch (error) {
                     console.error(LOG_PREFIX + 'Error: ', error)
                 }
@@ -225,6 +290,7 @@
          * @private 
          */
         _handleTokenSelect(message) {
+            return // TODO: Reimplement for keypad
             if (message.key != 'TAB') return
             if (message.state != 'down') return
 
@@ -254,23 +320,22 @@
         /**
          * Handles token movement and rotation.
          * 
-         * @param {*} message a data object from the websocket message containing a direction key and state down
+         * @param {*} keypad a keypad client that has been mapped from the websocket message data
          * @private 
          */
-        _handleMovement(message) {
-            if (!message.key) return
-            if (!message.key.match(/^[NESW]+$/g)) return
-            if (message.state != 'down') return
+         _handleMovement(keypad, tokenController) {
+            let shiftKey = keypad.keys.find(key => key.id === 'SHI')
+            let pressedMovementKeys = keypad.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g))
+            if (!pressedMovementKeys.length) return
 
             // Get controlled objects
-            const player = this._getPlayerFor(message['controller-id'])
-            let token = this._getTokenFor(player)
+            const player = tokenController._getPlayerFor(keypad.controllerId)
+            let token = tokenController._getTokenFor(player)
 
-            // Logging movement action
-            console.debug(LOG_PREFIX + player.name + ': ' + (message.modifier ? 'Rotating ' : 'Moving ') + token.name + ' to direction ' + message.key)
+            // Map keys to directions
+            const directions = pressedMovementKeys.map(key => keypad.directionKeyMap[key.id])
 
             // Define movement offsets and get moved directions
-            const directions = message.key.split('')
             let dx = 0
             let dy = 0
 
@@ -280,8 +345,14 @@
             if (directions.includes('S')) dy += 1
             if (directions.includes('W')) dx -= 1
 
+            // Logging movement action
+            console.debug(LOG_PREFIX + player.name + ': ' + (shiftKey.state === 'down' ? 'Rotating ' : 'Moving ') + token.name + ' to direction ' + directions, { 'dx': dx , 'dy': dy})
+
             // Perform the shift or rotation
-            canvas.tokens.moveMany({ dx, dy, rotate: message.modifier, ids: [token.id] })
+            canvas.tokens.moveMany({ dx, dy, rotate: shiftKey.state === 'down', ids: [token.id] })
+
+            // Repeat movement until all movement keys are released
+            setTimeout(tokenController._handleMovement, 250, keypad, tokenController)
         }
 
         /**
@@ -291,6 +362,7 @@
          * @private
          */
         _handleTorch(message) {
+            return // TODO: Reimplement for keypad
             if (!message.key) return
             if (!message.key.match(/^[T]+$/g)) return
             if (message.state != 'down') return
@@ -440,4 +512,5 @@
         }
 
     }
+
 })()
