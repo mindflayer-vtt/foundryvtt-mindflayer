@@ -110,6 +110,8 @@
      */
     class TokenController {
 
+        isConnected = false
+
         /**
          * Constructor. Initialize WebsocketTokenController.
          */
@@ -117,6 +119,8 @@
             Hooks.call('WebsocketTokenControllerInit', this)
             this.setDefaultTokens()
             this._initializeWebsocket()
+            this._overrideGetBorderColorOnTokens()
+            this._overrideHandleKeysOnKeyboardToHideUI()
         }
 
         /**
@@ -164,6 +168,7 @@
             socket.onopen = function (data) {
                 ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.Connected', { host: host, port: port, path: path }))
                 console.log(LOG_PREFIX + 'Connected to websocket: ', data)
+                $this.isConnected = true
                 socket.send(JSON.stringify({
                     type: 'registration',
                     status: 'connected',
@@ -174,6 +179,7 @@
             socket.onclose = function (e) {
                 ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.ConnectionClosed'))
                 console.warn(LOG_PREFIX + 'Websocket connection closed, attempting to reconnect in 5 seconds...')
+                $this.isConnected = false
                 setTimeout(function () {
                     $this._initializeWebsocket()
                 }, 5000)
@@ -186,9 +192,61 @@
             }
         }
 
+        _overrideGetBorderColorOnTokens() {
+            console.debug(LOG_PREFIX + "overriding Token Border Color to add display user select.")
+            let $this = this
+            let originalFunction = Token.prototype._getBorderColor
+            Token.prototype._getBorderColor = function WTC_getBorderColor() {
+                if($this.isConnected && this.actor && this.actor.hasPlayerOwner) {
+                    const userInfo = $this._getUserForSelectedToken(this)
+                    if(userInfo.selected) {
+                        const color = $this._hexToRgb(userInfo.player.data.color);
+                        return (color.r & 0xff) << 16 | (color.g & 0xff) << 8 | (color.b & 0xff)
+                    }
+                }
+                return originalFunction.apply(this)
+            }
+            $this._refreshTokenPlaceables()
+        }
+
+        _overrideHandleKeysOnKeyboardToHideUI() {
+            console.debug(LOG_PREFIX + "overriding Key handling to add F10 to hide UI.")
+            let originalFunction = KeyboardManager.prototype._handleKeys
+            KeyboardManager.prototype._handleKeys = function WTC_handleKeys(event, key, state) {
+                originalFunction.call(this, event, key, state)
+                if(key == "F10" && state == false) {
+                    event.preventDefault()
+                    jQuery(document.body).toggleClass('hide-ui')
+                }
+            }
+        }
+
+        _getUserForSelectedToken(token) {
+            let result = {selected: false}
+            game.users.entities.forEach(player => {
+                if (game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id) == token.id) {
+                    result = {player, selected: true};
+                }
+            })
+            return result
+        }
+
+        _refreshTokenPlaceables = debounce(this._WTC_refreshTokens.bind(this), 100)
+        
+        _WTC_refreshTokens() {
+            console.debug(LOG_PREFIX + "refreshing tokens")
+            canvas.tokens.placeables.forEach(t => t.refresh({}))
+            canvas.triggerPendingOperations()
+        }
+
+        /**
+         * Convert a hex color string to json color object
+         * @param {string} hex the color as hex string in the format '#ffffff'
+         * @returns a javascript object representing the color
+         */
         _hexToRgb(hex) {
             var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
+            return result !== null ? {
                 r: parseInt(result[1], 16),
                 g: parseInt(result[2], 16),
                 b: parseInt(result[3], 16)
@@ -203,7 +261,7 @@
          * @private
          */
         _handleStatus(socket, message) {
-            if (message.status == undefined) return
+            if (message.type != "registration" || message.status == undefined) return
 
             if (message.status == 'connected') {
                 const controllerId = message['controller-id']
@@ -211,9 +269,9 @@
                 ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.NewClient', { controller: controllerId, player: player.name }))
                 socket.send(JSON.stringify({
                     type: 'configuration',
-                    controllerId: controllerId,
-                    led1: this._hexToRgb(player.color),
-                    led2: this._hexToRgb(player.color)
+                    "controller-id": controllerId,
+                    led1: this._hexToRgb(player.data.color),
+                    led2: this._hexToRgb(player.data.color)
                 }))
             }
         }
@@ -249,6 +307,7 @@
                 game.user.setFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id, tokens[i].id)
                 console.debug(LOG_PREFIX + 'Selected token ' + tokens[i].name + ' for player ' + player.name)
             }
+            this._refreshTokenPlaceables()
         }
 
         /**

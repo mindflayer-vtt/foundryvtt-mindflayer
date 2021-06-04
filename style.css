@@ -1,1 +1,33 @@
 /* Websocket Token Controller Styling */
+
+.hide-ui #logo {
+  display: none;
+}
+
+.hide-ui #navigation {
+  display: none;
+}
+
+.hide-ui #controls {
+  display: none;
+}
+
+.hide-ui #sidebar {
+  display: none;
+}
+
+.hide-ui #players {
+  display: none;
+}
+
+.hide-ui #hotbar {
+  display: none;
+}
+
+.hide-ui #token-action-hud {
+  display: none;
+}
+
+.hide-ui .illandril-npc-quick-actions--outer-container {
+  display: none;
+}
