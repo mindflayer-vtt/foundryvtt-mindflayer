@@ -394,6 +394,32 @@
             }
         }
 
+        _handleDoorUse(message) {
+            let player = this._getPlayerFor(message['controller-id'])
+            let token = this._getTokenFor(player)
+
+            
+            const interactionBounds = {
+                left: token.x - canvas.grid.size,
+                top: token.y - canvas.grid.size,
+                right: token.x + token.width + canvas.grid.size,
+                bottom: token.y + token.height + canvas.grid.size
+            }
+
+            canvas.walls.doors.placeables.forEach((door) => {
+                if(this._intersectRect(interactionBounds, door.bounds)) {
+                    // TODO: open the door.
+                }
+            })
+        }
+
+        _intersectRect(r1, r2) {
+            return !(r2.left > r1.right || 
+                    r2.right < r1.left || 
+                    r2.top > r1.bottom ||
+                    r2.bottom < r1.top);
+        }
+
         /**
          * Returns an assigned player for the given controller id.
          * 
