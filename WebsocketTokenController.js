@@ -274,6 +274,8 @@
                     led1: this._hexToRgb(player.data.color),
                     led2: this._hexToRgb(player.data.color)
                 }))
+            } else if (message.status == 'disconnected') {
+                ui.notifications.warn('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.ClientDisconnected', { controller: controllerId, player: player.name }))
             }
         }
 

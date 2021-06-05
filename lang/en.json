@@ -21,5 +21,6 @@
     "WebsocketTokenController.Notifications.Connected": "Connected to websocket on \"{host}:{port}\"",
     "WebsocketTokenController.Notifications.Error": "An error ocurred, look at the log for more information",
     "WebsocketTokenController.Notifications.ConnectionClosed": "Connected to websocket closed, attempting to reconnect in 5 seconds...",
-    "WebsocketTokenController.Notifications.NewClient": "Controller \"{controller}\" assigned to player \"{player}\" connected!"
+    "WebsocketTokenController.Notifications.NewClient": "Controller \"{controller}\" assigned to player \"{player}\" connected!",
+    "WebsocketTokenController.Notifications.ClientDisconnected": "Controller \"{controller}\" assigned to player \"{player}\" disconnected!"
 }
