@@ -105,69 +105,13 @@
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    class Key {
-
-        state
-        id
-
-        constructor(id, state) {
-            this.id = id
-            this.state = state
-        }
-    }
-
-    class Keypad {
-
-        controllerId
-        tokenController
-        callbacks // TODO: Refactor this stuff, I think there is a better way than having to pass tokenController and callbacks
-
-        keys = [
-            new Key('Q', 'up'), new Key('W', 'up'), new Key('E', 'up'),
-            new Key('A', 'up'), new Key('S', 'up'), new Key('D', 'up'),
-            new Key('Z', 'up'), new Key('X', 'up'), new Key('C', 'up'),
-            new Key('SHI', 'up'), new Key('SPA', 'up')
-        ]
-
-        directionKeyMap = {
-            'W': 'N',
-            'A': 'W',
-            'S': 'S',
-            'D': 'E'
-        }
-
-        constructor(data, tokenController, ...callbacks) {
-            this.tokenController = tokenController
-            this.controllerId = data['controller-id']
-            console.debug(LOG_PREFIX + 'Initialized keypad for controller ' + this.controllerId)
-            this.callbacks = callbacks
-            callbacks.forEach(callback => console.debug(LOG_PREFIX + 'Registered callback ' + callback.name))
-        }
-
-        _registerKeyEvent(data) {
-            let key = this.keys.find(key => key.id === data.key)
-            key.state = data.state
-            if (data.state === 'down') this._handleKeyPress()
-        }
-
-        _handleKeyPress() {
-            if (this.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g)).length <= 1) {
-                let _handleMovement = this.callbacks.find(callback => callback.name === '_handleMovement')
-                if (_handleMovement) {
-                    console.debug(LOG_PREFIX + 'Handling movement key event...')
-                    setTimeout(_handleMovement, 50, this, this.tokenController)
-                }
-            }
-        }
-
-    }
-
     /**
      * Main class
      */
     class TokenController {
 
         isConnected = false
+        seenKeypads = new Array()
 
         /**
          * Constructor. Initialize WebsocketTokenController.
@@ -208,7 +152,6 @@
             let port = game.settings.get(VTT_MODULE_NAME, 'websocketPort')
             let path = game.settings.get(VTT_MODULE_NAME, 'websocketPath')
             let socket = new WebSocket('wss://' + host + ':' + port + path)
-            let seenKeypads = new Array()
 
             socket.onmessage = function (message) {
                 const data = JSON.parse(message.data)
@@ -216,14 +159,7 @@
                 try {
                     $this._handleStatus(socket, data)
                     if (data.type === "key-event") {
-                        let keypad = seenKeypads.find(keypad => keypad.controllerId === data['controller-id'])
-                        if (keypad) {
-                            keypad._registerKeyEvent(data)
-                        } else {
-                            keypad = new Keypad(data, $this, $this._handleMovement, $this._handleTokenSelect, $this._handleTorch)
-                            keypad._registerKeyEvent(data)
-                            seenKeypads.push(keypad)
-                        }
+                        $this._handleKeyEvent(data)
                     }
                 } catch (error) {
                     console.error(LOG_PREFIX + 'Error: ', error)
@@ -262,9 +198,9 @@
             let $this = this
             let originalFunction = Token.prototype._getBorderColor
             Token.prototype._getBorderColor = function WTC_getBorderColor() {
-                if($this.isConnected && this.actor && this.actor.hasPlayerOwner) {
+                if ($this.isConnected && this.actor && this.actor.hasPlayerOwner) {
                     const userInfo = $this._getUserForSelectedToken(this)
-                    if(userInfo.selected) {
+                    if (userInfo.selected) {
                         const color = $this._hexToRgb(userInfo.player.data.color);
                         return (color.r & 0xff) << 16 | (color.g & 0xff) << 8 | (color.b & 0xff)
                     }
@@ -279,7 +215,7 @@
             let originalFunction = KeyboardManager.prototype._handleKeys
             KeyboardManager.prototype._handleKeys = function WTC_handleKeys(event, key, state) {
                 originalFunction.call(this, event, key, state)
-                if(key == "F10" && state == false) {
+                if (key == "F10" && state == false) {
                     event.preventDefault()
                     jQuery(document.body).toggleClass('hide-ui')
                 }
@@ -287,17 +223,17 @@
         }
 
         _getUserForSelectedToken(token) {
-            let result = {selected: false}
+            let result = { selected: false }
             game.users.entities.forEach(player => {
                 if (game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id) == token.id) {
-                    result = {player, selected: true};
+                    result = { player, selected: true };
                 }
             })
             return result
         }
 
         _refreshTokenPlaceables = debounce(this._WTC_refreshTokens.bind(this), 100)
-        
+
         _WTC_refreshTokens() {
             console.debug(LOG_PREFIX + "refreshing tokens")
             canvas.tokens.placeables.forEach(t => t.refresh({}))
@@ -342,17 +278,40 @@
         }
 
         /**
-         * Handles token selection by cycling through the available tokens for the player assigned to the controller.
+         * Handles keypresses sent through the websocket.
          * 
-         * @param {*} message a data object from the websocket message containing the TAB kay and state down
+         * @param {*} message a data object from the websocket message containing a key-event representing a keypress on a client
          * @private 
          */
-        _handleTokenSelect(message) {
-            return // TODO: Reimplement for keypad
-            if (message.key != 'TAB') return
-            if (message.state != 'down') return
+        _handleKeyEvent(message) {
+            let $this = this
+            let keypad = $this.seenKeypads.find(keypad => keypad.controllerId === message['controller-id'])
+            if (!keypad) {
+                keypad = new Keypad(message)
+                keypad.onKeypress = function () {
+                    if (this.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g)).length <= 1) {
+                        setTimeout($this._handleMovement.bind($this), 50, this)
+                    }
+                    if (this.keys.filter(key => key.state === 'down' && key.id === 'E').length) {
+                        $this._handleTorch(this)
+                    }
+                    if (this.keys.filter(key => key.state === 'down' && key.id === 'Q').length) {
+                        $this._handleTokenSelect(this)
+                    }
+                }
+                $this.seenKeypads.push(keypad)
+            }
+            keypad.registerKeyEvent(message)
+        }
 
-            const player = this._getPlayerFor(message['controller-id'])
+        /**
+         * Handles token selection by cycling through the available tokens for the player assigned to the controller.
+         * 
+         * @param {*} keypad a keypad client that has been mapped from the websocket message data
+         * @private 
+         */
+        _handleTokenSelect(keypad) {
+            const player = this._getPlayerFor(keypad.controllerId)
             const tokens = this._findAllTokensFor(player)
 
             if (!game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)) {
@@ -382,17 +341,17 @@
          * @param {*} keypad a keypad client that has been mapped from the websocket message data
          * @private 
          */
-         _handleMovement(keypad, tokenController) {
+        _handleMovement(keypad) {
             let shiftKey = keypad.keys.find(key => key.id === 'SHI')
             let pressedMovementKeys = keypad.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g))
             if (!pressedMovementKeys.length) return
 
             // Get controlled objects
-            const player = tokenController._getPlayerFor(keypad.controllerId)
-            let token = tokenController._getTokenFor(player)
+            const player = this._getPlayerFor(keypad.controllerId)
+            let token = this._getTokenFor(player)
 
             // Map keys to directions
-            const directions = pressedMovementKeys.map(key => keypad.directionKeyMap[key.id])
+            const directions = pressedMovementKeys.filter(key => key.direction != null).map(key => key.direction)
 
             // Define movement offsets and get moved directions
             let dx = 0
@@ -405,28 +364,23 @@
             if (directions.includes('W')) dx -= 1
 
             // Logging movement action
-            console.debug(LOG_PREFIX + player.name + ': ' + (shiftKey.state === 'down' ? 'Rotating ' : 'Moving ') + token.name + ' to direction ' + directions, { 'dx': dx , 'dy': dy})
+            console.debug(LOG_PREFIX + player.name + ': ' + (shiftKey.state === 'down' ? 'Rotating ' : 'Moving ') + token.name + ' to direction ' + directions, { 'dx': dx, 'dy': dy })
 
             // Perform the shift or rotation
             canvas.tokens.moveMany({ dx, dy, rotate: shiftKey.state === 'down', ids: [token.id] })
 
             // Repeat movement until all movement keys are released
-            setTimeout(tokenController._handleMovement, 250, keypad, tokenController)
+            setTimeout(this._handleMovement.bind(this), 250, keypad)
         }
 
         /**
          * Handles torch enabling or disabling depending on whether the token already emits light or not.
          * 
-         * @param {*} message a data object from the websocket message containing the T key and state down
+         * @param {*} keypad a keypad client that has been mapped from the websocket message data
          * @private
          */
-        _handleTorch(message) {
-            return // TODO: Reimplement for keypad
-            if (!message.key) return
-            if (!message.key.match(/^[T]+$/g)) return
-            if (message.state != 'down') return
-
-            let player = this._getPlayerFor(message['controller-id'])
+        _handleTorch(keypad) {
+            const player = this._getPlayerFor(keypad.controllerId)
             let token = this._getTokenFor(player)
 
             if (!token.emitsLight) {
@@ -568,6 +522,53 @@
                 }
             }
             return ret
+        }
+
+    }
+
+    /**
+     * Key class representing a button on the Keypad
+     */
+    class Key {
+
+        state
+        id
+        direction
+
+        constructor(id, direction) {
+            this.id = id
+            this.state = 'up'
+            this.direction = direction
+        }
+    }
+
+    /**
+     * Keypad class representing a keypad
+     */
+    class Keypad {
+
+        controllerId
+
+        keys = [
+            new Key('Q'), new Key('W', 'N'), new Key('E'),
+            new Key('A', 'W'), new Key('S', 'S'), new Key('D', 'E'),
+            new Key('Z'), new Key('X'), new Key('C'),
+            new Key('SHI'), new Key('SPA')
+        ]
+
+        constructor(data) {
+            this.controllerId = data['controller-id']
+            console.debug(LOG_PREFIX + 'Initialized keypad for controller ' + this.controllerId)
+        }
+
+        registerKeyEvent(data) {
+            let key = this.keys.find(key => key.id === data.key)
+            key.state = data.state
+            if (data.state === 'down') this.onKeypress()
+        }
+
+        onKeypress() {
+            throw Error('onKeypress is not implemented')
         }
 
     }
