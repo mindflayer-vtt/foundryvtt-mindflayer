@@ -300,6 +300,9 @@
                     if (this.keys.filter(key => key.state === 'down' && key.id === 'Q').length) {
                         $this._handleTokenSelect(this)
                     }
+                    if (this.keys.filter(key => key.state === 'down' && key.id === 'SPC').length) {
+                        $this._handleDoorUse(this)
+                    }
                 }
                 $this.seenKeypads.push(keypad)
             }
@@ -394,9 +397,9 @@
             }
         }
 
-        _handleDoorUse(message) {
-            let player = this._getPlayerFor(message['controller-id'])
-            let token = this._getTokenFor(player)
+        _handleDoorUse(keypad) {
+            const player = this._getPlayerFor(keypad.controllerId)
+            const token = this._getTokenFor(player)
 
             
             const interactionBounds = {
@@ -406,9 +409,10 @@
                 bottom: token.y + token.height + canvas.grid.size
             }
 
-            canvas.walls.doors.placeables.forEach((door) => {
+            canvas.walls.doors.forEach((door) => {
                 if(this._intersectRect(interactionBounds, door.bounds)) {
-                    // TODO: open the door.
+                    console.log(LOG_PREFIX + player.name + '[' + token.name + ']: toggling the door ', door)
+                    door.doorControl._onMouseDown(new MouseEvent('mousedown'))
                 }
             })
         }
@@ -581,7 +585,7 @@
             new Key('Q'), new Key('W', 'N'), new Key('E'),
             new Key('A', 'W'), new Key('S', 'S'), new Key('D', 'E'),
             new Key('Z'), new Key('X'), new Key('C'),
-            new Key('SHI'), new Key('SPA')
+            new Key('SHI'), new Key('SPC')
         ]
 
         constructor(data) {
@@ -591,6 +595,10 @@
 
         registerKeyEvent(data) {
             let key = this.keys.find(key => key.id === data.key)
+            if(key == null) {
+                console.warn(LOG_PREFIX + 'unknown key:', data)
+                return
+            }
             key.state = data.state
             if (data.state === 'down') this.onKeypress()
         }
