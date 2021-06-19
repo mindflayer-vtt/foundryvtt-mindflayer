@@ -93,11 +93,13 @@
      * Ready hook
      */
     Hooks.once('ready', () => {
-        if (game.settings.get(VTT_MODULE_NAME, 'enabled')) {
+        if(!game.modules.get('lib-wrapper')?.active && game.user.isGM) {
+            ui.notifications.error("Module " + VTT_MODULE_NAME + " requires the 'libWrapper' module. Please install and activate it.")
+        } else if (game.settings.get(VTT_MODULE_NAME, 'enabled')) {
             console.log(LOG_PREFIX + 'Starting websocket connection')
             game.wstokenctrl = new TokenController()
         }
-    })
+    });
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -129,7 +131,7 @@
          */
         setDefaultTokens() {
             const $this = this
-            game.users.entities.forEach(user => {
+            game.users.contents.forEach(user => {
                 let selectedToken = null
                 if (user.character) {
                     selectedToken = $this._findAllTokensFor(user, true).find(token => token.actor.id == user.character.id)
@@ -196,8 +198,7 @@
         _overrideGetBorderColorOnTokens() {
             console.debug(LOG_PREFIX + "overriding Token Border Color to add display user select.")
             let $this = this
-            let originalFunction = Token.prototype._getBorderColor
-            Token.prototype._getBorderColor = function WTC_getBorderColor() {
+            libWrapper.register(VTT_MODULE_NAME, "Token.prototype._getBorderColor", function WTC_getBorderColor(wrapped, ...args) {
                 if ($this.isConnected && this.actor && this.actor.hasPlayerOwner) {
                     const userInfo = $this._getUserForSelectedToken(this)
                     if (userInfo.selected) {
@@ -205,26 +206,25 @@
                         return (color.r & 0xff) << 16 | (color.g & 0xff) << 8 | (color.b & 0xff)
                     }
                 }
-                return originalFunction.apply(this)
-            }
+                return wrapped(...args)
+            }, 'MIXED')
             $this._refreshTokenPlaceables()
         }
 
         _overrideHandleKeysOnKeyboardToHideUI() {
             console.debug(LOG_PREFIX + "overriding Key handling to add F10 to hide UI.")
-            let originalFunction = KeyboardManager.prototype._handleKeys
-            KeyboardManager.prototype._handleKeys = function WTC_handleKeys(event, key, state) {
-                originalFunction.call(this, event, key, state)
+            libWrapper.register(VTT_MODULE_NAME, "KeyboardManager.prototype._handleKeys", function WTC_handleKeys(wrapped, event, key, state) {
+                wrapped(event, key, state)
                 if (key == "F10" && state == false) {
                     event.preventDefault()
                     jQuery(document.body).toggleClass('hide-ui')
                 }
-            }
+            }, 'WRAPPER');
         }
 
         _getUserForSelectedToken(token) {
             let result = { selected: false }
-            game.users.entities.forEach(player => {
+            game.users.contents.forEach(player => {
                 if (game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id) == token.id) {
                     result = { player, selected: true };
                 }
@@ -410,7 +410,7 @@
             }
 
             canvas.walls.doors.forEach((door) => {
-                if(this._intersectRect(interactionBounds, door.bounds)) {
+                if(door.doorControl && this._intersectRect(interactionBounds, door.bounds)) {
                     console.log(LOG_PREFIX + player.name + '[' + token.name + ']: toggling the door ', door)
                     door.doorControl._onMouseDown(new MouseEvent('mousedown'))
                 }
@@ -435,7 +435,7 @@
         _getPlayerFor(controllerId) {
             const settings = game.settings.get(VTT_MODULE_NAME, 'settings')
             const playerId = Object.keys(settings.mappings).find(key => settings.mappings[key] == controllerId)
-            const selectedPlayer = game.users.entities.find(player => player.id == playerId)
+            const selectedPlayer = game.users.contents.find(player => player.id == playerId)
             if (!selectedPlayer) {
                 throw new Error('Could not find any player with id ' + playerId)
             }
@@ -468,7 +468,7 @@
          * @private
          */
         _findAllTokensFor(player, ignoreEmpty) {
-            const tokens = canvas.tokens.placeables.filter(token => token.actor.data.permission[player.id] >= 3).sort((a, b) => a.id.localeCompare(b.id))
+            const tokens = canvas.tokens.placeables.filter(token => token.actor && token.actor.data.permission[player.id] >= 3).sort((a, b) => a.id.localeCompare(b.id))
             if (!ignoreEmpty && !tokens.length) {
                 throw new Error('Could not find any tokens for player ' + player.name)
             }
@@ -496,7 +496,7 @@
         getData(options) {
             const existingSettings = game.settings.get(VTT_MODULE_NAME, 'settings')
             let data = mergeObject({
-                playerList: game.users.entities.reduce((acc, user) => {
+                playerList: game.users.contents.reduce((acc, user) => {
                     acc[user.id] = user.name
                     return acc
                 }, {})
