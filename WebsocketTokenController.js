@@ -162,6 +162,8 @@
                     $this._handleStatus(socket, data)
                     if (data.type === "key-event") {
                         $this._handleKeyEvent(data)
+                    } else if(data.type === "keyboard-login") {
+                        $this._handleKeyboardLogin(data)
                     }
                 } catch (error) {
                     console.error(LOG_PREFIX + 'Error: ', error)
@@ -175,7 +177,11 @@
                 socket.send(JSON.stringify({
                     type: 'registration',
                     status: 'connected',
-                    receiver: true
+                    receiver: true,
+                    players: game.users.players.map(player => ({
+                        id: player.id,
+                        name: player.name
+                    }))
                 }));
             }
 
@@ -307,6 +313,15 @@
                 $this.seenKeypads.push(keypad)
             }
             keypad.registerKeyEvent(message)
+        }
+
+        _handleKeyboardLogin(message) {
+            let $this = this
+            const settings = game.settings.get(VTT_MODULE_NAME, 'settings')
+            
+            settings.mappings[message['player-id']] = message['controller-id']
+
+            game.settings.set(VTT_MODULE_NAME, 'settings', settings)
         }
 
         /**
