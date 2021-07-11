@@ -274,27 +274,30 @@
                     if ( animate ) await this.animateMovement(new Ray(this.position, ray.B));
                     else this.position.set(x, y);
 
-                    if (cameraControl == 'focusPlayers') {
-                        // If the movement took a controlled token off-screen, re-center the view on all players
-                        if (isVisible) {
-                            let gridSize = canvas.scene.dimensions.size
-                            let activeCharacterTokens = $this._getAllActivePlayerCharacterTokens()
-                            
-                            let lowestXCoordinate = Math.min(...activeCharacterTokens.map(token => token.x))
-                            let highestXCoordinate = Math.max(...activeCharacterTokens.map(token => token.x))
-                            let targetXCoordinate = (highestXCoordinate + lowestXCoordinate + gridSize) / 2
-
-                            let lowestYCoordinate = Math.min(...activeCharacterTokens.map(token => token.y))
-                            let highestYCoordinate = Math.max(...activeCharacterTokens.map(token => token.y))
-                            let targetYCoordinate = (highestYCoordinate + lowestYCoordinate + gridSize) / 2
-
-                            let boundingbox = { width: highestXCoordinate - lowestXCoordinate, height: highestYCoordinate - lowestYCoordinate }
-                            let pad = gridSize*4
-                            let scale = Math.min((window.innerWidth-pad)/(boundingbox.width+pad), (window.innerHeight-pad)/(boundingbox.height+pad), 0.7)
-
-                            console.debug(LOG_PREFIX, 'Readjusting view to fit all player tokens on screen... Centering on: ', {x: targetXCoordinate, y: targetYCoordinate})
-                            canvas.animatePan({x: targetXCoordinate, y: targetYCoordinate, scale: scale, duration: 1000});
+                    // Re-center the view on all players if the moved token is visible
+                    if (cameraControl == 'focusPlayers' && isVisible) {
+                        let gridSize = canvas.scene.dimensions.size
+                        let activeCharacterTokens = $this._getAllActivePlayerCharacterTokens()
+                        if (!activeCharacterTokens) {
+                            console.warn(LOG_PREFIX + 'No active character tokens found. Automatic camera panning only works with active controllers that belong to a player with a character token in the same scene.')
+                            return
                         }
+                        
+                        let lowestXCoordinate = Math.min(...activeCharacterTokens.map(token => token.x))
+                        let highestXCoordinate = Math.max(...activeCharacterTokens.map(token => token.x))
+                        let targetXCoordinate = (highestXCoordinate + lowestXCoordinate + gridSize) / 2
+
+                        let lowestYCoordinate = Math.min(...activeCharacterTokens.map(token => token.y))
+                        let highestYCoordinate = Math.max(...activeCharacterTokens.map(token => token.y))
+                        let targetYCoordinate = (highestYCoordinate + lowestYCoordinate + gridSize) / 2
+
+                        let boundingbox = { width: highestXCoordinate - lowestXCoordinate, height: highestYCoordinate - lowestYCoordinate }
+                        let pad = gridSize*4
+                        let scale = Math.min((window.innerWidth-pad)/(boundingbox.width+pad), (window.innerHeight-pad)/(boundingbox.height+pad), 0.7)
+
+                        let cameraSettings = {x: targetXCoordinate, y: targetYCoordinate, scale: scale, duration: 1000}
+                        console.debug(LOG_PREFIX, 'Readjusting view to fit all player tokens on screen... Centering on: ', cameraSettings)
+                        canvas.animatePan(cameraSettings);
                     }
 
                     return this;
