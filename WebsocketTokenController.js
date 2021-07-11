@@ -505,12 +505,18 @@
                 bottom: token.y + token.height + canvas.grid.size
             }
 
+            let delay = 0
             canvas.walls.doors.forEach((door) => {
                 if(door.doorControl && this._intersectRect(interactionBounds, door.bounds)) {
-                    console.log(LOG_PREFIX + player.name + '[' + token.name + ']: toggling the door ', door)
-                    door.doorControl._onMouseDown(new MouseEvent('mousedown'))
+                    setTimeout(this._toggleDoor.bind(this, player, token, door), delay);
+                    delay += 100;
                 }
             })
+        }
+
+        _toggleDoor(player, token, door) {
+            console.log(LOG_PREFIX + player.name + '[' + token.name + ']: toggling the door ', door)
+            door.doorControl._onMouseDown(new MouseEvent('mousedown'))
         }
 
         _intersectRect(r1, r2) {
