@@ -75,9 +75,9 @@
             type: String,
             isSelect: true,
             choices: {
-                default: game.i18n.localize('WebsocketTokenController.cameraControl.default'),
-                focusPlayers: game.i18n.localize('WebsocketTokenController.cameraControl.focusPlayers'),
-                off: game.i18n.localize('WebsocketTokenController.cameraControl.off')
+                default: game.i18n.localize('WebsocketTokenController.cameraControlDefault'),
+                focusPlayers: game.i18n.localize('WebsocketTokenController.cameraControlFocusPlayers'),
+                off: game.i18n.localize('WebsocketTokenController.cameraControlOff')
             },
             config: true
         })

@@ -12,9 +12,9 @@
 
     "WebsocketTokenController.cameraControl": "Camera Behavior",
     "WebsocketTokenController.cameraControlHint": "This changes the camera behavior when tokens move",
-    "WebsocketTokenController.cameraControl.default": "VTT Default (focus controlled token)",
-    "WebsocketTokenController.cameraControl.focusPlayers": "Automatic (focus all active player tokens on scene)",
-    "WebsocketTokenController.cameraControl.off": "GM Mode (manual camera control)",
+    "WebsocketTokenController.cameraControlDefault": "VTT Default (focus controlled token)",
+    "WebsocketTokenController.cameraControlFocusPlayers": "Automatic (focus all active player tokens on scene)",
+    "WebsocketTokenController.cameraControlOff": "GM Mode (manual camera control)",
 
     "WebsocketTokenController.moduleEnabled": "Enabled",
     "WebsocketTokenController.moduleEnabledHint": "Enables the module for this browser",
