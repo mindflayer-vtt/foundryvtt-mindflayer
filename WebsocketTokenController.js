@@ -68,6 +68,20 @@
             }
         })
 
+        game.settings.register(VTT_MODULE_NAME, 'cameraControl', {
+            name: 'WebsocketTokenController.cameraControl',
+            hint: 'WebsocketTokenController.cameraControlhHint',
+            default: 'default',
+            type: String,
+            isSelect: true,
+            choices: {
+                default: game.i18n.localize('WebsocketTokenController.cameraControl.default'),
+                focusPlayers: game.i18n.localize('WebsocketTokenController.cameraControl.focusPlayers'),
+                off: game.i18n.localize('WebsocketTokenController.cameraControl.off')
+            },
+            config: true
+        })
+
         game.settings.registerMenu(VTT_MODULE_NAME, VTT_MODULE_NAME, {
             name: 'WebsocketTokenController.config',
             label: 'WebsocketTokenController.configTitle',
@@ -114,6 +128,7 @@
 
         isConnected = false
         seenKeypads = new Array()
+        activeControllers = new Set()
 
         /**
          * Constructor. Initialize WebsocketTokenController.
@@ -124,6 +139,7 @@
             this._initializeWebsocket()
             this._overrideGetBorderColorOnTokens()
             this._overrideHandleKeysOnKeyboardToHideUI()
+            this._overrideCameraPanForTokenMovement()
         }
 
         /**
@@ -225,7 +241,68 @@
                     event.preventDefault()
                     jQuery(document.body).toggleClass('hide-ui')
                 }
-            }, 'WRAPPER');
+            }, 'WRAPPER')
+        }
+
+        _overrideCameraPanForTokenMovement() {
+            let $this = this
+            console.debug(LOG_PREFIX + "overriding camera pan to focus on all player tokens instead of the current moved one.")
+            libWrapper.register(VTT_MODULE_NAME, "Token.prototype.setPosition", async function WTC_setPosition(wrapped, x, y, {animate=true}={}) {
+                let cameraControl = game.settings.get(VTT_MODULE_NAME, 'cameraControl')
+                if (cameraControl == 'off' || cameraControl == 'focusPlayers') {
+                    // Create a Ray for the requested movement
+                    let origin = this._movement ? this.position : this._validPosition,
+                    target = {x: x, y: y},
+                    isVisible = this.isVisible;
+
+                    // Create the movement ray
+                    let ray = new Ray(origin, target);
+
+                    // Update the new valid position
+                    this._validPosition = target;
+
+                    // Record the Token's new velocity
+                    this._velocity = this._updateVelocity(ray);
+
+                    // Update visibility for a non-controlled token which may have moved into the controlled tokens FOV
+                    this.visible = isVisible;
+
+                    // Conceal the HUD if it targets this Token
+                    if ( this.hasActiveHUD ) this.layer.hud.clear();
+
+                    // Either animate movement to the destination position, or set it directly if animation is disabled
+                    if ( animate ) await this.animateMovement(new Ray(this.position, ray.B));
+                    else this.position.set(x, y);
+
+                    if (cameraControl == 'focusPlayers') {
+                        // If the movement took a controlled token off-screen, re-center the view on all players
+                        if (isVisible) {
+                            let gridSize = canvas.scene.dimensions.size
+                            let activeCharacterTokens = $this._getAllActivePlayerCharacterTokens()
+                            
+                            let lowestXCoordinate = Math.min(...activeCharacterTokens.map(token => token.x))
+                            let highestXCoordinate = Math.max(...activeCharacterTokens.map(token => token.x))
+                            let targetXCoordinate = (highestXCoordinate + lowestXCoordinate + gridSize) / 2
+
+                            let lowestYCoordinate = Math.min(...activeCharacterTokens.map(token => token.y))
+                            let highestYCoordinate = Math.max(...activeCharacterTokens.map(token => token.y))
+                            let targetYCoordinate = (highestYCoordinate + lowestYCoordinate + gridSize) / 2
+
+                            let boundingbox = { width: highestXCoordinate - lowestXCoordinate, height: highestYCoordinate - lowestYCoordinate }
+                            let pad = gridSize*4
+                            let scale = Math.min((window.innerWidth-pad)/(boundingbox.width+pad), (window.innerHeight-pad)/(boundingbox.height+pad), 0.7)
+
+                            console.debug(LOG_PREFIX, 'Readjusting view to fit all player tokens on screen... Centering on: ', {x: targetXCoordinate, y: targetYCoordinate})
+                            canvas.animatePan({x: targetXCoordinate, y: targetYCoordinate, scale: scale, duration: 1000});
+                        }
+                    }
+
+                    return this;
+                }
+
+                // use default camera control behavior for token movement
+                return wrapped(x, y, {animate=true}={})
+            }, 'MIXED')
         }
 
         _getUserForSelectedToken(token) {
@@ -273,6 +350,7 @@
             if (message.status == 'connected') {
                 const controllerId = message['controller-id']
                 const player = this._getPlayerFor(controllerId)
+                this.activeControllers.add(controllerId)
                 ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.NewClient', { controller: controllerId, player: player.name }))
                 socket.send(JSON.stringify({
                     type: 'configuration',
@@ -281,6 +359,9 @@
                     led2: this._hexToRgb(player.data.color)
                 }))
             } else if (message.status == 'disconnected') {
+                const controllerId = message['controller-id']
+                this.activeControllers.delete(controllerId)
+                const player = this._getPlayerFor(controllerId)
                 ui.notifications.warn('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.ClientDisconnected', { controller: controllerId, player: player.name }))
             }
         }
@@ -298,7 +379,7 @@
                 keypad = new Keypad(message)
                 keypad.onKeypress = function () {
                     if (this.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g)).length <= 1) {
-                        setTimeout($this._handleMovement.bind($this), 50, this)
+                        setTimeout($this._handleMovement.bind($this), 1, this)
                     }
                     if (this.keys.filter(key => key.state === 'down' && key.id === 'E').length) {
                         $this._handleTorch(this)
@@ -487,6 +568,18 @@
             if (!ignoreEmpty && !tokens.length) {
                 throw new Error('Could not find any tokens for player ' + player.name)
             }
+            return tokens
+        }
+
+        /**
+         * Returns all currently selected tokens for active players.
+         * 
+         * @returns all currently selected player character tokens for active players, if there are any
+         */
+        _getAllActivePlayerCharacterTokens() {
+            if (!this.activeControllers.size) return
+            const activePlayers = Array.from(this.activeControllers).map(controllerId => this._getPlayerFor(controllerId))
+            const tokens = activePlayers.flatMap(player => this._findAllTokensFor(player, true)).filter(token => token.actor.type == 'character')
             return tokens
         }
     }
