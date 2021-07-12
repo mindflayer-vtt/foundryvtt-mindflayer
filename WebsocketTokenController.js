@@ -277,18 +277,19 @@
                     // Re-center the view on all players if the moved token is visible
                     if (cameraControl == 'focusPlayers' && isVisible) {
                         let gridSize = canvas.scene.dimensions.size
-                        let activeCharacterTokens = $this._getAllActivePlayerCharacterTokens()
-                        if (!activeCharacterTokens) {
+                        let activeCharacterTokens = $this._getAllCombatTokens()
+                        activeCharacterTokens.push(...$this._getAllActivePlayerCharacterTokens())
+                        if (activeCharacterTokens.length == 0) {
                             console.warn(LOG_PREFIX + 'No active character tokens found. Automatic camera panning only works with active controllers that belong to a player with a character token in the same scene.')
                             return
                         }
                         
                         let lowestXCoordinate = Math.min(...activeCharacterTokens.map(token => token.x))
-                        let highestXCoordinate = Math.max(...activeCharacterTokens.map(token => token.x))
+                        let highestXCoordinate = Math.max(...activeCharacterTokens.map(token => token.x + token.w))
                         let targetXCoordinate = (highestXCoordinate + lowestXCoordinate + gridSize) / 2
 
                         let lowestYCoordinate = Math.min(...activeCharacterTokens.map(token => token.y))
-                        let highestYCoordinate = Math.max(...activeCharacterTokens.map(token => token.y))
+                        let highestYCoordinate = Math.max(...activeCharacterTokens.map(token => token.y + token.h))
                         let targetYCoordinate = (highestYCoordinate + lowestYCoordinate + gridSize) / 2
 
                         let boundingbox = { width: highestXCoordinate - lowestXCoordinate, height: highestYCoordinate - lowestYCoordinate }
@@ -296,7 +297,7 @@
                         let scale = Math.min((window.innerWidth-pad)/(boundingbox.width+pad), (window.innerHeight-pad)/(boundingbox.height+pad), 0.7)
 
                         let cameraSettings = {x: targetXCoordinate, y: targetYCoordinate, scale: scale, duration: 1000}
-                        console.debug(LOG_PREFIX, 'Readjusting view to fit all player tokens on screen... Centering on: ', cameraSettings)
+                        console.debug(LOG_PREFIX + 'Readjusting view to fit all player tokens on screen... Centering on: ', cameraSettings)
                         canvas.animatePan(cameraSettings);
                     }
 
@@ -586,10 +587,22 @@
          * @returns all currently selected player character tokens for active players, if there are any
          */
         _getAllActivePlayerCharacterTokens() {
-            if (!this.activeControllers.size) return
+            if (!this.activeControllers.size) return []
             const activePlayers = Array.from(this.activeControllers).map(controllerId => this._getPlayerFor(controllerId))
             const tokens = activePlayers.flatMap(player => this._findAllTokensFor(player, true)).filter(token => token.actor.type == 'character')
             return tokens
+        }
+
+        /**
+         * Returns all tokens that are in combat
+         * 
+         * @returns TokenDocument[] the tokens in combat or empty array if no combat
+         */
+        _getAllCombatTokens() {
+            if(game.combat == null) {
+                return []
+            }
+            return game.combat.turns.map(combatant => combatant.token.object)
         }
     }
 
