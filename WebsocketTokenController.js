@@ -129,6 +129,12 @@
         isConnected = false
         seenKeypads = new Array()
         activeControllers = new Set()
+        directions = {
+            0: ['N', 'W', 'S', 'E'],
+            90: ['E', 'N', 'W', 'S'],
+            180: ['S', 'E', 'N', 'W'],
+            270: ['W', 'S', 'E', 'N']
+        }
 
         /**
          * Constructor. Initialize WebsocketTokenController.
@@ -383,7 +389,16 @@
                 keypad = new Keypad(message)
                 keypad.onKeypress = function () {
                     if (this.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g)).length <= 1) {
-                        setTimeout($this._handleMovement.bind($this), 1, this)
+                        
+                        // Reset move keys after a delay of 50ms or greater
+                        const now = Date.now()
+                        const delta = now - this._moveTime
+                        if ( delta > 50 ) this._moveKeys.clear()
+
+                        if ( delta < 100 ) return; // Throttle keyboard movement once per 100ms
+                        setTimeout($this._handleMovement.bind($this), 50, this)
+
+                        this._moveTime = now
                     }
                     if (this.keys.filter(key => key.state === 'down' && key.id === 'E').length) {
                         $this._handleTorch(this)
@@ -393,6 +408,12 @@
                     }
                     if (this.keys.filter(key => key.state === 'down' && key.id === 'SPC').length) {
                         $this._handleDoorUse(this)
+                    }
+                    if (this.keys.filter(key => key.state === 'down' && key.id === 'C').length) {
+                        // change keyboard alignment
+                        this.alignment = this.alignment < 270 ? this.alignment + 90 : 0
+                        let player = $this._getPlayerFor(this.controllerId)
+                        ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.ChangeDirection', { player: player.name, orientation: this.alignment }))
                     }
                 }
                 $this.seenKeypads.push(keypad)
@@ -448,15 +469,19 @@
          */
         _handleMovement(keypad) {
             let shiftKey = keypad.keys.find(key => key.id === 'SHI')
-            let pressedMovementKeys = keypad.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g))
-            if (!pressedMovementKeys.length) return
+            // Track the movement set
+            const pressedKeys = keypad.keys.filter(key => key.state === 'down' && key.id.match(/^[WASD]+$/g))
+            for (let key of pressedKeys) {
+                keypad._moveKeys.add(this.directions[keypad.alignment][key.directionId])
+            }
+            if (!keypad._moveKeys.length) return
 
             // Get controlled objects
             const player = this._getPlayerFor(keypad.controllerId)
             let token = this._getTokenFor(player)
 
             // Map keys to directions
-            const directions = pressedMovementKeys.filter(key => key.direction != null).map(key => key.direction)
+            const directions = keypad._moveKeys
 
             // Define movement offsets and get moved directions
             let dx = 0
@@ -474,6 +499,8 @@
             // Perform the shift or rotation
             canvas.tokens.moveMany({ dx, dy, rotate: shiftKey.state === 'down', ids: [token.id] })
 
+            // Reset move keys
+            keypad._moveKeys.clear()
             // Repeat movement until all movement keys are released
             setTimeout(this._handleMovement.bind(this), 250, keypad)
         }
@@ -695,12 +722,12 @@
 
         state
         id
-        direction
+        directionId
 
-        constructor(id, direction) {
+        constructor(id, directionId) {
             this.id = id
             this.state = 'up'
-            this.direction = direction
+            this.directionId = directionId
         }
     }
 
@@ -711,9 +738,14 @@
 
         controllerId
 
+        _moveTime = null
+        _moveKeys = new Set()
+
+        alignment = 0
+
         keys = [
-            new Key('Q'), new Key('W', 'N'), new Key('E'),
-            new Key('A', 'W'), new Key('S', 'S'), new Key('D', 'E'),
+            new Key('Q'), new Key('W', 0), new Key('E'),
+            new Key('A', 1), new Key('S', 2), new Key('D', 3),
             new Key('Z'), new Key('X'), new Key('C'),
             new Key('SHI'), new Key('SPC')
         ]
