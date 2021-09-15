@@ -112,6 +112,18 @@
         } else if (game.settings.get(VTT_MODULE_NAME, 'enabled')) {
             console.log(LOG_PREFIX + 'Starting websocket connection')
             game.wstokenctrl = new TokenController()
+            document.addEventListener('visibilitychange', game.wstokenctrl.ensureWakeLock.bind(game.wstokenctrl));
+        }
+    });
+
+
+    Hooks.on('updateCombat', async (combat, update) => {
+        if (!combat.started) {
+            await Marker.deleteStartMarker();
+        }
+        // SWADE has a special initiative
+        if (game.system.id != "swade") {
+            game.wstokenctrl.handleCombatUpdate(combat, update);
         }
     });
 
@@ -126,9 +138,12 @@
      */
     class TokenController {
 
+        doorQueue = []
+        doorChangeThread = null
+        wakeLock = null
         isConnected = false
         seenKeypads = new Array()
-        activeControllers = new Set()
+        activeControllers = new Map()
         directions = {
             0: ['N', 'W', 'S', 'E'],
             90: ['E', 'N', 'W', 'S'],
@@ -146,6 +161,7 @@
             this._overrideGetBorderColorOnTokens()
             this._overrideHandleKeysOnKeyboardToHideUI()
             this._overrideCameraPanForTokenMovement()
+            this.doorChangeThread = setInterval(this._toggleDoorThread.bind(this), 150)
         }
 
         /**
@@ -241,13 +257,34 @@
 
         _overrideHandleKeysOnKeyboardToHideUI() {
             console.debug(LOG_PREFIX + "overriding Key handling to add F10 to hide UI.")
+            const $this = this
             libWrapper.register(VTT_MODULE_NAME, "KeyboardManager.prototype._handleKeys", function WTC_handleKeys(wrapped, event, key, state) {
                 wrapped(event, key, state)
                 if (key == "F10" && state == false) {
                     event.preventDefault()
-                    jQuery(document.body).toggleClass('hide-ui')
+                    const $body = jQuery(document.body)
+                    $body.toggleClass('hide-ui')
+                    $this.ensureWakeLock()
                 }
             }, 'WRAPPER')
+        }
+
+        async ensureWakeLock() {
+            if(jQuery(document.body).hasClass('hide-ui') && this.wakeLock === null && document.visibilityState === 'visible') {
+                try {
+                    this.wakeLock = await navigator.wakeLock.request()
+                    const $this = this
+                    this.wakeLock.addEventListener('release', () => {
+                        console.debug(LOG_PREFIX + "screen lock released")
+                        $this.wakeLock = null
+                    })
+                    console.debug(LOG_PREFIX + "locked the screen awake")
+                } catch(err) {
+                    console.error(LOG_PREFIX + `WakeLock ${err.name}, ${err.message}`)
+                }
+            } else if(this.wakeLock != null) {
+                this.wakeLock.release()
+            }
         }
 
         _overrideCameraPanForTokenMovement() {
@@ -360,19 +397,14 @@
             if (message.status == 'connected') {
                 const controllerId = message['controller-id']
                 const player = this._getPlayerFor(controllerId)
-                this.activeControllers.add(controllerId)
+                this.activeControllers.set(controllerId, socket)
                 ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.NewClient', { controller: controllerId, player: player.name }))
-                socket.send(JSON.stringify({
-                    type: 'configuration',
-                    "controller-id": controllerId,
-                    led1: this._hexToRgb(player.data.color),
-                    led2: this._hexToRgb(player.data.color)
-                }))
+                this._configurePlayerLEDs(controllerId)
             } else if (message.status == 'disconnected') {
                 const controllerId = message['controller-id']
                 this.activeControllers.delete(controllerId)
                 const player = this._getPlayerFor(controllerId)
-                ui.notifications.warn('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.ClientDisconnected', { controller: controllerId, player: player.name }))
+                ui.notifications.warn('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.ClientDisconnected', { controller: controllerId, player: player.name }))
             }
         }
 
@@ -396,29 +428,32 @@
                         if ( delta > 50 ) this._moveKeys.clear()
 
                         if ( delta < 100 ) return; // Throttle keyboard movement once per 100ms
-                        setTimeout($this._handleMovement.bind($this), 50, this)
+                        setTimeout($this._handleMovement.bind($this), 40, this)
 
                         this._moveTime = now
                     }
-                    if (this.keys.filter(key => key.state === 'down' && key.id === 'E').length) {
+                    if (this.isDown('E')) {
                         $this._handleTorch(this)
                     }
-                    if (this.keys.filter(key => key.state === 'down' && key.id === 'Q').length) {
+                    if (this.isDown('Q')) {
                         $this._handleTokenSelect(this)
                     }
-                    if (this.keys.filter(key => key.state === 'down' && key.id === 'SPC').length) {
+                    if (this.isDown('SPC')) {
                         $this._handleDoorUse(this)
                     }
-                    if (this.keys.filter(key => key.state === 'down' && key.id === 'C').length) {
-                        // change keyboard alignment
-                        this.alignment = this.alignment < 270 ? this.alignment + 90 : 0
-                        let player = $this._getPlayerFor(this.controllerId)
-                        ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.ChangeDirection', { player: player.name, orientation: this.alignment }))
+                    if (this.isDown('C') && this.isDown('SHI')) {
+                        $this._changeKeyboardAlignment(this)
                     }
                 }
                 $this.seenKeypads.push(keypad)
             }
             keypad.registerKeyEvent(message)
+        }
+        
+        _changeKeyboardAlignment(keypad) {
+            keypad.alignment = (keypad.alignment + 90) % 360
+            let player = this._getPlayerFor(keypad.controllerId)
+            ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.ChangeDirection', { player: player.name, orientation: keypad.alignment }))
         }
 
         _handleKeyboardLogin(message) {
@@ -474,7 +509,7 @@
             for (let key of pressedKeys) {
                 keypad._moveKeys.add(this.directions[keypad.alignment][key.directionId])
             }
-            if (!keypad._moveKeys.length) return
+            if (!keypad._moveKeys.size) return
 
             // Get controlled objects
             const player = this._getPlayerFor(keypad.controllerId)
@@ -488,10 +523,10 @@
             let dy = 0
 
             // Assign movement offsets
-            if (directions.includes('N')) dy -= 1
-            if (directions.includes('E')) dx += 1
-            if (directions.includes('S')) dy += 1
-            if (directions.includes('W')) dx -= 1
+            if (directions.has('N')) dy -= 1
+            if (directions.has('E')) dx += 1
+            if (directions.has('S')) dy += 1
+            if (directions.has('W')) dx -= 1
 
             // Logging movement action
             console.debug(LOG_PREFIX + player.name + ': ' + (shiftKey.state === 'down' ? 'Rotating ' : 'Moving ') + token.name + ' to direction ' + directions, { 'dx': dx, 'dy': dy })
@@ -538,16 +573,20 @@
 
             let delay = 0
             canvas.walls.doors.forEach((door) => {
-                if(door.doorControl && this._intersectRect(interactionBounds, door.bounds)) {
-                    setTimeout(this._toggleDoor.bind(this, player, token, door), delay);
-                    delay += 100;
+                if(door.doorControl && this._intersectRect(interactionBounds, door.bounds) && !this.doorQueue.find(d => d.door === door)) {
+                    this.doorQueue.push({
+                        player, token, door
+                    })
                 }
             })
         }
 
-        _toggleDoor(player, token, door) {
-            console.log(LOG_PREFIX + player.name + '[' + token.name + ']: toggling the door ', door)
-            door.doorControl._onMouseDown(new MouseEvent('mousedown'))
+        _toggleDoorThread() {
+            const doorChangeRequest = this.doorQueue.shift()
+            if(doorChangeRequest) {
+                console.debug(LOG_PREFIX + doorChangeRequest.player.name + '[' + doorChangeRequest.token.name + ']: toggling the door ', doorChangeRequest.door)
+                doorChangeRequest.door.doorControl._onMouseDown(new MouseEvent('mousedown'))
+            }
         }
 
         _intersectRect(r1, r2) {
@@ -584,9 +623,13 @@
          */
         _getTokenFor(player) {
             const selectedToken = game.user.getFlag(VTT_MODULE_NAME, 'selectedToken_' + player.id)
-            const token = canvas.tokens.placeables.find(token => token.id == selectedToken)
+            let token = canvas.tokens.placeables.find(token => token.id == selectedToken)
             if (!token) {
-                throw new Error('Could not find token ' + selectedToken + ' for player ' + player.name)
+                const tokens = this._findAllTokensFor(player, true)
+                if(tokens.length <= 0) {
+                    throw new Error('Could not find token any tokens on current map for player ' + player.name)
+                }
+                token = tokens[0]
             }
             return token
         }
@@ -615,7 +658,7 @@
          */
         _getAllActivePlayerCharacterTokens() {
             if (!this.activeControllers.size) return []
-            const activePlayers = Array.from(this.activeControllers).map(controllerId => this._getPlayerFor(controllerId))
+            const activePlayers = Array.from(this.activeControllers.keys()).map(controllerId => this._getPlayerFor(controllerId))
             const tokens = activePlayers.flatMap(player => this._findAllTokensFor(player, true)).filter(token => token.actor.type == 'character')
             return tokens
         }
@@ -630,6 +673,31 @@
                 return []
             }
             return game.combat.turns.map(combatant => combatant.token.object)
+        }
+
+        _configurePlayerLEDs(controllerId, color1Arg, color2Arg) {
+            const color1 = color1Arg || this._hexToRgb(this._getPlayerFor(controllerId).data.color)
+            const color2 = color2Arg || this._hexToRgb(this._getPlayerFor(controllerId).data.color)
+            this.activeControllers.get(controllerId).send(JSON.stringify({
+                type: 'configuration',
+                "controller-id": controllerId,
+                led1: color1,
+                led2: color2
+            }))
+        }
+
+        handleCombatUpdate(combat, update) {
+            if(combat.combatant) {
+                const activePlayerIds = combat.combatant.players.map(player => player.id)
+                this.activeControllers.forEach((socket, controllerId) => {
+                    const player = this._getPlayerFor(controllerId)
+                    if(activePlayerIds.includes(player.id)) {
+                        this._configurePlayerLEDs(controllerId, this._hexToRgb(player.data.color), this._hexToRgb("#FF0000"))
+                    } else {
+                        this._configurePlayerLEDs(controllerId, this._hexToRgb(player.data.color), this._hexToRgb(player.data.color))
+                    }
+                })
+            }
         }
     }
 
@@ -738,7 +806,7 @@
 
         controllerId
 
-        _moveTime = null
+        _moveTime = 0
         _moveKeys = new Set()
 
         alignment = 0
@@ -767,6 +835,10 @@
 
         onKeypress() {
             throw Error('onKeypress is not implemented')
+        }
+
+        isDown(wantedKey) {
+            return this.keys.filter(key => key.state === 'down' && key.id === wantedKey).length > 0
         }
 
     }
