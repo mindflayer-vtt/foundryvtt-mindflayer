@@ -709,8 +709,8 @@
         static get defaultOptions() {
             return mergeObject(super.defaultOptions, {
                 title: game.i18n.localize('MindFlayer.configTitle'),
-                id: 'websocket-token-controller-config',
-                template: 'modules/websocket-token-controller/templates/keyboard-config.html',
+                id: 'mindflayer-token-controller-config',
+                template: 'modules/mindflayer-token-controller/templates/keyboard-config.html',
                 width: 500,
                 height: 'auto',
                 closeOnSubmit: true,
@@ -737,7 +737,7 @@
 
             await game.settings.set(VTT_MODULE_NAME, 'settings', settings)
 
-            game.socket.emit('module.websocket-token-controller', { type: 'update', user: game.user.id })
+            game.socket.emit('module.mindflayer-token-controller', { type: 'update', user: game.user.id })
             ui.notifications.info(game.i18n.localize('MindFlayer.saveMessage'))
 
             game.mindflayerctrl.setDefaultTokens()

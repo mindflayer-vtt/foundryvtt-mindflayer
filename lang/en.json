@@ -1,33 +1,33 @@
 {
-    "WebsocketTokenController.config": "Controller Assignments",
-    "WebsocketTokenController.configTitle": "Controller Assignments",
-    "WebsocketTokenController.configHint": "Controller to user assignments",
+    "MindFlayer.config": "Controller Assignments",
+    "MindFlayer.configTitle": "Controller Assignments",
+    "MindFlayer.configHint": "Controller to user assignments",
 
-    "WebsocketTokenController.websocketHost": "Websocket Host",
-    "WebsocketTokenController.websocketHostHint": "A websocket server that the module will connect to",
-    "WebsocketTokenController.websocketPort": "Websocket Port",
-    "WebsocketTokenController.websocketPortHint": "The port of the websocket that the module will connect to",
-    "WebsocketTokenController.websocketPath": "Websocket Path",
-    "WebsocketTokenController.websocketPathHint": "The path of the websocket that the module will connect to",
+    "MindFlayer.websocketHost": "Websocket Host",
+    "MindFlayer.websocketHostHint": "A websocket server that the module will connect to",
+    "MindFlayer.websocketPort": "Websocket Port",
+    "MindFlayer.websocketPortHint": "The port of the websocket that the module will connect to",
+    "MindFlayer.websocketPath": "Websocket Path",
+    "MindFlayer.websocketPathHint": "The path of the websocket that the module will connect to",
 
-    "WebsocketTokenController.cameraControl": "Camera Behavior",
-    "WebsocketTokenController.cameraControlHint": "This changes the camera behavior when tokens move",
-    "WebsocketTokenController.cameraControlDefault": "VTT Default (focus controlled token)",
-    "WebsocketTokenController.cameraControlFocusPlayers": "Automatic (focus all active player tokens on scene)",
-    "WebsocketTokenController.cameraControlOff": "GM Mode (manual camera control)",
+    "MindFlayer.cameraControl": "Camera Behavior",
+    "MindFlayer.cameraControlHint": "This changes the camera behavior when tokens move",
+    "MindFlayer.cameraControlDefault": "VTT Default (focus controlled token)",
+    "MindFlayer.cameraControlFocusPlayers": "Automatic (focus all active player tokens on scene)",
+    "MindFlayer.cameraControlOff": "GM Mode (manual camera control)",
 
-    "WebsocketTokenController.moduleEnabled": "Enabled",
-    "WebsocketTokenController.moduleEnabledHint": "Enables the module for this browser",
+    "MindFlayer.moduleEnabled": "Enabled",
+    "MindFlayer.moduleEnabledHint": "Enables the module for this browser",
 
-    "WebsocketTokenController.Save": "Save",
-    "WebsocketTokenController.Reset": "Reset",
+    "MindFlayer.Save": "Save",
+    "MindFlayer.Reset": "Reset",
 
-    "WebsocketTokenController.saveMessage": "Updated Websocket Token Controller Assignments",
+    "MindFlayer.saveMessage": "Updated Mind Flayer Controller Assignments",
 
-    "WebsocketTokenController.Notifications.Connected": "Connected to websocket on \"{host}:{port}\"",
-    "WebsocketTokenController.Notifications.Error": "An error ocurred, look at the log for more information",
-    "WebsocketTokenController.Notifications.ConnectionClosed": "Connected to websocket closed, attempting to reconnect in 5 seconds...",
-    "WebsocketTokenController.Notifications.NewClient": "Controller \"{controller}\" assigned to player \"{player}\" connected!",
-    "WebsocketTokenController.Notifications.ClientDisconnected": "Controller \"{controller}\" assigned to player \"{player}\" disconnected!",
-    "WebsocketTokenController.Notifications.ChangeDirection": "Player \"{player}\" changed orientation by {orientation}°"
+    "MindFlayer.Notifications.Connected": "Connected to websocket on \"{host}:{port}\"",
+    "MindFlayer.Notifications.Error": "An error ocurred, look at the log for more information",
+    "MindFlayer.Notifications.ConnectionClosed": "Connected to websocket closed, attempting to reconnect in 5 seconds...",
+    "MindFlayer.Notifications.NewClient": "Controller \"{controller}\" assigned to player \"{player}\" connected!",
+    "MindFlayer.Notifications.ClientDisconnected": "Controller \"{controller}\" assigned to player \"{player}\" disconnected!",
+    "MindFlayer.Notifications.ChangeDirection": "Player \"{player}\" changed orientation by {orientation}°"
 }

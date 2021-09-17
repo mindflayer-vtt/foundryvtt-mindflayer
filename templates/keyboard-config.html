@@ -1,11 +1,11 @@
-<form autocomplete="off" class="websocket-token-controller flexcol">
+<form autocomplete="off" class="mindflayer-token-controller flexcol">
     <nav class="sheet-tabs tabs">
-        <a class="item active" data-tab="general"><i class="fas fa-keyboard"></i> {{localize "WebsocketTokenController.config"}}</a>
+        <a class="item active" data-tab="general"><i class="fas fa-keyboard"></i> {{localize "MindFlayer.config"}}</a>
     </nav>
     <section id="config-tabs" class="content">
         <div class="tab active" data-tab="general">
             <div class="settings-list">
-                <div class="websocket-token-controller-settings-container">
+                <div class="mindflayer-token-controller-settings-container">
                     {{#each playerList as |name key|}}
                     <div class="form-group">
                         <label>{{name}}</label>
@@ -20,10 +20,10 @@
     </section>
     <footer class="sheet-footer flexrow">
         <button type="button" name="reset">
-            <i class="fas fa-refresh"></i> {{localize "WebsocketTokenController.Reset"}}
+            <i class="fas fa-refresh"></i> {{localize "MindFlayer.Reset"}}
         </button>
         <button type="submit" name="submit">
-            <i class="fas fa-save"></i> {{localize "WebsocketTokenController.Save"}}
+            <i class="fas fa-save"></i> {{localize "MindFlayer.Save"}}
         </button>
     </footer>
 </form>
