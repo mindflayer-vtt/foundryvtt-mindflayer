@@ -17,4 +17,4 @@ TBD
 
 # Demo
 
-For testing and demostration purposes, you can use [this keypad app](https://shawly.github.io/mindflayer-server/test/keypad.html) to control tokens.
+For testing and demostration purposes, you can use [this keypad app](https://shawly.github.io/mindflayer-server/static/keypad.html) to control tokens.
