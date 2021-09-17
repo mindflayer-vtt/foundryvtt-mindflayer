@@ -5,8 +5,8 @@
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const VTT_MODULE_NAME = 'websocket-token-controller'
-    const LOG_PREFIX = 'WebsocketTokenController | '
+    const VTT_MODULE_NAME = 'mindflayer-token-controller'
+    const LOG_PREFIX = 'Mind Flayer | '
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -20,8 +20,8 @@
     Hooks.once('init', () => {
 
         game.settings.register(VTT_MODULE_NAME, 'enabled', {
-            name: 'WebsocketTokenController.moduleEnabled',
-            hint: 'WebsocketTokenController.moduleEnabledHint',
+            name: 'MindFlayer.moduleEnabled',
+            hint: 'MindFlayer.moduleEnabledHint',
             scope: 'client',
             type: Boolean,
             default: false,
@@ -33,8 +33,8 @@
         })
 
         game.settings.register(VTT_MODULE_NAME, 'websocketHost', {
-            name: 'WebsocketTokenController.websocketHost',
-            hint: 'WebsocketTokenController.websocketHostHint',
+            name: 'MindFlayer.websocketHost',
+            hint: 'MindFlayer.websocketHostHint',
             scope: 'client',
             type: String,
             default: 'localhost',
@@ -45,8 +45,8 @@
         })
 
         game.settings.register(VTT_MODULE_NAME, 'websocketPort', {
-            name: 'WebsocketTokenController.websocketPort',
-            hint: 'WebsocketTokenController.websocketPortHint',
+            name: 'MindFlayer.websocketPort',
+            hint: 'MindFlayer.websocketPortHint',
             scope: 'client',
             type: String,
             default: '443',
@@ -57,8 +57,8 @@
         })
 
         game.settings.register(VTT_MODULE_NAME, 'websocketPath', {
-            name: 'WebsocketTokenController.websocketPath',
-            hint: 'WebsocketTokenController.websocketPathHint',
+            name: 'MindFlayer.websocketPath',
+            hint: 'MindFlayer.websocketPathHint',
             scope: 'client',
             type: String,
             default: '/ws/vtt',
@@ -69,29 +69,29 @@
         })
 
         game.settings.register(VTT_MODULE_NAME, 'cameraControl', {
-            name: 'WebsocketTokenController.cameraControl',
-            hint: 'WebsocketTokenController.cameraControlhHint',
+            name: 'MindFlayer.cameraControl',
+            hint: 'MindFlayer.cameraControlhHint',
             default: 'default',
             type: String,
             isSelect: true,
             choices: {
-                default: game.i18n.localize('WebsocketTokenController.cameraControlDefault'),
-                focusPlayers: game.i18n.localize('WebsocketTokenController.cameraControlFocusPlayers'),
-                off: game.i18n.localize('WebsocketTokenController.cameraControlOff')
+                default: game.i18n.localize('MindFlayer.cameraControlDefault'),
+                focusPlayers: game.i18n.localize('MindFlayer.cameraControlFocusPlayers'),
+                off: game.i18n.localize('MindFlayer.cameraControlOff')
             },
             config: true
         })
 
         game.settings.registerMenu(VTT_MODULE_NAME, VTT_MODULE_NAME, {
-            name: 'WebsocketTokenController.config',
-            label: 'WebsocketTokenController.configTitle',
-            hint: 'WebsocketTokenController.configHint',
+            name: 'MindFlayer.config',
+            label: 'MindFlayer.configTitle',
+            hint: 'MindFlayer.configHint',
             icon: 'fas fa-keyboard',
             type: TokenControllerConfig
         })
 
         game.settings.register(VTT_MODULE_NAME, 'settings', {
-            name: 'WebsocketTokenController.config',
+            name: 'MindFlayer.config',
             scope: 'world',
             type: Object,
             config: false,
@@ -111,8 +111,8 @@
             ui.notifications.error("Module " + VTT_MODULE_NAME + " requires the 'libWrapper' module. Please install and activate it.")
         } else if (game.settings.get(VTT_MODULE_NAME, 'enabled')) {
             console.log(LOG_PREFIX + 'Starting websocket connection')
-            game.wstokenctrl = new TokenController()
-            document.addEventListener('visibilitychange', game.wstokenctrl.ensureWakeLock.bind(game.wstokenctrl));
+            game.mindflayerctrl = new TokenController()
+            document.addEventListener('visibilitychange', game.mindflayerctrl.ensureWakeLock.bind(game.mindflayerctrl));
         }
     });
 
@@ -123,7 +123,7 @@
         }
         // SWADE has a special initiative
         if (game.system.id != "swade") {
-            game.wstokenctrl.handleCombatUpdate(combat, update);
+            game.mindflayerctrl.handleCombatUpdate(combat, update);
         }
     });
 
@@ -152,10 +152,10 @@
         }
 
         /**
-         * Constructor. Initialize WebsocketTokenController.
+         * Constructor. Initialize MindFlayer.
          */
         constructor() {
-            Hooks.call('WebsocketTokenControllerInit', this)
+            Hooks.call('MindFlayerInit', this)
             this.setDefaultTokens()
             this._initializeWebsocket()
             this._overrideGetBorderColorOnTokens()
@@ -209,7 +209,7 @@
             }
 
             socket.onopen = function (data) {
-                ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.Connected', { host: host, port: port, path: path }))
+                ui.notifications.info('Mind Flayer: ' + game.i18n.format('MindFlayer.Notifications.Connected', { host: host, port: port, path: path }))
                 console.log(LOG_PREFIX + 'Connected to websocket: ', data)
                 $this.isConnected = true
                 socket.send(JSON.stringify({
@@ -224,7 +224,7 @@
             }
 
             socket.onclose = function (e) {
-                ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.ConnectionClosed'))
+                ui.notifications.error('Mind Flayer: ' + game.i18n.localize('MindFlayer.Notifications.ConnectionClosed'))
                 console.warn(LOG_PREFIX + 'Websocket connection closed, attempting to reconnect in 5 seconds...')
                 $this.isConnected = false
                 setTimeout(function () {
@@ -233,7 +233,7 @@
             }
 
             socket.onerror = function (error) {
-                ui.notifications.error('Websocket Token Controller: ' + game.i18n.localize('WebsocketTokenController.Notifications.Error'))
+                ui.notifications.error('Mind Flayer: ' + game.i18n.localize('MindFlayer.Notifications.Error'))
                 console.error(LOG_PREFIX + 'Error: ', error)
                 socket.close()
             }
@@ -398,13 +398,13 @@
                 const controllerId = message['controller-id']
                 const player = this._getPlayerFor(controllerId)
                 this.activeControllers.set(controllerId, socket)
-                ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.NewClient', { controller: controllerId, player: player.name }))
+                ui.notifications.info('Mind Flayer: ' + game.i18n.format('MindFlayer.Notifications.NewClient', { controller: controllerId, player: player.name }))
                 this._configurePlayerLEDs(controllerId)
             } else if (message.status == 'disconnected') {
                 const controllerId = message['controller-id']
                 this.activeControllers.delete(controllerId)
                 const player = this._getPlayerFor(controllerId)
-                ui.notifications.warn('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.ClientDisconnected', { controller: controllerId, player: player.name }))
+                ui.notifications.warn('Mind Flayer: ' + game.i18n.format('MindFlayer.Notifications.ClientDisconnected', { controller: controllerId, player: player.name }))
             }
         }
 
@@ -453,7 +453,7 @@
         _changeKeyboardAlignment(keypad) {
             keypad.alignment = (keypad.alignment + 90) % 360
             let player = this._getPlayerFor(keypad.controllerId)
-            ui.notifications.info('Websocket Token Controller: ' + game.i18n.format('WebsocketTokenController.Notifications.ChangeDirection', { player: player.name, orientation: keypad.alignment }))
+            ui.notifications.info('Mind Flayer: ' + game.i18n.format('MindFlayer.Notifications.ChangeDirection', { player: player.name, orientation: keypad.alignment }))
         }
 
         _handleKeyboardLogin(message) {
@@ -708,7 +708,7 @@
 
         static get defaultOptions() {
             return mergeObject(super.defaultOptions, {
-                title: game.i18n.localize('WebsocketTokenController.configTitle'),
+                title: game.i18n.localize('MindFlayer.configTitle'),
                 id: 'websocket-token-controller-config',
                 template: 'modules/websocket-token-controller/templates/keyboard-config.html',
                 width: 500,
@@ -738,9 +738,9 @@
             await game.settings.set(VTT_MODULE_NAME, 'settings', settings)
 
             game.socket.emit('module.websocket-token-controller', { type: 'update', user: game.user.id })
-            ui.notifications.info(game.i18n.localize('WebsocketTokenController.saveMessage'))
+            ui.notifications.info(game.i18n.localize('MindFlayer.saveMessage'))
 
-            game.wstokenctrl.setDefaultTokens()
+            game.mindflayerctrl.setDefaultTokens()
         }
 
         activateListeners(html) {
