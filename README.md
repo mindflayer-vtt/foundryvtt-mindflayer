@@ -1,3 +1,7 @@
+<div align="center">
+<img width="460" src="https://raw.githubusercontent.com/shawly/foundryvtt-mindflayer/main/.github/foundryvtt-mindflayer-logo.png">
+</div>
+
 # Foundry VTT - Mind Flayer
 
 A Foundry VTT module for controlling tokens via WebSocket. Can be used by external hardware or other software applications.
