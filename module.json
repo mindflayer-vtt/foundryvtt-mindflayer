@@ -38,10 +38,10 @@
         }
     ],
     "media": [],
-    "url": "https://github.com/shawly/foundryvtt-mindflayer",
-    "manifest": "https://github.com/shawly/foundryvtt-mindflayer/raw/main/module.json",
-    "download": "https://github.com/shawly/foundryvtt-mindflayer/archive/main.zip",
-    "bugs": "https://github.com/shawly/foundryvtt-mindflayer/issues",
-    "license": "https://github.com/shawly/foundryvtt-mindflayer/blob/main/LICENSE",
-    "readme": "https://github.com/shawly/foundryvtt-mindflayer/blob/main/README.md"
+    "url": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer",
+    "manifest": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/raw/main/module.json",
+    "download": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/archive/main.zip",
+    "bugs": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/issues",
+    "license": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/blob/main/LICENSE",
+    "readme": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/blob/main/README.md"
 }
