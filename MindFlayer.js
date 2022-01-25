@@ -267,6 +267,12 @@
                     $this.ensureWakeLock()
                 }
             }, 'WRAPPER')
+            libWrapper.register(VTT_MODULE_NAME, "PlaceableObject.prototype.can", function MF_can(wrapped, user, action) {
+                if (action == "control" && jQuery(document.body).hasClass('hide-ui')) {
+                    return false
+                }
+                return wrapped(user, action)
+            }, 'MIXED')
         }
 
         async ensureWakeLock() {
