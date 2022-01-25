@@ -680,6 +680,10 @@
         _changeKeyboardAlignment(keypad) {
             keypad.alignment = (keypad.alignment + 90) % 360
             let player = this._getPlayerFor(keypad.controllerId)
+            const token = this._getTokenFor(player)
+            const north = new Vector(0, 1)
+            north.rotate(-keypad.alignment*Math.PI/180)
+            canvas.tokens.moveMany({ x: north.x, y: north.y, rotate: true, ids: [token.id] })
             ui.notifications.info('Mind Flayer: ' + game.i18n.format('MindFlayer.Notifications.ChangeDirection', { player: player.name, orientation: keypad.alignment }))
         }
 
