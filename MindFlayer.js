@@ -332,6 +332,7 @@
                             console.warn(LOG_PREFIX + 'No active character tokens found. Automatic camera panning only works with active controllers that belong to a player with a character token in the same scene.')
                             return
                         }
+                        activeCharacterTokens = activeCharacterTokens.filter(token => (token.combatant)? !token.combatant.data.hidden && !token.combatant.data.defeated: true)
                         
                         let lowestXCoordinate = Math.min(...activeCharacterTokens.map(token => token.x))
                         let highestXCoordinate = Math.max(...activeCharacterTokens.map(token => token.x + token.w))
