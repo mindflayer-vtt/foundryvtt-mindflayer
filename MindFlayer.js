@@ -8,6 +8,14 @@
     const VTT_MODULE_NAME = 'mindflayer-token-controller'
     const LOG_PREFIX = 'Mind Flayer | '
 
+    const SETT_AMBILIGHT_ENABLE = 'ambilightEnabled'
+    const SETT_AMBILIGHT_TARGET = 'ambilightTarget'
+    const SETT_AMBILIGHT_UNIVERSE = 'ambilightUniverse'
+    const SETT_AMBILIGHT_LED_COUNT = 'ambilightLEDCount'
+    const SETT_AMBILIGHT_LED_OFFSET = 'ambilightOffset'
+    const SETT_AMBILIGHT_BRIGHTNESS_MIN = 'ambilightBrightnessMin'
+    const SETT_AMBILIGHT_BRIGHTNESS_MAX = 'ambilightBrightnessMax'
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //
     // Hooks
@@ -70,7 +78,7 @@
 
         game.settings.register(VTT_MODULE_NAME, 'cameraControl', {
             name: 'MindFlayer.cameraControl',
-            hint: 'MindFlayer.cameraControlhHint',
+            hint: 'MindFlayer.cameraControlHint',
             default: 'default',
             type: String,
             isSelect: true,
@@ -88,6 +96,104 @@
             hint: 'MindFlayer.configHint',
             icon: 'fas fa-keyboard',
             type: TokenControllerConfig
+        })
+
+        game.settings.register(VTT_MODULE_NAME, SETT_AMBILIGHT_ENABLE, {
+            name: 'MindFlayer.ambilightEnabled',
+            hint: 'MindFlayer.ambilightEnabledHint',
+            scope: 'client',
+            type: Boolean,
+            default: false,
+            config: true,
+            restricted: false,
+            onChange: () => {
+                game.mindflayerctrl.ambilightNeedsData = true
+            }
+        })
+
+        game.settings.register(VTT_MODULE_NAME, SETT_AMBILIGHT_TARGET, {
+            name: 'MindFlayer.ambilightTarget',
+            hint: 'MindFlayer.ambilightTargetHint',
+            scope: 'client',
+            type: String,
+            default: "",
+            config: true,
+            restricted: false
+        })
+
+        game.settings.register(VTT_MODULE_NAME, SETT_AMBILIGHT_UNIVERSE, {
+            name: 'MindFlayer.ambilightUniverse',
+            hint: 'MindFlayer.ambilightUniverseHint',
+            scope: 'client',
+            type: Number,
+            default: 0x01,
+            range: {
+                min: 1,
+                max: 255,
+                step: 1
+            },
+            config: true,
+            restricted: false
+        })
+
+        game.settings.register(VTT_MODULE_NAME, SETT_AMBILIGHT_LED_COUNT, {
+            name: 'MindFlayer.ambilightLEDCount',
+            hint: 'MindFlayer.ambilightLEDCountHint',
+            scope: 'client',
+            type: Number,
+            default: 0x01,
+            range: {
+                min: 1,
+                max: 170,
+                step: 1
+            },
+            config: true,
+            restricted: false
+        })
+
+        game.settings.register(VTT_MODULE_NAME, SETT_AMBILIGHT_LED_OFFSET, {
+            name: 'MindFlayer.ambilightOffset',
+            hint: 'MindFlayer.ambilightOffsetHint',
+            scope: 'client',
+            type: Number,
+            default: 0,
+            range: {
+                min: -170,
+                max: 170,
+                step: 1
+            },
+            config: true,
+            restricted: false
+        })
+
+        game.settings.register(VTT_MODULE_NAME, SETT_AMBILIGHT_BRIGHTNESS_MIN, {
+            name: 'MindFlayer.ambilightBrightnessMin',
+            hint: 'MindFlayer.ambilightBrightnessMinHint',
+            scope: 'client',
+            type: Number,
+            default: 0,
+            range: {
+                min: 0,
+                max: 255,
+                step: 1
+            },
+            config: true,
+            restricted: false
+        })
+
+        game.settings.register(VTT_MODULE_NAME, SETT_AMBILIGHT_BRIGHTNESS_MAX, {
+            name: 'MindFlayer.ambilightBrightnessMax',
+            hint: 'MindFlayer.ambilightBrightnessMaxHint',
+            scope: 'client',
+            type: Number,
+            default: 255,
+            range: {
+                min: 0,
+                max: 255,
+                step: 1
+            },
+            config: true,
+            restricted: false
         })
 
         game.settings.register(VTT_MODULE_NAME, 'settings', {
@@ -142,6 +248,7 @@
         doorChangeThread = null
         wakeLock = null
         isConnected = false
+        connection = null
         seenKeypads = new Array()
         activeControllers = new Map()
         directions = {
@@ -150,6 +257,12 @@
             180: ['S', 'E', 'N', 'W'],
             270: ['W', 'S', 'E', 'N']
         }
+        ambilightNeedsData = true
+        pixelsRaw = null
+        ledState = new Array()
+        updateLEDsTimer = null
+        stopRequestAnimationLoop = false
+        ambilightLastSent = "null"
 
         /**
          * Constructor. Initialize MindFlayer.
@@ -158,6 +271,7 @@
             Hooks.call('MindFlayerInit', this)
             this.setDefaultTokens()
             this._initializeWebsocket()
+            this._initializeAmbilight()
             this._overrideGetBorderColorOnTokens()
             this._overrideHandleKeysOnKeyboardToHideUI()
             this._overrideCameraPanForTokenMovement()
@@ -212,6 +326,7 @@
                 ui.notifications.info('Mind Flayer: ' + game.i18n.format('MindFlayer.Notifications.Connected', { host: host, port: port, path: path }))
                 console.log(LOG_PREFIX + 'Connected to websocket: ', data)
                 $this.isConnected = true
+                $this.connection = socket
                 socket.send(JSON.stringify({
                     type: 'registration',
                     status: 'connected',
@@ -227,6 +342,7 @@
                 ui.notifications.error('Mind Flayer: ' + game.i18n.localize('MindFlayer.Notifications.ConnectionClosed'))
                 console.warn(LOG_PREFIX + 'Websocket connection closed, attempting to reconnect in 5 seconds...')
                 $this.isConnected = false
+                $this.connection = null
                 setTimeout(function () {
                     $this._initializeWebsocket()
                 }, 5000)
@@ -237,6 +353,14 @@
                 console.error(LOG_PREFIX + 'Error: ', error)
                 socket.close()
             }
+        }
+
+        /**
+         * setup the animation loop for reading the canvas for ambilight leds
+         */
+        _initializeAmbilight() {
+            this._startRequestAnimationLoop()
+            this.updateLEDsTimer = window.setInterval(this._sendAmbilightData.bind(this), 1000/5)
         }
 
         _overrideGetBorderColorOnTokens() {
@@ -267,6 +391,109 @@
                     $this.ensureWakeLock()
                 }
             }, 'WRAPPER')
+        }
+
+        _startRequestAnimationLoop() {
+            // Calculate the current time
+            let elapsed = Date.now();
+
+            // Update function every frame
+            let update = () => {
+                // Maybe stop
+                if ( this.stopRequestAnimationLoop) return;
+
+                // Update the next frame
+                requestAnimationFrame(update);
+
+                // Track the number of elapsed seconds since the previous frame update
+                let now = Date.now();
+                this._updateFrame((now - elapsed) * 0.001);
+                elapsed = now;
+            };
+
+            // Start emitting
+            this.stopRequestAnimationLoop = false;
+            update();
+        }
+
+        _updateFrame(elapsedSeconds) {
+            const gl = game.canvas.app.renderer.gl
+            if(game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_ENABLE) && this.ambilightNeedsData) {
+                const pixelsRaw = {
+                    image: new Uint8Array((gl.drawingBufferWidth) * gl.drawingBufferHeight * 4 + gl.drawingBufferHeight),
+                    drawingBufferWidth: gl.drawingBufferWidth,
+                    drawingBufferHeight: gl.drawingBufferHeight
+                }
+                // bottom left of the screen is the origin
+                gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixelsRaw.image)
+                delete this.pixelsRaw
+                this.pixelsRaw = pixelsRaw
+                this.ambilightNeedsData = false
+            }
+        }
+
+        _findColorAlongVector(image, bounds, direction) {
+            // scale vector so longer direction is length 1
+            const backgroundColor = this._hexToRgb(game.scenes.active.data.backgroundColor)
+            direction.scale(1/Math.max(Math.abs(direction.x), Math.abs(direction.y)))
+            const scale = Math.floor(bounds.intersectionFromCenter(direction))
+            for (let i = scale; i >= 0; i--) {
+                const x = Math.floor(bounds.center.x + direction.x * i)
+                const y = Math.floor(bounds.center.y + direction.y * i )
+                const baseIndex = (x + y * bounds.p1.x) * 4
+                if(image[baseIndex] == backgroundColor.r && image[baseIndex + 1] == backgroundColor.g && image[baseIndex + 2] == backgroundColor.b) {
+                    continue
+                } else if(image[baseIndex] != 0 || image[baseIndex + 1] != 0 || image[baseIndex + 2] != 0 ) {
+                    //console.log(x, y, baseIndex, (360 + Math.atan2(direction.y, direction.x)*180/Math.PI) % 360)
+                    return baseIndex
+                }
+            }
+            return Math.floor(bounds.center.x + bounds.center.y * bounds.p1.x) * 4
+        }
+
+        _ambilightCompileData() {
+            const ledCount = game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_LED_COUNT)
+            const brightMin = game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_BRIGHTNESS_MIN)
+            const brightRange = (game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_BRIGHTNESS_MAX) - brightMin) / 255
+            const pixelsRaw = this.pixelsRaw
+            const ledState = new Uint32Array(ledCount*3)
+            const bounds = new Rect(new Vector(0,0), new Vector(pixelsRaw.drawingBufferWidth, pixelsRaw.drawingBufferHeight))
+            const direction = new Vector(0, 1)
+            let ledOffset = game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_LED_OFFSET) % ledCount
+            if(ledOffset < 0) {
+                ledOffset = ledOffset + ledCount
+            }
+            const angle = -(2*Math.PI)/ledCount
+            direction.rotate(angle*ledOffset)
+            for (let i = 0; i < ledCount; i++) {
+                const ledIndex = i * 3
+                const imageIndex = this._findColorAlongVector(pixelsRaw.image, bounds, direction)
+                ledState[ledIndex]     = pixelsRaw.image[imageIndex]     * brightRange + brightMin
+                ledState[ledIndex + 1] = pixelsRaw.image[imageIndex + 1] * brightRange + brightMin
+                ledState[ledIndex + 2] = pixelsRaw.image[imageIndex + 2] * brightRange + brightMin
+                direction.rotate(angle)
+            }
+            delete this.ledState
+            this.ledState = ledState
+            return ledState
+        }
+
+        _sendAmbilightData() {
+            if(this.ambilightNeedsData || !this.isConnected || !game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_ENABLE)) {
+                return
+            }
+            this._ambilightCompileData()
+            const data = JSON.stringify({
+                type: "ambilight",
+                target: game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_TARGET),
+                universe: game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_UNIVERSE),
+                colors: Array.from(this.ledState)
+            })
+            if(this.ambilightLastSent !== data) {
+                this.connection.send(data)
+                this.ambilightLastSent = data
+            }
+            this.ambilightNeedsData = true
         }
 
         async ensureWakeLock() {
@@ -842,5 +1069,77 @@
         }
 
     }
+
+    class Vector {
+        x = 0
+        y = 0
+
+        constructor(x, y) {
+            this.x = x
+            this.y = y
+        }
+
+        normalize() {
+            const length = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2))
+            this.x /= length
+            this.y /= length
+            return this
+        }
+
+        scale(fact) {
+            this.x *= fact
+            this.y *= fact
+            return this
+        }
+
+        rotate(rad) {
+            const cos = Math.cos(rad)
+            const sin = Math.sin(rad)
+            const x = cos * this.x - sin * this.y
+            this.y = sin * this.x + cos * this.y
+            this.x = x
+            return this
+        }
+
+        subtract(vector) {
+            return new Vector(this.x - vector.x, this.y - vector.y)
+        }
+
+        add(vector) {
+            return new Vector(this.x + vector.x, this.y + vector.y)
+        }
+    }
+
+    class Rect {
+        p0 = null
+        p1 = null
+        center = null
+
+        constructor(p0, p1) {
+            this.p0 = new Vector(Math.min(p0.x, p1.x), Math.min(p0.y, p1.y))
+            this.p1 = new Vector(Math.max(p0.x, p1.x), Math.max(p0.y, p1.y))
+            this.center = this.p1.subtract(this.p0).scale(0.5).add(this.p0)
+        }
+
+        intersectionFromCenter(direction) {
+            if(direction.y != 0) {
+                const interFact = Math.abs((this.p1.y - this.center.y - 1) / direction.y)
+                const interX = direction.x * interFact + this.center.x
+                if(interX >= this.p0.x && interX <= this.p1.x) {
+                    return interFact
+                }
+            }
+            if(direction.x != 0) {
+                const interFact = Math.abs((this.p1.x - this.center.x - 1) / direction.x)
+                const interY = direction.y * interFact + this.center.y
+                if(interY >= this.p0.y && interY <= this.p1.y) {
+                    return interFact
+                }
+            }
+            console.error("(0,0) vector?", direction)
+            return 1
+        }
+    }
+
 
 })()
