@@ -2,7 +2,7 @@
     "name": "mindflayer-token-controller",
     "title": "Mind Flayer - Token Controller",
     "description": "Adds a websocket for third party applications to control tokens. Used with the Mind Flayer server.",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "minimumCoreVersion": "0.8.0",
     "compatibleCoreVersion": "0.8.8",
     "author": "749, shawly",

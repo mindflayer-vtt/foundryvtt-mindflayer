@@ -391,6 +391,12 @@
                     $this.ensureWakeLock()
                 }
             }, 'WRAPPER')
+            libWrapper.register(VTT_MODULE_NAME, "PlaceableObject.prototype.can", function MF_can(wrapped, user, action) {
+                if (action == "control" && jQuery(document.body).hasClass('hide-ui')) {
+                    return false
+                }
+                return wrapped(user, action)
+            }, 'MIXED')
         }
 
         _startRequestAnimationLoop() {
@@ -546,6 +552,10 @@
 
                     // Re-center the view on all players if the moved token is visible
                     if (cameraControl == 'focusPlayers' && isVisible) {
+                        const sceneSize = {
+                            width: canvas.scene.dimensions.rect.width,
+                            height: canvas.scene.dimensions.rect.height
+                        }
                         let gridSize = canvas.scene.dimensions.size
                         let activeCharacterTokens = $this._getAllCombatTokens()
                         activeCharacterTokens.push(...$this._getAllActivePlayerCharacterTokens())
@@ -553,6 +563,7 @@
                             console.warn(LOG_PREFIX + 'No active character tokens found. Automatic camera panning only works with active controllers that belong to a player with a character token in the same scene.')
                             return
                         }
+                        activeCharacterTokens = activeCharacterTokens.filter(token => (token.combatant)? !token.combatant.data.hidden && !token.combatant.data.defeated: true)
                         
                         let lowestXCoordinate = Math.min(...activeCharacterTokens.map(token => token.x))
                         let highestXCoordinate = Math.max(...activeCharacterTokens.map(token => token.x + token.w))
@@ -565,6 +576,7 @@
                         let boundingbox = { width: highestXCoordinate - lowestXCoordinate, height: highestYCoordinate - lowestYCoordinate }
                         let pad = gridSize*4
                         let scale = Math.min((window.innerWidth-pad)/(boundingbox.width+pad), (window.innerHeight-pad)/(boundingbox.height+pad), 0.7)
+                        scale = Math.max(Math.min(window.innerWidth/sceneSize.width, window.innerHeight/sceneSize.height), scale)
 
                         let cameraSettings = {x: targetXCoordinate, y: targetYCoordinate, scale: scale, duration: 1000}
                         console.debug(LOG_PREFIX + 'Readjusting view to fit all player tokens on screen... Centering on: ', cameraSettings)

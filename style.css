@@ -1,4 +1,8 @@
-/* Websocket Token Controller Styling */
+/* Mind Flayer - Token Controller Styling */
+
+.hide-ui {
+  cursor: none !important;
+}
 
 .hide-ui #logo {
   display: none;
