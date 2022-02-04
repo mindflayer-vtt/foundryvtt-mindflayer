@@ -1,0 +1,43 @@
+{
+  "name": "mindflayer-token-controller",
+  "title": "Mind Flayer - Token Controller",
+  "description": "Adds a websocket for third party applications to control tokens. Used with the Mind Flayer server.",
+  "minimumCoreVersion": "0.8.0",
+  "compatibleCoreVersion": "0.8.8",
+  "author": "749, shawly",
+  "authors": [
+    {
+      "name": "shawly",
+      "email": "shawlyde@gmail.com",
+      "url": "https://github.com/shawly"
+    },
+    {
+      "name": "749",
+      "url": "https://github.com/749"
+    }
+  ],
+  "esmodules": ["./MindFlayer.js"],
+  "scripts": [],
+  "socket": true,
+  "styles": ["./style.css"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "./lang/en.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "name": "lib-wrapper",
+      "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json"
+    }
+  ],
+  "media": [],
+  "url": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer",
+  "manifest": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/releases/latest/download/module.json",
+  "download": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/releases/latest/download/module.zip",
+  "bugs": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/issues",
+  "license": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/blob/main/LICENSE",
+  "readme": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/blob/main/README.md"
+}

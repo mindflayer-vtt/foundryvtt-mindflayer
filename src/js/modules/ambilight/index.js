@@ -1,0 +1,195 @@
+/**
+ * This file is part of the Foundry VTT Module Mindflayer.
+ *
+ * The Foundry VTT Module Mindflayer is free software: you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * The Foundry VTT Module Mindflayer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+ * the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with the Foundry VTT Module Mindflayer. If not,
+ * see <https://www.gnu.org/licenses/>.
+ */
+"use strict";
+import { Rectangle, Vector } from "../../utils/2d-geometry";
+import { hexToRgb } from "../../utils/color";
+import AbstractSubModule from "../AbstractSubModule";
+import Socket from "../socket";
+
+export default class Ambilight extends AbstractSubModule {
+  #updateLEDsTimer = null;
+  #ambilightLastSent = "null";
+
+  constructor(instance) {
+    super(instance);
+    // setup the animation loop for reading the canvas for ambilight leds
+    this.#updateLEDsTimer = window.setInterval(
+      this._ambilightLoop.bind(this),
+      1000 / this.instance.settings.ambilight.fps
+    );
+  }
+
+  unhook() {
+    window.clearInterval(this.#updateLEDsTimer);
+    super.unhook();
+  }
+
+  static get moduleDependencies() {
+    return [...super.moduleDependencies, Socket.name];
+  }
+
+  /**
+   * @returns {Socket}
+   */
+  get socket() {
+    return this.instance.modules[Socket.name];
+  }
+
+  /**
+   * @protected
+   */
+  async _ambilightLoop() {
+    this.ensureLoaded();
+    if (!this.instance.settings.ambilight.enabled) {
+      return;
+    }
+    const pixelsRaw = await this.loadPixels();
+    if (pixelsRaw !== null) {
+      this._sendAmbilightData(this._compileLEDData(pixelsRaw));
+    }
+  }
+
+  loadPixels() {
+    return new Promise((resolve, reject) => {
+      requestAnimationFrame(this._loadPixels.bind(this, resolve, reject));
+    });
+  }
+
+  /**
+   * Will only function correctly if call from within requestAnimationFrame()
+   * @protected
+   */
+  _loadPixels(resolve, reject) {
+    try {
+      const gl = game.canvas.app.renderer.gl;
+      const pixelsRaw = {
+        image: new Uint8Array(
+          gl.drawingBufferWidth * gl.drawingBufferHeight * 4 +
+            gl.drawingBufferHeight
+        ),
+        drawingBufferWidth: gl.drawingBufferWidth,
+        drawingBufferHeight: gl.drawingBufferHeight,
+      };
+      // bottom left of the screen is the origin
+      gl.readPixels(
+        0,
+        0,
+        gl.drawingBufferWidth,
+        gl.drawingBufferHeight,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        pixelsRaw.image
+      );
+      resolve(pixelsRaw);
+    } catch (e) {
+      reject(e);
+    }
+  }
+
+  /**
+   * @protected
+   */
+  _compileLEDData(pixelsRaw) {
+    const ledCount = this.instance.settings.ambilight.led.count;
+    const brightMin = this.instance.settings.ambilight.brightness.min;
+    const brightRange =
+      (this.instance.settings.ambilight.brightness.max - brightMin) / 255;
+    const ledState = new Uint32Array(ledCount * 3);
+    const bounds = new Rectangle(
+      new Vector(0, 0),
+      new Vector(pixelsRaw.drawingBufferWidth, pixelsRaw.drawingBufferHeight)
+    );
+    const direction = new Vector(0, 1);
+    let ledOffset = this.instance.settings.ambilight.led.offset % ledCount;
+    if (ledOffset < 0) {
+      ledOffset = ledOffset + ledCount;
+    }
+    const angle = -(2 * Math.PI) / ledCount;
+    direction.rotate(angle * ledOffset);
+    let totalColor = 0;
+    for (let i = 0; i < ledCount; i++) {
+      const ledIndex = i * 3;
+      const imageIndex = this._findColorAlongVector(
+        pixelsRaw.image,
+        bounds,
+        direction
+      );
+      totalColor +=
+        pixelsRaw.image[imageIndex] +
+        pixelsRaw.image[imageIndex + 1] +
+        pixelsRaw.image[imageIndex + 2];
+      ledState[ledIndex] =
+        pixelsRaw.image[imageIndex] * brightRange + brightMin;
+      ledState[ledIndex + 1] =
+        pixelsRaw.image[imageIndex + 1] * brightRange + brightMin;
+      ledState[ledIndex + 2] =
+        pixelsRaw.image[imageIndex + 2] * brightRange + brightMin;
+      direction.rotate(angle);
+    }
+    if (totalColor == 0) {
+      return null;
+    }
+    return ledState;
+  }
+
+  /**
+   * @protected
+   */
+  _findColorAlongVector(image, bounds, direction) {
+    // scale vector so longer direction is length 1
+    const backgroundColor = hexToRgb(game.scenes.active.data.backgroundColor);
+    direction.scale(1 / Math.max(Math.abs(direction.x), Math.abs(direction.y)));
+    const scale = Math.floor(bounds.intersectionFromCenter(direction));
+    for (let i = scale; i >= 0; i--) {
+      const x = Math.floor(bounds.center.x + direction.x * i);
+      const y = Math.floor(bounds.center.y + direction.y * i);
+      const baseIndex = (x + y * bounds.p1.x) * 4;
+      if (
+        image[baseIndex] == backgroundColor.r &&
+        image[baseIndex + 1] == backgroundColor.g &&
+        image[baseIndex + 2] == backgroundColor.b
+      ) {
+        continue;
+      } else if (
+        image[baseIndex] != 0 ||
+        image[baseIndex + 1] != 0 ||
+        image[baseIndex + 2] != 0
+      ) {
+        //console.log(x, y, baseIndex, (360 + Math.atan2(direction.y, direction.x)*180/Math.PI) % 360)
+        return baseIndex;
+      }
+    }
+    return Math.floor(bounds.center.x + bounds.center.y * bounds.p1.x) * 4;
+  }
+
+  /**
+   * @protected
+   */
+  _sendAmbilightData(ledState) {
+    if (ledState === null) {
+      return;
+    }
+    const data = JSON.stringify({
+      type: "ambilight",
+      target: this.instance.settings.ambilight.target,
+      universe: this.instance.settings.ambilight.universe,
+      colors: Array.from(ledState),
+    });
+    if (this.#ambilightLastSent !== data) {
+      this.socket.send(data);
+      this.#ambilightLastSent = data;
+    }
+  }
+}
