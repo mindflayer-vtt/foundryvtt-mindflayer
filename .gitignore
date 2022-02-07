@@ -232,3 +232,4 @@ $RECYCLE.BIN/
 chrome-overrides/
 /dependencies/
 foundry.js
+.devDomain

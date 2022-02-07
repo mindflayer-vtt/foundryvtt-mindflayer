@@ -1,0 +1,39 @@
+{
+  "name": "foundryvtt-mindflayer",
+  "version": "1.5.1-development",
+  "description": "<div align=\"center\"> <img width=\"460\" src=\"https://raw.githubusercontent.com/mindflayer-vtt/foundryvtt-mindflayer/main/.github/foundryvtt-mindflayer-logo.png\"> </div>",
+  "private": true,
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "prod": "NODE_ENV=production webpack --config webpack.config.js",
+    "style": "prettier --write src/ templates/ lang/ *.json *.md webpack.config.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "semantic-release": "semantic-release"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer.git"
+  },
+  "license": "GPL-3",
+  "bugs": {
+    "url": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/issues"
+  },
+  "homepage": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer#readme",
+  "devDependencies": {
+    "@semantic-release/commit-analyzer": "^9.0.2",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^8.0.2",
+    "@semantic-release/npm": "^9.0.0",
+    "@semantic-release/release-notes-generator": "^10.0.3",
+    "copy-webpack-plugin": "^10.2.4",
+    "prettier": "2.5.1",
+    "semantic-release": "^19.0.2",
+    "webpack": "^5.67.0",
+    "webpack-cli": "^4.9.2"
+  },
+  "dependencies": {
+    "dependency-graph": "^0.11.0",
+    "require": "^2.4.20"
+  }
+}

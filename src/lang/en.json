@@ -1,0 +1,48 @@
+{
+  "MindFlayer.config": "Controller Assignments",
+  "MindFlayer.configTitle": "Controller Assignments",
+  "MindFlayer.configHint": "Controller to user assignments",
+
+  "MindFlayer.ambilightEnabled": "Enable Ambilight",
+  "MindFlayer.ambilightEnabledHint": "Enables the ambilight to be controlled from this browser",
+  "MindFlayer.ambilightTarget": "E131 Target",
+  "MindFlayer.ambilightTargetHint": "Can be an IP address or a E131 Universe",
+  "MindFlayer.ambilightUniverse": "E131 Universe",
+  "MindFlayer.ambilightUniverseHint": "The Universe to which the LEDs belong",
+  "MindFlayer.ambilightLEDCount": "E131 RGB LED count",
+  "MindFlayer.ambilightLEDCountHint": "Must be a number between 1 and 170 inclusive",
+  "MindFlayer.ambilightOffset": "Starting LED offset",
+  "MindFlayer.ambilightOffsetHint": "How many times should the array be rotated by one led. Positive numbers shift upwards",
+  "MindFlayer.ambilightBrightnessMin": "Minimum LED Brightness",
+  "MindFlayer.ambilightBrightnessMinHint": "Each Color of each LED will be at least this value",
+  "MindFlayer.ambilightBrightnessMax": "Maximum LED Brightness",
+  "MindFlayer.ambilightBrightnessMaxHint": "Each Color of each LED will be capped to this value",
+
+  "MindFlayer.websocketHost": "Websocket Host",
+  "MindFlayer.websocketHostHint": "A websocket server that the module will connect to",
+  "MindFlayer.websocketPort": "Websocket Port",
+  "MindFlayer.websocketPortHint": "The port of the websocket that the module will connect to",
+  "MindFlayer.websocketPath": "Websocket Path",
+  "MindFlayer.websocketPathHint": "The path of the websocket that the module will connect to",
+
+  "MindFlayer.cameraControl": "Camera Behavior",
+  "MindFlayer.cameraControlHint": "This changes the camera behavior when tokens move",
+  "MindFlayer.cameraControlDefault": "VTT Default (focus controlled token)",
+  "MindFlayer.cameraControlFocusPlayers": "Automatic (focus all active player tokens on scene)",
+  "MindFlayer.cameraControlOff": "GM Mode (manual camera control)",
+
+  "MindFlayer.moduleEnabled": "Enabled",
+  "MindFlayer.moduleEnabledHint": "Enables the module for this browser",
+
+  "MindFlayer.Save": "Save",
+  "MindFlayer.Reset": "Reset",
+
+  "MindFlayer.saveMessage": "Updated Mind Flayer Controller Assignments",
+
+  "MindFlayer.Notifications.Connected": "Connected to websocket on \"{host}:{port}\"",
+  "MindFlayer.Notifications.Error": "An error ocurred, look at the log for more information",
+  "MindFlayer.Notifications.ConnectionClosed": "Connected to websocket closed, attempting to reconnect in 5 seconds...",
+  "MindFlayer.Notifications.NewClient": "Controller \"{controller}\" assigned to player \"{player}\" connected!",
+  "MindFlayer.Notifications.ClientDisconnected": "Controller \"{controller}\" assigned to player \"{player}\" disconnected!",
+  "MindFlayer.Notifications.ChangeDirection": "Player \"{player}\" changed orientation by {orientation}°"
+}
