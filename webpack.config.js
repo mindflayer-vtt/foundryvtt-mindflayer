@@ -24,7 +24,12 @@ class ModuleJsonWebpackPlugin {
           stage: Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE,
         },
         (assets) => {
-          const content = JSON.parse(fs.readFileSync(this.options.srcFile).toString().replaceAll('{{version}}', packages.version));
+          const content = JSON.parse(
+            fs
+              .readFileSync(this.options.srcFile)
+              .toString()
+              .replaceAll("{{version}}", packages.version)
+          );
           content.version = packages.version;
 
           // Adding new asset to the compilation, so it would be automatically

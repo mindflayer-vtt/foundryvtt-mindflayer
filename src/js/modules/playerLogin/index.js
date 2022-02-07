@@ -14,7 +14,7 @@
  */
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
-import Socket from "../socket";
+import { default as Socket } from "../socket";
 
 export default class PlayerLogin extends AbstractSubModule {
   #messageHandlerFun;

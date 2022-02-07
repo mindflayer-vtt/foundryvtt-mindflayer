@@ -14,7 +14,7 @@
  */
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
-import ControllerManager from "../ControllerManager";
+import { default as ControllerManager } from "../ControllerManager";
 import * as TokenUtil from "../../utils/tokenUtil";
 import Keypad from "../ControllerManager/Keypad";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";

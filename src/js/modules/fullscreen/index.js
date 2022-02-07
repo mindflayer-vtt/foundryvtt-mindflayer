@@ -15,7 +15,7 @@
 "use strict";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import AbstractSubModule from "../AbstractSubModule";
-import WakeLock from "../wakeLock";
+import { default as WakeLock } from "../wakeLock";
 const SUB_LOG_PREFIX = LOG_PREFIX + "Fullscreen: ";
 
 const WRAP_KeyboardManager_handleKeys = "KeyboardManager.prototype._handleKeys";

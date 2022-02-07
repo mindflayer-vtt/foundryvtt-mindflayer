@@ -15,7 +15,7 @@
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
 import * as TokenUtil from "../../utils/tokenUtil";
-import ControllerManager from "../ControllerManager";
+import { default as ControllerManager } from "../ControllerManager";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 
 const WRAP_Token_setPosition = "Token.prototype.setPosition";

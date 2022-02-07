@@ -14,7 +14,7 @@
  */
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
-import ControllerManager from "../ControllerManager";
+import { default as ControllerManager } from "../ControllerManager";
 import { deg2rad, Vector } from "../../utils/2d-geometry";
 import Keypad from "../ControllerManager/Keypad";
 import { LOG_PREFIX } from "../../settings/constants";

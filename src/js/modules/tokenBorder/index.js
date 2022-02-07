@@ -17,7 +17,7 @@ import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import { hexToRgb } from "../../utils/color";
 import * as TokenUtil from "../../utils/tokenUtil";
 import AbstractSubModule from "../AbstractSubModule";
-import Socket from "../socket";
+import { default as Socket } from "../socket";
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenBorder: ";
 
 const REF_Token_getBorderColor = "Token.prototype._getBorderColor";

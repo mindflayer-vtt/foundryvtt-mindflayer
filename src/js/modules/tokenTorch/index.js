@@ -14,7 +14,7 @@
  */
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
-import ControllerManager from "../ControllerManager";
+import { default as ControllerManager } from "../ControllerManager";
 import Keypad from "../ControllerManager/Keypad";
 import { LOG_PREFIX } from "../../settings/constants";
 

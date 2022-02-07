@@ -16,7 +16,7 @@
 import { Rectangle, Vector } from "../../utils/2d-geometry";
 import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
-import Socket from "../socket";
+import { default as Socket } from "../socket";
 
 export default class Ambilight extends AbstractSubModule {
   #updateLEDsTimer = null;

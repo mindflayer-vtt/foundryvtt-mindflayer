@@ -16,7 +16,7 @@
 import { LOG_PREFIX } from "../../settings/constants";
 import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
-import Socket from "../socket";
+import { default as Socket } from "../socket";
 import Keypad from "./Keypad";
 const SUB_LOG_PREFIX = LOG_PREFIX + "ControllerManager: ";
 

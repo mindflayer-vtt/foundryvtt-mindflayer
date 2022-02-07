@@ -14,7 +14,7 @@
  */
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
-import ControllerManager from "../ControllerManager";
+import { default as ControllerManager } from "../ControllerManager";
 import * as TokenUtil from "../../utils/tokenUtil";
 import { Keypad } from "../ControllerManager/Keypad";
 import { Rectangle, Vector } from "../../utils/2d-geometry";
