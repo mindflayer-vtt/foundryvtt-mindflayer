@@ -109,7 +109,7 @@ export default class Keypad {
     return TokenUtil.getTokenFor(player, true);
   }
 
-  getKeys() {
+  get keys() {
     return Object.getOwnPropertyNames(this.#rawState);
   }
 
