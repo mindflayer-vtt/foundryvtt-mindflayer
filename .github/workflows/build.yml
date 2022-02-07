@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: apt-get update && apt-get install -y unzip zip
+      - run: sudo apt-get update && sudo apt-get install -y unzip zip
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - run: apt-get update && apt-get install -y unzip zip
+      - run: sudo apt-get update && sudo apt-get install -y unzip zip
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
