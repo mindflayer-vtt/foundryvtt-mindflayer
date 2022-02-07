@@ -3,6 +3,7 @@ const path = require("path");
 const packages = require("./package.json");
 const fs = require("fs");
 const CopyPlugin = require("copy-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 
 class ModuleJsonWebpackPlugin {
   static defaultOptions = {
@@ -74,5 +75,16 @@ module.exports = {
     }),
     new ModuleJsonWebpackPlugin(),
   ],
+  optimization: {
+    minimize: process.env.NODE_ENV == "production",
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          keep_classnames: true,
+          keep_fnames: true,
+        },
+      }),
+    ],
+  },
   devtool: "source-map",
 };
