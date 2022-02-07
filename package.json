@@ -33,7 +33,9 @@
     "webpack-cli": "^4.9.2"
   },
   "dependencies": {
-    "dependency-graph": "^0.11.0",
-    "require": "^2.4.20"
+    "dependency-graph": "^0.11.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

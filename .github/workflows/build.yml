@@ -27,6 +27,7 @@ jobs:
       - run: zip -q -r node_modules.zip node_modules
       - uses: actions/upload-artifact@v2
         with:
+          name: node_modules.zip
           path: node_modules.zip
   version:
     if: github.ref == 'refs/heads/main'
@@ -37,9 +38,16 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v2
         with:
-          path: node_modules.zip
+          name: node_modules.zip
+          path: .
       - run: unzip -qq node_modules.zip
-      - run: npm run semantic-release
+      - run: npm ci
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run semantic-release -- --ci
