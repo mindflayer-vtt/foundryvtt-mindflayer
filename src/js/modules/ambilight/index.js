@@ -167,7 +167,6 @@ export default class Ambilight extends AbstractSubModule {
         image[baseIndex + 1] != 0 ||
         image[baseIndex + 2] != 0
       ) {
-        //console.log(x, y, baseIndex, (360 + Math.atan2(direction.y, direction.x)*180/Math.PI) % 360)
         return baseIndex;
       }
     }

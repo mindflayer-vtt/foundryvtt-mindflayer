@@ -29,7 +29,7 @@ export function warnIfAnyMissing() {
     }
     const dependency = moduleJson.dependencies[i].name;
     if (!game.modules.get(dependency)?.active) {
-      if (!game.user.isGM) {
+      if (game.user.isGM) {
         ui.notifications.error(
           `Module '${VTT_MODULE_NAME}' requires the '${dependency}' module. Please install and activate it.`
         );
