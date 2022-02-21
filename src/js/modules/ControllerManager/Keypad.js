@@ -182,9 +182,15 @@ export default class Keypad {
 
   setDefaultLEDColor() {
     try {
-      const playerColor = this.player.data.color;
-      this.setLED(0, playerColor);
-      this.setLED(1, playerColor);
+      const player = this.player;
+      if(player) {
+        const playerColor = player.data.color;
+        this.setLED(0, playerColor);
+        this.setLED(1, playerColor);
+      } else {
+        this.setLED(0, "#00FF00");
+        this.setLED(1, "#000000");
+      }
     } catch (err) {
       console.warn(
         LOG_PREFIX +
@@ -195,6 +201,7 @@ export default class Keypad {
       );
     }
   }
+
   setLED(index, color) {
     if (!this.#ledState[index]) {
       console.error(

@@ -31,7 +31,7 @@ export class TokenControllerConfig extends FormApplication {
       height: "auto",
       closeOnSubmit: true,
       tabs: [
-        { navSelector: ".tabs", contentSelector: "form", initial: "general" },
+        { navSelector: ".tabs", contentSelector: ".content", initial: "general" },
       ],
     });
   }

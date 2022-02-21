@@ -19,6 +19,7 @@ import AbstractSubModule from "../AbstractSubModule";
 import { default as Socket } from "../socket";
 
 export default class Ambilight extends AbstractSubModule {
+  #enabled = true;
   #updateLEDsTimer = null;
   #ambilightLastSent = "null";
 
@@ -32,6 +33,7 @@ export default class Ambilight extends AbstractSubModule {
   }
 
   unhook() {
+    this.#enabled = false;
     window.clearInterval(this.#updateLEDsTimer);
     super.unhook();
   }
@@ -47,17 +49,21 @@ export default class Ambilight extends AbstractSubModule {
     return this.instance.modules[Socket.name];
   }
 
+  set enabled(value) {
+    this.#enabled = value;
+  }
+
   /**
    * @protected
    */
   async _ambilightLoop() {
     this.ensureLoaded();
-    if (!this.instance.settings.ambilight.enabled) {
+    if (!this.#enabled || !this.instance.settings.ambilight.enabled) {
       return;
     }
     const pixelsRaw = await this.loadPixels();
     if (pixelsRaw !== null) {
-      this._sendAmbilightData(this._compileLEDData(pixelsRaw));
+      this.sendAmbilightData(this._compileLEDData(pixelsRaw));
     }
   }
 
@@ -173,10 +179,7 @@ export default class Ambilight extends AbstractSubModule {
     return Math.floor(bounds.center.x + bounds.center.y * bounds.p1.x) * 4;
   }
 
-  /**
-   * @protected
-   */
-  _sendAmbilightData(ledState) {
+  sendAmbilightData(ledState) {
     if (ledState === null) {
       return;
     }

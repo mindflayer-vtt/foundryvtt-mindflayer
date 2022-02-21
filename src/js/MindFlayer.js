@@ -46,20 +46,4 @@ export default class MindFlayer {
       loader(this);
     }
   }
-
-  handleCombatUpdate(combat, update) {
-    if (combat.combatant) {
-      const activePlayerIds = combat.combatant.players.map(
-        (player) => player.id
-      );
-      this.#modules[ControllerManager.name].keypads.forEach((keypad) => {
-        const player = keypad.player;
-        if (activePlayerIds.includes(player.id)) {
-          keypad.setLED(1, "#FF0000");
-        } else {
-          keypad.setLED(1, player.data.color);
-        }
-      });
-    }
-  }
 }
