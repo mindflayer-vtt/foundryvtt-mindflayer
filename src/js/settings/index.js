@@ -37,6 +37,8 @@ const SETT_AMBILIGHT_LED_OFFSET = "ambilightOffset";
 const SETT_AMBILIGHT_BRIGHTNESS_MIN = "ambilightBrightnessMin";
 const SETT_AMBILIGHT_BRIGHTNESS_MAX = "ambilightBrightnessMax";
 
+const SETT_COMBAT_SKIP_DEFEATED = "combatSkipDefeated";
+
 const SETT_SETTINGS = "settings";
 
 export const settings = {
@@ -49,6 +51,10 @@ export const settings = {
 
   get settings() {
     return game.settings.get(VTT_MODULE_NAME, SETT_SETTINGS);
+  },
+
+  get skipDefeated() {
+    return game.settings.get(VTT_MODULE_NAME, SETT_COMBAT_SKIP_DEFEATED);
   },
 
   websocket: {
@@ -310,6 +316,14 @@ export const settings = {
       default: {
         mappings: {},
       },
+    });
+
+    game.settings.register(VTT_MODULE_NAME, SETT_COMBAT_SKIP_DEFEATED, {
+      name: "MindFlayer.combatSkipDefeated",
+      scope: "world",
+      type: Boolean,
+      config: false,
+      default: true
     });
 
     console.log(LOG_PREFIX + "Loaded settings");
