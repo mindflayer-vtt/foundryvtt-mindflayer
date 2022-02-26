@@ -23,12 +23,11 @@ export default class Ambilight extends AbstractSubModule {
   #updateLEDsTimer = null;
   #ambilightLastSent = "null";
 
-  constructor(instance) {
-    super(instance);
+  ready() {
     // setup the animation loop for reading the canvas for ambilight leds
     this.#updateLEDsTimer = window.setInterval(
       this._ambilightLoop.bind(this),
-      1000 / this.instance.settings.ambilight.fps
+      Math.round(1000 / this.instance.settings.ambilight.fps)
     );
   }
 

@@ -37,7 +37,7 @@ export default class Fullscreen extends AbstractSubModule {
     );
     this.#keyboardManagerHandleKeysWrapperFun =
       this.#keyboardManagerHandleKeysWrapper.bind(this);
-    if (isNewerVersion(game.version || game.data.version, "0.9.0")) {
+    if (isNewerVersion(game.version || game.data.version, "9.0")) {
       game.keybindings.register(VTT_MODULE_NAME, "hideUI", {
         name: "Hide UI",
         hint: "When the key is released, the game UI is toggled invisible.",

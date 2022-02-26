@@ -104,6 +104,10 @@ function _reload(instance, module) {
     subModules.find((mod) => mod.default.name === name)
   );
   __loadModules(instance, modules);
+
+  modules.forEach(mod => {
+    instance.modules[mod.default.name].ready();
+  });
 }
 
 export const reload = foundry.utils.debounce(_reload, 500);

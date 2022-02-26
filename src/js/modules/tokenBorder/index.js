@@ -24,6 +24,9 @@ const REF_Token_getBorderColor = "Token.prototype._getBorderColor";
 export default class TokenBorder extends AbstractSubModule {
   constructor(instance) {
     super(instance);
+  }
+
+  ready() {
     const $this = this;
     console.debug(
       SUB_LOG_PREFIX +

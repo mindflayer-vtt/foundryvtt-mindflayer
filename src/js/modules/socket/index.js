@@ -19,6 +19,7 @@ import AbstractSubModule from "../AbstractSubModule";
 const SUB_LOG_PREFIX = LOG_PREFIX + "Socket: ";
 
 export default class Socket extends AbstractSubModule {
+  /** @type {WebSocket|null} */
   #connection = null;
   #onmessageFun = null;
   #onopenFun = null;
@@ -35,7 +36,9 @@ export default class Socket extends AbstractSubModule {
     this.#oncloseFun = this._onclose.bind(this);
     this.#onerrorFun = this._onerror.bind(this);
     this.#initializeWebsocketFun = this._initializeWebsocket.bind(this);
+  }
 
+  ready() {
     this._initializeWebsocket();
   }
 
@@ -52,7 +55,9 @@ export default class Socket extends AbstractSubModule {
     } catch (err) {
       console.debug(SUB_LOG_PREFIX + "Failed to send disconnect message", err);
     }
-    this.#connection.close();
+    if(this.#connection) {
+      this.#connection.close();
+    }
     this.#connection = null;
     super.unhook();
   }
@@ -100,6 +105,9 @@ export default class Socket extends AbstractSubModule {
     this.#connection.addEventListener("close", this.#oncloseFun);
   }
 
+  /**
+   * @param {MessageEvent<any>} message 
+   */
   _onmessage(message) {
     const data = JSON.parse(message.data);
     console.debug(SUB_LOG_PREFIX + "Received message: ", data);
@@ -110,6 +118,9 @@ export default class Socket extends AbstractSubModule {
     }
   }
 
+  /**
+   * @param {Event} data 
+   */
   _onopen(data) {
     ui.notifications.info(
       "Mind Flayer: " +
@@ -133,21 +144,28 @@ export default class Socket extends AbstractSubModule {
     );
   }
 
-  _onclose() {
+  /**
+   * @param {CloseEvent} evt
+   */
+  _onclose(evt) {
     this.#connection = null;
     if (this.loaded) {
       ui.notifications.error(
         "Mind Flayer: " +
           game.i18n.localize("MindFlayer.Notifications.ConnectionClosed")
       );
+      console.debug(SUB_LOG_PREFIX + "Websocket connection closed:",evt)
       console.warn(
         SUB_LOG_PREFIX +
-          "Websocket connection closed, attempting to reconnect in 5 seconds..."
+          "Attempting to reconnect in 5 seconds..."
       );
       setTimeout(this.#initializeWebsocketFun, 5000);
     }
   }
 
+  /**
+   * @param {Event} error 
+   */
   _onerror(error) {
     ui.notifications.error(
       "Mind Flayer: " + game.i18n.localize("MindFlayer.Notifications.Error")

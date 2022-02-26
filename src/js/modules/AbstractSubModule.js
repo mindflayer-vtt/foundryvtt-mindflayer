@@ -22,6 +22,9 @@ export default class AbstractSubModule {
    */
   #instance = null;
 
+  /**
+   * @returns {string[]}
+   */
   static get moduleDependencies() {
     return [];
   }
@@ -30,18 +33,23 @@ export default class AbstractSubModule {
     this.#instance = instance;
     this.#loaded = true;
   }
+
   /**
    * @returns {MindFlayer}
    */
   get instance() {
     return this.#instance;
   }
+
   /**
    * @returns {boolean}
    */
   get loaded() {
     return this.#loaded;
   }
+
+  ready() {}
+
   unhook() {
     this.#loaded = false;
     this.#instance = null;

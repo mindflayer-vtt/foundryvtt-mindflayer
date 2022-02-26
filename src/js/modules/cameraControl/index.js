@@ -22,6 +22,9 @@ const WRAP_Token_setPosition = "Token.prototype.setPosition";
 export default class CameraControl extends AbstractSubModule {
   constructor(instance) {
     super(instance);
+  }
+
+  ready() {
     let $this = this;
     console.debug(
       LOG_PREFIX +

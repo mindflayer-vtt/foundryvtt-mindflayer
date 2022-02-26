@@ -29,7 +29,11 @@ export default class WakeLock extends AbstractSubModule {
 
   constructor(instance) {
     super(instance);
+
     this.#wakeLockFun = this.ensureWakeLock.bind(this);
+  }
+
+  ready() {
     document.addEventListener("visibilitychange", this.#wakeLockFun);
   }
 

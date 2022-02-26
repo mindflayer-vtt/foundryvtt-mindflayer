@@ -18,7 +18,9 @@ import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
 import { default as Socket } from "../socket";
 import Keypad from "./Keypad";
+
 const SUB_LOG_PREFIX = LOG_PREFIX + "ControllerManager: ";
+const CONTROLLER_FPS = 30;
 
 export default class ControllerManager extends AbstractSubModule {
   /**
@@ -38,7 +40,10 @@ export default class ControllerManager extends AbstractSubModule {
     this.#onKeyEventFun = this.#onKeyEventHandler.bind(this);
     this.socket.registerListener("registration", this.#onRegisterFun);
     this.socket.registerListener("key-event", this.#onKeyEventFun);
-    this.#tickThread = window.setInterval(this.#tick.bind(this), 1000 / 30);
+  }
+
+  ready() {
+    this.#tickThread = window.setInterval(this.#tick.bind(this), Math.round(1000 / CONTROLLER_FPS));
   }
 
   unhook() {
@@ -118,7 +123,7 @@ export default class ControllerManager extends AbstractSubModule {
       } catch (err) {
         console.error(
           SUB_LOG_PREFIX + `Keypad Tick Listener [${i}] threw an error: `,
-          err
+          err, callback
         );
       }
     });
@@ -130,6 +135,7 @@ export default class ControllerManager extends AbstractSubModule {
       if (!this.#keypads.hasOwnProperty(name)) {
         continue;
       }
+      /** @type {Keypad}  */
       const keypad = this.#keypads[name];
       const leds = keypad.getLEDsIfChanged();
       if (leds) {

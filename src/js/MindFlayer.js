@@ -18,6 +18,9 @@ import * as dependencies from "./dependencies";
 import loader from "./modules/loader";
 import AbstractSubModule from "./modules/AbstractSubModule";
 import ControllerManager from "./modules/ControllerManager";
+import { VTT_MODULE_NAME } from "./settings/constants";
+
+const WRAP_Application__activateCoreListeners = "Application.prototype._activateCoreListeners";
 
 export default class MindFlayer {
   #settings = null;
@@ -41,9 +44,32 @@ export default class MindFlayer {
     return this.#modules;
   }
 
-  ready() {
-    if (dependencies.warnIfAnyMissing() && this.#settings.enabled) {
+  init() {
+    if (this.#settings.enabled && dependencies.warnIfAnyMissing()) {
+      this._vttBugFixes();
       loader(this);
     }
+  }
+
+  ready() {
+    if (this.#settings.enabled && dependencies.warnIfAnyMissing(false)) {
+      this.#modules.forEach(mod => mod.ready());
+    }
+  }
+
+  _vttBugFixes() {
+    libWrapper.register(
+      VTT_MODULE_NAME,
+      WRAP_Application__activateCoreListeners,
+      function _activateCoreListeners(wrapped, html) {
+        /** @type {Node} */
+        let node = html[0];
+        if(node.nodeType !== Node.ELEMENT_NODE) {
+          node = node.nextElementSibling
+        }
+        return wrapped(jQuery(node));
+      },
+      libWrapper.MIXED
+    );
   }
 }

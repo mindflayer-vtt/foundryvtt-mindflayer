@@ -27,8 +27,11 @@ export default class DoorHandler extends AbstractSubModule {
 
   constructor(instance) {
     super(instance);
-    this.#nextDoorTimestamp = new Date().getTime();
     this.#tickHandlerFun = this.#tickHandler.bind(this);
+  }
+
+  ready() {
+    this.#nextDoorTimestamp = new Date().getTime();
     this.controllerManager.registerTickListener(this.#tickHandlerFun);
   }
 

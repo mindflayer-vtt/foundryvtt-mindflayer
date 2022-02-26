@@ -22,6 +22,9 @@ export default class PlayerLogin extends AbstractSubModule {
   constructor(instance) {
     super(instance);
     this.#messageHandlerFun = this.#messageHandler.bind(this);
+  }
+
+  ready() {
     this.socket.registerListener("keyboard-login", this.#messageHandlerFun);
   }
 
