@@ -16,10 +16,12 @@
 import { LOG_PREFIX } from "../settings/constants";
 import { DepGraph } from "dependency-graph";
 import MindFlayer from "../MindFlayer";
+import AbstractSubModule from "./AbstractSubModule";
 
 function importAll(contextRequire) {
   return contextRequire.keys().map((module) => contextRequire(module));
 }
+/** @type {({default: AbstractSubModule})[]} */
 const subModules = importAll(require.context("./", true, /\/index\.js$/));
 
 /**
@@ -32,7 +34,7 @@ let dependencyGraph = null;
  *
  * @param {MindFlayer} instance
  */
-export default function init(instance) {
+export function init(instance) {
   console.debug(LOG_PREFIX + "Sorting submodules");
   subModules.sort((a, b) => {
     const bDeps = b.default.moduleDependencies;
@@ -49,7 +51,35 @@ export default function init(instance) {
 
   __loadModules(instance, subModules);
 
-  console.info(LOG_PREFIX + "Submodules ready");
+  console.info(LOG_PREFIX + "Submodules initialized");
+}
+
+/**
+ * Ready all submodules in the order in which they are dependent on one another
+ *
+ * @param {MindFlayer} instance
+ * @param {AbstractSubModule[]|null} modules
+ */
+export function ready(instance, modules = null) {
+  if (!modules) {
+    modules = subModules
+      .sort((a, b) => {
+        const bDeps = b.default.moduleDependencies;
+        if (bDeps.includes(a.default.name)) {
+          return -1;
+        }
+        const aDeps = a.default.moduleDependencies;
+        if (aDeps.includes(b.default.name)) {
+          return 1;
+        }
+        return aDeps.length - bDeps.length;
+      })
+      .map((mod) => instance.modules[mod.default.name]);
+  }
+  modules.forEach((mod) => {
+    console.debug(`${LOG_PREFIX}Readying Module: ${mod.constructor.name}`);
+    mod.ready();
+  });
 }
 
 function buildDependencyGraph() {
@@ -104,10 +134,6 @@ function _reload(instance, module) {
     subModules.find((mod) => mod.default.name === name)
   );
   __loadModules(instance, modules);
-
-  modules.forEach(mod => {
-    instance.modules[mod.default.name].ready();
-  });
 }
 
 export const reload = foundry.utils.debounce(_reload, 500);

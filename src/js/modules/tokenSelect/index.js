@@ -24,7 +24,7 @@ export default class TokenSelect extends AbstractSubModule {
 
   constructor(instance) {
     super(instance);
-    
+
     this.#tickHandlerFun = this.#tickHandler.bind(this);
   }
 
@@ -99,6 +99,6 @@ export default class TokenSelect extends AbstractSubModule {
           `selected token '${tokens[i].name}' for player '${player.name}'`
       );
     }
-    TokenUtil.refreshTokenPlaceables();
+    TokenUtil.deselectAllTokens();
   }
 }

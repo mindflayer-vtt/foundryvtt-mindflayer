@@ -363,7 +363,7 @@ export const settings = {
       scope: "world",
       type: Boolean,
       config: false,
-      default: true
+      default: true,
     });
 
     console.log(LOG_PREFIX + "Loaded settings");

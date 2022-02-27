@@ -4,6 +4,10 @@
   cursor: none !important;
 }
 
+.hide-ui #ui-left {
+  display: none;
+}
+
 .hide-ui #logo {
   display: none;
 }
@@ -13,6 +17,10 @@
 }
 
 .hide-ui #controls {
+  display: none;
+}
+
+.hide-ui #ui-right {
   display: none;
 }
 
@@ -29,6 +37,10 @@
 }
 
 .hide-ui #token-action-hud {
+  display: none;
+}
+
+.hide-ui #plutonium__backend-version {
   display: none;
 }
 

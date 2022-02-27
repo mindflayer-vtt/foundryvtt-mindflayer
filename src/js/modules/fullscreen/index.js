@@ -20,6 +20,7 @@ const SUB_LOG_PREFIX = LOG_PREFIX + "Fullscreen: ";
 
 const WRAP_KeyboardManager_handleKeys = "KeyboardManager.prototype._handleKeys";
 const WRAP_PlaceableObject_can = "PlaceableObject.prototype.can";
+const WRAP_Notifications_notify = "Notifications.prototype.notify";
 
 export default class Fullscreen extends AbstractSubModule {
   #keyboardManagerHandleKeysWrapperFun = null;
@@ -33,7 +34,14 @@ export default class Fullscreen extends AbstractSubModule {
       VTT_MODULE_NAME,
       WRAP_PlaceableObject_can,
       this.#placeableObjectCanWrapper.bind(this),
-      libWrapper.WRAPPER
+      libWrapper.MIXED
+    );
+    /* prevent permanent notifications in fullscreen */
+    libWrapper.register(
+      VTT_MODULE_NAME,
+      WRAP_Notifications_notify,
+      this.#notificationsNotifyWrapper.bind(this),
+      libWrapper.MIXED
     );
     this.#keyboardManagerHandleKeysWrapperFun =
       this.#keyboardManagerHandleKeysWrapper.bind(this);
@@ -107,6 +115,16 @@ export default class Fullscreen extends AbstractSubModule {
       return false;
     }
     return wrapped(user, action);
+  }
+
+  #notificationsNotifyWrapper(wrapped, message, type, options) {
+    if (this.enabled) {
+      options = {
+        ...options,
+        permanent: false,
+      };
+    }
+    wrapped(message, type, options);
   }
 
   #keyboardManagerHandleKeysWrapper(wrapped, event, key, state) {

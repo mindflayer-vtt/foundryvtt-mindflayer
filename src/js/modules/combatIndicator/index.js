@@ -78,7 +78,7 @@ export default class CombatIndicator extends AbstractSubModule {
       const keypads = {};
       this.controllerManager.keypads.forEach((keypad) => {
         const player = keypad.player;
-        if(player) {
+        if (player) {
           keypads[player.id] = keypad;
         }
       });
@@ -88,7 +88,7 @@ export default class CombatIndicator extends AbstractSubModule {
           continue;
         }
         turns[i].players.forEach((player) => {
-          if(!(player.id in keypads)) {
+          if (!(player.id in keypads)) {
             return;
           }
           /** @type {Keypad} */

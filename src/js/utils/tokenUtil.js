@@ -94,7 +94,7 @@ export function setDefaultToken(user) {
   game.user.setFlag(VTT_MODULE_NAME, "selectedToken_" + user.id, selectedToken);
   console.debug(
     LOG_PREFIX +
-      `Selected default token '${selectedToken.name}' for player '${player.name}'`
+      `Selected default token '${selectedToken.name}' for player '${user.name}'`
   );
 }
 
@@ -136,3 +136,8 @@ function _refreshTokens() {
 }
 
 export const refreshTokenPlaceables = debounce(_refreshTokens, 100);
+
+export function deselectAllTokens() {
+  canvas.activeLayer.releaseAll();
+  refreshTokenPlaceables();
+}

@@ -26,10 +26,10 @@ export default class TokenMovement extends AbstractSubModule {
 
   constructor(instance) {
     super(instance);
-    
+
     this.#tickHandlerFun = this.#tickHandler.bind(this);
   }
-  
+
   ready() {
     this.instance.modules[ControllerManager.name].registerTickListener(
       this.#tickHandlerFun

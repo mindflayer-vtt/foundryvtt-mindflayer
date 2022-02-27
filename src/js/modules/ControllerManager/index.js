@@ -43,7 +43,10 @@ export default class ControllerManager extends AbstractSubModule {
   }
 
   ready() {
-    this.#tickThread = window.setInterval(this.#tick.bind(this), Math.round(1000 / CONTROLLER_FPS));
+    this.#tickThread = window.setInterval(
+      this.#tick.bind(this),
+      Math.round(1000 / CONTROLLER_FPS)
+    );
   }
 
   unhook() {
@@ -123,7 +126,8 @@ export default class ControllerManager extends AbstractSubModule {
       } catch (err) {
         console.error(
           SUB_LOG_PREFIX + `Keypad Tick Listener [${i}] threw an error: `,
-          err, callback
+          err,
+          callback
         );
       }
     });

@@ -205,7 +205,7 @@ export default class Keypad {
   setDefaultLEDColor() {
     try {
       const player = this.player;
-      if(player) {
+      if (player) {
         const playerColor = player.data.color;
         this.setLED(0, playerColor);
         this.setLED(1, playerColor);
@@ -243,7 +243,7 @@ export default class Keypad {
 
   /**
    * Get the current LED state, if they were changed since the last call to this method
-   * 
+   *
    * @returns {string[] | null} null if the values have not changed
    */
   getLEDsIfChanged() {
@@ -256,7 +256,7 @@ export default class Keypad {
 
   /**
    * Get the current LED state
-   * 
+   *
    * @returns {string[]}
    */
   peekLEDs() {

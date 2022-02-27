@@ -55,7 +55,7 @@ export default class Socket extends AbstractSubModule {
     } catch (err) {
       console.debug(SUB_LOG_PREFIX + "Failed to send disconnect message", err);
     }
-    if(this.#connection) {
+    if (this.#connection) {
       this.#connection.close();
     }
     this.#connection = null;
@@ -106,7 +106,7 @@ export default class Socket extends AbstractSubModule {
   }
 
   /**
-   * @param {MessageEvent<any>} message 
+   * @param {MessageEvent<any>} message
    */
   _onmessage(message) {
     const data = JSON.parse(message.data);
@@ -119,7 +119,7 @@ export default class Socket extends AbstractSubModule {
   }
 
   /**
-   * @param {Event} data 
+   * @param {Event} data
    */
   _onopen(data) {
     ui.notifications.info(
@@ -154,17 +154,14 @@ export default class Socket extends AbstractSubModule {
         "Mind Flayer: " +
           game.i18n.localize("MindFlayer.Notifications.ConnectionClosed")
       );
-      console.debug(SUB_LOG_PREFIX + "Websocket connection closed:",evt)
-      console.warn(
-        SUB_LOG_PREFIX +
-          "Attempting to reconnect in 5 seconds..."
-      );
+      console.debug(SUB_LOG_PREFIX + "Websocket connection closed:", evt);
+      console.warn(SUB_LOG_PREFIX + "Attempting to reconnect in 5 seconds...");
       setTimeout(this.#initializeWebsocketFun, 5000);
     }
   }
 
   /**
-   * @param {Event} error 
+   * @param {Event} error
    */
   _onerror(error) {
     ui.notifications.error(
