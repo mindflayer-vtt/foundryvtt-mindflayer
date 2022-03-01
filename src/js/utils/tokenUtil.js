@@ -130,6 +130,12 @@ export function getAllCombatTokens() {
 }
 
 function _refreshTokens() {
+  if (!game.canvas.initialized) {
+    console.info(
+      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens"
+    );
+    return;
+  }
   console.debug(SUB_LOG_PREFIX + "refreshing tokens");
   canvas.tokens.placeables.forEach((t) => t.refresh({}));
   canvas.triggerPendingOperations();
@@ -138,6 +144,12 @@ function _refreshTokens() {
 export const refreshTokenPlaceables = debounce(_refreshTokens, 100);
 
 export function deselectAllTokens() {
+  if (!game.canvas.initialized) {
+    console.info(
+      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens"
+    );
+    return;
+  }
   canvas.activeLayer.releaseAll();
   refreshTokenPlaceables();
 }

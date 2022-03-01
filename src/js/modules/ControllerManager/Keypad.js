@@ -124,7 +124,7 @@ export default class Keypad {
    */
   get token() {
     const player = this.player;
-    if (!player) return null;
+    if (!game.canvas.initialized || !player) return null;
     return TokenUtil.getTokenFor(player, true);
   }
 
