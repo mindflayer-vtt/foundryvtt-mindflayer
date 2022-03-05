@@ -23,12 +23,12 @@ export default class Ambilight extends AbstractSubModule {
   #updateLEDsTimer = null;
   #ambilightLastSent = "null";
 
-  constructor(instance) {
-    super(instance);
+  ready() {
+    this.#enabled = game.canvas.initialized;
     // setup the animation loop for reading the canvas for ambilight leds
     this.#updateLEDsTimer = window.setInterval(
       this._ambilightLoop.bind(this),
-      1000 / this.instance.settings.ambilight.fps
+      Math.round(1000 / this.instance.settings.ambilight.fps)
     );
   }
 
@@ -50,7 +50,7 @@ export default class Ambilight extends AbstractSubModule {
   }
 
   set enabled(value) {
-    this.#enabled = value;
+    this.#enabled = game.canvas.initialized && value;
   }
 
   /**

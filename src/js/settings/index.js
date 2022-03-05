@@ -49,30 +49,52 @@ export const settings = {
     return game.settings.get(VTT_MODULE_NAME, SETT_MODULE_ENABLED);
   },
 
+  /**
+   * @returns {({})}
+   */
   get settings() {
     return game.settings.get(VTT_MODULE_NAME, SETT_SETTINGS);
   },
 
+  /**
+   * @returns {Boolean}
+   */
   get skipDefeated() {
     return game.settings.get(VTT_MODULE_NAME, SETT_COMBAT_SKIP_DEFEATED);
   },
 
   websocket: {
+    /**
+     * @returns {string}
+     */
     get host() {
       return game.settings.get(VTT_MODULE_NAME, SETT_WEBSOCKET_HOST);
     },
+    /**
+     * @returns {number}
+     */
     get port() {
       return game.settings.get(VTT_MODULE_NAME, SETT_WEBSOCKET_PORT);
     },
+    /**
+     * @returns {string}
+     */
     get path() {
       return game.settings.get(VTT_MODULE_NAME, SETT_WEBSOCKET_PATH);
     },
+    /**
+     * @returns {string}
+     */
     get url() {
       return "wss://" + this.host + ":" + this.port + this.path;
     },
   },
 
   camera: {
+    /**
+     * @returns {"default"|"focusPlayers"|"off"},
+      }}
+     */
     get control() {
       return game.settings.get(VTT_MODULE_NAME, SETT_CAMERA_CONTROL);
     },
@@ -85,9 +107,15 @@ export const settings = {
     get enabled() {
       return game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_ENABLE);
     },
+    /**
+     * @returns {string}
+     */
     get target() {
       return game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_TARGET);
     },
+    /**
+     * @returns {number}
+     */
     get universe() {
       return game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_UNIVERSE);
     },
@@ -98,20 +126,32 @@ export const settings = {
       return game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_FPS);
     },
     led: {
+      /**
+       * @returns {number}
+       */
       get count() {
         return game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_LED_COUNT);
       },
+      /**
+       * @returns {number}
+       */
       get offset() {
         return game.settings.get(VTT_MODULE_NAME, SETT_AMBILIGHT_LED_OFFSET);
       },
     },
     brightness: {
+      /**
+       * @returns {number}
+       */
       get min() {
         return game.settings.get(
           VTT_MODULE_NAME,
           SETT_AMBILIGHT_BRIGHTNESS_MIN
         );
       },
+      /**
+       * @returns {number}
+       */
       get max() {
         return game.settings.get(
           VTT_MODULE_NAME,
@@ -323,7 +363,7 @@ export const settings = {
       scope: "world",
       type: Boolean,
       config: false,
-      default: true
+      default: true,
     });
 
     console.log(LOG_PREFIX + "Loaded settings");

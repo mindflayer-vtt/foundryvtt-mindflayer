@@ -15,35 +15,59 @@
 "use strict";
 import { settings } from "./settings";
 import * as dependencies from "./dependencies";
-import loader from "./modules/loader";
+import * as loader from "./modules/loader";
 import AbstractSubModule from "./modules/AbstractSubModule";
-import ControllerManager from "./modules/ControllerManager";
+import { LOG_PREFIX, VTT_MODULE_NAME } from "./settings/constants";
+
+const WRAP_Application__activateCoreListeners =
+  "Application.prototype._activateCoreListeners";
 
 export default class MindFlayer {
+  /** @type {settings} */
   #settings = null;
+  /** @type {AbstractSubModule[]} */
   #modules = [];
 
   constructor() {
     this.#settings = settings.init();
   }
 
-  /**
-   * @type {settings}
-   */
   get settings() {
     return this.#settings;
   }
 
-  /**
-   * @type {AbstractSubModule[]}
-   */
   get modules() {
     return this.#modules;
   }
 
-  ready() {
-    if (dependencies.warnIfAnyMissing() && this.#settings.enabled) {
-      loader(this);
+  init() {
+    if (this.#settings.enabled && dependencies.warnIfAnyMissing()) {
+      console.debug(LOG_PREFIX + "Initializing modules");
+      this._vttBugFixes();
+      loader.init(this);
     }
+  }
+
+  ready() {
+    if (this.#settings.enabled && dependencies.warnIfAnyMissing(false)) {
+      console.debug(LOG_PREFIX + "Calling ready methods on modules");
+      loader.ready(this);
+    }
+  }
+
+  _vttBugFixes() {
+    libWrapper.register(
+      VTT_MODULE_NAME,
+      WRAP_Application__activateCoreListeners,
+      function _activateCoreListeners(wrapped, html) {
+        /** @type {Node} */
+        let node = html[0];
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          node = node.nextElementSibling;
+        }
+        return wrapped(jQuery(node));
+      },
+      libWrapper.MIXED
+    );
   }
 }

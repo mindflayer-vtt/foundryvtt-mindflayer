@@ -94,7 +94,7 @@ export function setDefaultToken(user) {
   game.user.setFlag(VTT_MODULE_NAME, "selectedToken_" + user.id, selectedToken);
   console.debug(
     LOG_PREFIX +
-      `Selected default token '${selectedToken.name}' for player '${player.name}'`
+      `Selected default token '${selectedToken.name}' for player '${user.name}'`
   );
 }
 
@@ -130,9 +130,26 @@ export function getAllCombatTokens() {
 }
 
 function _refreshTokens() {
+  if (!game.canvas.initialized) {
+    console.info(
+      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens"
+    );
+    return;
+  }
   console.debug(SUB_LOG_PREFIX + "refreshing tokens");
   canvas.tokens.placeables.forEach((t) => t.refresh({}));
   canvas.triggerPendingOperations();
 }
 
 export const refreshTokenPlaceables = debounce(_refreshTokens, 100);
+
+export function deselectAllTokens() {
+  if (!game.canvas.initialized) {
+    console.info(
+      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens"
+    );
+    return;
+  }
+  canvas.activeLayer.releaseAll();
+  refreshTokenPlaceables();
+}

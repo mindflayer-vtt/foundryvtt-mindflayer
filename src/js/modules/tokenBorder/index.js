@@ -17,13 +17,20 @@ import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import { hexToRgb } from "../../utils/color";
 import * as TokenUtil from "../../utils/tokenUtil";
 import AbstractSubModule from "../AbstractSubModule";
+import Fullscreen from "../fullscreen";
 import { default as Socket } from "../socket";
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenBorder: ";
 
 const REF_Token_getBorderColor = "Token.prototype._getBorderColor";
 export default class TokenBorder extends AbstractSubModule {
+  #onUpdateSceneFun = null;
   constructor(instance) {
     super(instance);
+
+    this.#onUpdateSceneFun = this.#onUpdateScene.bind(this);
+  }
+
+  ready() {
     const $this = this;
     console.debug(
       SUB_LOG_PREFIX +
@@ -37,16 +44,18 @@ export default class TokenBorder extends AbstractSubModule {
       },
       libWrapper.MIXED
     );
+    Hooks.on("updateScene", this.#onUpdateSceneFun);
     TokenUtil.refreshTokenPlaceables();
   }
 
   unhook() {
     libWrapper.unregister(VTT_MODULE_NAME, REF_Token_getBorderColor, false);
+    Hooks.off("updateScene", this.#onUpdateSceneFun);
     super.unhook();
   }
 
   static get moduleDependencies() {
-    return [...super.moduleDependencies, Socket.name];
+    return [...super.moduleDependencies, Socket.name, Fullscreen.name];
   }
 
   /**
@@ -54,6 +63,13 @@ export default class TokenBorder extends AbstractSubModule {
    */
   get socket() {
     return this.instance.modules[Socket.name];
+  }
+
+  /**
+   * @returns {Fullscreen}
+   */
+  get fullscreen() {
+    return this.instance.modules[Fullscreen.name];
   }
 
   #getBorderColorWrapper(wrapped, token, ...args) {
@@ -67,5 +83,11 @@ export default class TokenBorder extends AbstractSubModule {
       }
     }
     return wrapped(...args);
+  }
+
+  #onUpdateScene() {
+    TokenUtil.deselectAllTokens();
+
+    return true;
   }
 }

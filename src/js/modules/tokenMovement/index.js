@@ -26,7 +26,17 @@ export default class TokenMovement extends AbstractSubModule {
 
   constructor(instance) {
     super(instance);
+
     this.#tickHandlerFun = this.#tickHandler.bind(this);
+  }
+
+  ready() {
+    if (!game.canvas.initialized) {
+      console.info(
+        SUB_LOG_PREFIX + "canvas is disabled, cannot control tokens"
+      );
+      return;
+    }
     this.instance.modules[ControllerManager.name].registerTickListener(
       this.#tickHandlerFun
     );

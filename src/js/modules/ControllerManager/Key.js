@@ -14,13 +14,19 @@
  */
 "use strict";
 
-export class Key {
+export default class Key {
   #state = false;
   #lastUp = null;
   lastTrigger = null;
+  /**
+   * @returns {boolean}
+   */
   get down() {
     return this.#state;
   }
+  /**
+   * @param {boolean} isDown
+   */
   set down(isDown) {
     if (!isDown) {
       this.#lastUp = null;

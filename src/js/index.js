@@ -44,6 +44,8 @@
   Hooks.once("init", () => {
     instance = new MindFlayer();
     setModuleInstance(instance);
+
+    instance.init();
   });
 
   /**

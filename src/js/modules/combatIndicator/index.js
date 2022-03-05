@@ -2,6 +2,7 @@ import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
 import Ambilight from "../ambilight";
 import ControllerManager from "../ControllerManager";
+import Keypad from "../ControllerManager/Keypad";
 
 const COMBAT_DURATION_TACTICAL_DISCUSSION = 60000; //ms
 const COMBAT_DURATION_FORCED_DODGE = 7000; //ms
@@ -73,10 +74,11 @@ export default class CombatIndicator extends AbstractSubModule {
     } else if (update.hasOwnProperty("turn") && update.turn !== null) {
       const turn = combat.turn;
       const turns = combat.turns;
+      /** @type {Map<string, Keypad>} */
       const keypads = {};
       this.controllerManager.keypads.forEach((keypad) => {
         const player = keypad.player;
-        if(player) {
+        if (player) {
           keypads[player.id] = keypad;
         }
       });
@@ -86,9 +88,10 @@ export default class CombatIndicator extends AbstractSubModule {
           continue;
         }
         turns[i].players.forEach((player) => {
-          if(!(player.id in keypads)) {
+          if (!(player.id in keypads)) {
             return;
           }
+          /** @type {Keypad} */
           const keypad = keypads[player.id];
           switch (state) {
             case -1:

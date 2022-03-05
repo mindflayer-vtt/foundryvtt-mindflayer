@@ -14,13 +14,17 @@
  */
 "use strict";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
-import { Key } from "./Key";
+import Key from "./Key";
 import * as TokenUtil from "../../utils/tokenUtil";
+import MindFlayer from "../../MindFlayer";
 
 /**
  * Keypad class representing a keypad
  */
 export default class Keypad {
+  /**
+   * @type {MindFlayer}
+   */
   #instance;
   #controllerId;
   #rawState = {
@@ -36,7 +40,13 @@ export default class Keypad {
     SHI: new Key(),
     SPC: new Key(),
   };
+  /**
+   * @returns {boolean}
+   */
   #ledChanged = false;
+  /**
+   * @returns {[string, string]}
+   */
   #ledState = ["#000000", "#000000"];
 
   constructor(instance, controllerId) {
@@ -48,10 +58,16 @@ export default class Keypad {
     );
   }
 
+  /**
+   * @returns {string}
+   */
   get controllerId() {
     return this.#controllerId;
   }
 
+  /**
+   * @returns {number} rotation in degrees
+   */
   get rotation() {
     let r = game.user.getFlag(
       VTT_MODULE_NAME,
@@ -64,6 +80,9 @@ export default class Keypad {
     return r;
   }
 
+  /**
+   * @param {number} amount the new rotation in degrees
+   */
   set rotation(amount) {
     if (typeof amount !== "number") {
       throw new TypeError("Rotation has to be numerical");
@@ -105,10 +124,13 @@ export default class Keypad {
    */
   get token() {
     const player = this.player;
-    if (!player) return null;
+    if (!game.canvas.initialized || !player) return null;
     return TokenUtil.getTokenFor(player, true);
   }
 
+  /**
+   * @returns {string[]}
+   */
   get keys() {
     return Object.getOwnPropertyNames(this.#rawState);
   }
@@ -183,7 +205,7 @@ export default class Keypad {
   setDefaultLEDColor() {
     try {
       const player = this.player;
-      if(player) {
+      if (player) {
         const playerColor = player.data.color;
         this.setLED(0, playerColor);
         this.setLED(1, playerColor);
@@ -191,6 +213,7 @@ export default class Keypad {
         this.setLED(0, "#00FF00");
         this.setLED(1, "#000000");
       }
+      this.#ledChanged = true;
     } catch (err) {
       console.warn(
         LOG_PREFIX +
@@ -214,14 +237,29 @@ export default class Keypad {
     }
     if (this.#ledState[index] !== color) {
       this.#ledChanged = true;
-      this.#ledState[index] = color;
     }
+    this.#ledState[index] = color;
   }
+
+  /**
+   * Get the current LED state, if they were changed since the last call to this method
+   *
+   * @returns {string[] | null} null if the values have not changed
+   */
   getLEDsIfChanged() {
     if (this.#ledChanged) {
       this.#ledChanged = false;
       return this.#ledState;
     }
     return null;
+  }
+
+  /**
+   * Get the current LED state
+   *
+   * @returns {string[]}
+   */
+  peekLEDs() {
+    return this.#ledState;
   }
 }

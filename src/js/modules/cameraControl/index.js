@@ -18,23 +18,32 @@ import * as TokenUtil from "../../utils/tokenUtil";
 import { default as ControllerManager } from "../ControllerManager";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 
+const SUB_LOG_PREFIX = `${LOG_PREFIX}CameraControl: `;
+
 const WRAP_Token_setPosition = "Token.prototype.setPosition";
 export default class CameraControl extends AbstractSubModule {
   constructor(instance) {
     super(instance);
+  }
+
+  ready() {
     let $this = this;
-    console.debug(
-      LOG_PREFIX +
-        "overriding camera pan to focus on all player tokens instead of the current moved one."
-    );
-    libWrapper.register(
-      VTT_MODULE_NAME,
-      WRAP_Token_setPosition,
-      async function wrapperTokenSetPosition(wrapped, ...args) {
-        return await $this.#Token_setPosition(this, wrapped, ...args);
-      },
-      libWrapper.MIXED
-    );
+    if (game.canvas.initialized) {
+      console.info(
+        SUB_LOG_PREFIX +
+          "overriding camera pan to focus on all player tokens instead of the current moved one."
+      );
+      libWrapper.register(
+        VTT_MODULE_NAME,
+        WRAP_Token_setPosition,
+        async function wrapperTokenSetPosition(wrapped, ...args) {
+          return await $this.#Token_setPosition(this, wrapped, ...args);
+        },
+        libWrapper.MIXED
+      );
+    } else {
+      console.info(SUB_LOG_PREFIX + "canvas is disabled, so no camera control");
+    }
   }
 
   unhook() {

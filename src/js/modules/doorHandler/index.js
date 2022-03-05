@@ -20,6 +20,8 @@ import { Keypad } from "../ControllerManager/Keypad";
 import { Rectangle, Vector } from "../../utils/2d-geometry";
 import { LOG_PREFIX } from "../../settings/constants";
 
+const SUB_LOG_PREFIX = `${LOG_PREFIX}DoorHandler: `;
+
 export default class DoorHandler extends AbstractSubModule {
   #nextDoorTimestamp;
   #doorQueue = [];
@@ -27,8 +29,15 @@ export default class DoorHandler extends AbstractSubModule {
 
   constructor(instance) {
     super(instance);
-    this.#nextDoorTimestamp = new Date().getTime();
     this.#tickHandlerFun = this.#tickHandler.bind(this);
+  }
+
+  ready() {
+    if (!game.canvas.initialized) {
+      console.info(SUB_LOG_PREFIX + "canvas is disabled, cannot control doors");
+      return;
+    }
+    this.#nextDoorTimestamp = new Date().getTime();
     this.controllerManager.registerTickListener(this.#tickHandlerFun);
   }
 
@@ -61,7 +70,7 @@ export default class DoorHandler extends AbstractSubModule {
     if (this.#nextDoorTimestamp <= now && this.#doorQueue.length > 0) {
       const doorCR = this.#doorQueue.shift();
       console.debug(
-        LOG_PREFIX +
+        SUB_LOG_PREFIX +
           `${doorCR.player.name}[${doorCR.token.name}]: toggling the door `,
         doorCR.door
       );
