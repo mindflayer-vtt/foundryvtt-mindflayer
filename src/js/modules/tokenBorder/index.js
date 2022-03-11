@@ -22,6 +22,7 @@ import { default as Socket } from "../socket";
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenBorder: ";
 
 const REF_Token_getBorderColor = "Token.prototype._getBorderColor";
+const REF_Token_refreshHUD = "Token.prototype.refreshHUD";
 export default class TokenBorder extends AbstractSubModule {
   #onUpdateSceneFun = null;
   constructor(instance) {
@@ -44,6 +45,19 @@ export default class TokenBorder extends AbstractSubModule {
       },
       libWrapper.MIXED
     );
+    libWrapper.register(
+      VTT_MODULE_NAME,
+      REF_Token_refreshHUD,
+      function refreshHUD(wrapped) {
+        if (!this.hud.hasOwnProperty("border")) {
+          this.removeChild(this.border);
+          this.hud.border = this.hud.addChild(this.border);
+        }
+        return wrapped();
+      },
+      libWrapper.WRAPPER
+    );
+
     Hooks.on("updateScene", this.#onUpdateSceneFun);
     TokenUtil.refreshTokenPlaceables();
   }
