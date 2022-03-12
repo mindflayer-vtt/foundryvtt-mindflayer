@@ -1,0 +1,13 @@
+{
+  "_id": "g6tqix26wcRSjOBR",
+  "name": "Start Timer",
+  "type": "script",
+  "img": "icons/magic/time/clock-stopwatch-white-blue.webp",
+  "scope": "global",
+  "command": "<<filled from ./timer.command.macrovar.js>>",
+  "folder": null,
+  "sort": 0,
+  "permission": {
+    "default": 0
+  }
+}
