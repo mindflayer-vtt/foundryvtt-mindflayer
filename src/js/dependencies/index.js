@@ -14,7 +14,7 @@
  */
 "use strict";
 import { VTT_MODULE_NAME } from "../settings/constants";
-const moduleJson = require("../module.tmpl.json");
+const moduleJson = require("../../module.tmpl.json");
 
 /**
  * Warn the GM user about any missing dependencies
