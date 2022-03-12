@@ -101,7 +101,7 @@ export default class Keypad {
   /**
    * Returns an assigned player for this keypad.
    *
-   * @returns {Player | null} the assigned player
+   * @returns {User | null} the assigned player
    */
   get player() {
     const settings = this.#instance.settings.settings;

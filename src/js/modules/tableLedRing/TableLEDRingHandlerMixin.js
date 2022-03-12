@@ -13,22 +13,27 @@
  * see <https://www.gnu.org/licenses/>.
  */
 "use strict";
-import MindFlayer from "../MindFlayer";
-import { VTT_MODULE_NAME } from "../settings/constants";
 
 /**
- * Get the stored instance of this module
  *
- * @returns {MindFlayer} the modules main instance
+ * @mixin
  */
-export function getModuleInstance() {
-  return game.modules.get(VTT_MODULE_NAME).instance;
-}
-/**
- * Set the stored instance of this module
- *
- * @param {MindFlayer} inst instance to be stored
- */
-export function setModuleInstance(inst) {
-  game.modules.get(VTT_MODULE_NAME).instance = inst;
-}
+export const TableLEDRingHandlerMixin = (S) => {
+  return class TableLEDRingHandler extends S {
+    /**
+     * @returns {number} >= 0
+     */
+    get priority() {
+      return 0;
+    }
+
+    /**
+     *
+     * @param {number} count the number of leds in the table
+     * @returns {Promise<Uint32Array>} with 3 entries per LED (red, green, blue)
+     */
+    async updateLEDs(count) {
+      return new Uint32Array(count * 3);
+    }
+  };
+};

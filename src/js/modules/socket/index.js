@@ -39,6 +39,9 @@ export default class Socket extends AbstractSubModule {
   }
 
   ready() {
+    // The module may be asked to load as dependency
+    // WebSocket to connect to elder brain will only start if enabled
+    if (!Socket.shouldStart(this.instance)) return;
     this._initializeWebsocket();
   }
 

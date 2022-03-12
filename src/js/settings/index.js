@@ -50,7 +50,9 @@ export const settings = {
   },
 
   /**
-   * @returns {({})}
+   * @returns {({
+   *  mappings: {}
+   * })}
    */
   get settings() {
     return game.settings.get(VTT_MODULE_NAME, SETT_SETTINGS);
@@ -61,6 +63,15 @@ export const settings = {
    */
   get skipDefeated() {
     return game.settings.get(VTT_MODULE_NAME, SETT_COMBAT_SKIP_DEFEATED);
+  },
+
+  core: {
+    /**
+     * @returns {Boolean}
+     */
+    get noCanvas() {
+      return game.settings.get("core", "noCanvas");
+    },
   },
 
   websocket: {

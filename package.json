@@ -26,6 +26,7 @@
     "@semantic-release/github": "^8.0.2",
     "@semantic-release/npm": "^9.0.0",
     "@semantic-release/release-notes-generator": "^10.0.3",
+    "@types/pixi.js": "^5.0.0",
     "copy-webpack-plugin": "^10.2.4",
     "glob": "^7.2.0",
     "prettier": "2.5.1",

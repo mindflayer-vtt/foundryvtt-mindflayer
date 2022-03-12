@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/jsconfig",
+  "compilerOptions": {
+    "module": "AMD",
+    "target": "ES2022",
+    "checkJs": true,
+    "moduleResolution": "Node",
+    "noUnusedLocals": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
+  },
+  "exclude": ["chrome-overrides/", "dist/"],
+  "include": [
+    "src/js/**/*",
+    "dependencies/foundry-common/**/*.esm.js",
+    "dependencies/foundry.js"
+  ],
+  "typeAcquisition": {
+    "include": ["jquery"],
+    "enable": true
+  }
+}

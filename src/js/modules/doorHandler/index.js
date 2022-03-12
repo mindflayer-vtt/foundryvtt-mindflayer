@@ -16,7 +16,7 @@
 import AbstractSubModule from "../AbstractSubModule";
 import { default as ControllerManager } from "../ControllerManager";
 import * as TokenUtil from "../../utils/tokenUtil";
-import { Keypad } from "../ControllerManager/Keypad";
+import Keypad from "../ControllerManager/Keypad";
 import { Rectangle, Vector } from "../../utils/2d-geometry";
 import { LOG_PREFIX } from "../../settings/constants";
 
@@ -33,7 +33,7 @@ export default class DoorHandler extends AbstractSubModule {
   }
 
   ready() {
-    if (!game.canvas.initialized) {
+    if (this.instance.settings.core.noCanvas) {
       console.info(SUB_LOG_PREFIX + "canvas is disabled, cannot control doors");
       return;
     }
@@ -42,7 +42,9 @@ export default class DoorHandler extends AbstractSubModule {
   }
 
   unhook() {
-    this.controllerManager.unregisterTickListener(this.#tickHandlerFun);
+    if (!this.instance.settings.core.noCanvas) {
+      this.controllerManager.unregisterTickListener(this.#tickHandlerFun);
+    }
     super.unhook();
   }
 

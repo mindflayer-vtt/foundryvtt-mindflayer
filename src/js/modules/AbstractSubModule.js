@@ -29,6 +29,16 @@ export default class AbstractSubModule {
     return [];
   }
 
+  /**
+   * Ask to start the module when the module Setting is enabled
+   *
+   * @param {Mindflayer} instance the instance to start
+   * @returns {boolean} if true the module should be loaded
+   */
+  static shouldStart(instance) {
+    return instance.settings.enabled;
+  }
+
   constructor(instance) {
     this.#instance = instance;
     this.#loaded = true;

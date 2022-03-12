@@ -22,7 +22,7 @@ function importAll(contextRequire) {
   return contextRequire.keys().map((module) => contextRequire(module));
 }
 /** @type {({default: AbstractSubModule})[]} */
-const subModules = importAll(require.context("./", true, /\/index\.js$/));
+let subModules = importAll(require.context("./", true, /\/index\.js$/));
 
 /**
  * @var {DepGraph} dependencyGraph
@@ -36,20 +36,46 @@ let dependencyGraph = null;
  */
 export function init(instance) {
   console.debug(LOG_PREFIX + "Sorting submodules");
+
   subModules.sort((a, b) => {
+    /*
+     * This functions sorts modules by their dependencies.
+     * starting with the modules with the most dependencies,
+     * ending with the ones who don't have any
+     */
     const bDeps = b.default.moduleDependencies;
     if (bDeps.includes(a.default.name)) {
-      return -1;
+      return 1;
     }
     const aDeps = a.default.moduleDependencies;
     if (aDeps.includes(b.default.name)) {
-      return 1;
+      return -1;
     }
     return aDeps.length - bDeps.length;
   });
+
+  console.debug(LOG_PREFIX + "Filtering unnecessary modules");
+
+  let filteredModules = [];
+  let requiredModuleNames = new Set();
+  subModules.forEach((module) => {
+    const moduleName = module.default.name;
+    if (
+      module.default.shouldStart(instance) ||
+      requiredModuleNames.has(moduleName)
+    ) {
+      filteredModules.push(module);
+      requiredModuleNames.delete(moduleName);
+      module.default.moduleDependencies.forEach((name) =>
+        requiredModuleNames.add(name)
+      );
+    }
+  });
+  subModules = filteredModules.reverse();
+
   console.info(LOG_PREFIX + "Starting submodules");
 
-  __loadModules(instance, subModules);
+  __loadModules(instance, filteredModules);
 
   console.info(LOG_PREFIX + "Submodules initialized");
 }
@@ -74,11 +100,19 @@ export function ready(instance, modules = null) {
         }
         return aDeps.length - bDeps.length;
       })
-      .map((mod) => instance.modules[mod.default.name]);
+      .map((mod) => instance.modules[mod.default.name])
+      .filter((mod) => mod !== undefined && mod !== null);
   }
   modules.forEach((mod) => {
-    console.debug(`${LOG_PREFIX}Readying Module: ${mod.constructor.name}`);
-    mod.ready();
+    try {
+      console.debug(`${LOG_PREFIX}Readying Module: ${mod.constructor.name}`);
+      mod.ready();
+    } catch (e) {
+      console.warn(
+        `${LOG_PREFIX}Failed to ready module '${mod.constructor.name}', continuing...`,
+        e
+      );
+    }
   });
 }
 
@@ -134,6 +168,7 @@ function _reload(instance, module) {
     subModules.find((mod) => mod.default.name === name)
   );
   __loadModules(instance, modules);
+  ready(instance, modules);
 }
 
 export const reload = foundry.utils.debounce(_reload, 500);

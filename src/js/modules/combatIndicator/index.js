@@ -3,6 +3,8 @@ import AbstractSubModule from "../AbstractSubModule";
 import Ambilight from "../ambilight";
 import ControllerManager from "../ControllerManager";
 import Keypad from "../ControllerManager/Keypad";
+import Timer from "../timer";
+import TimerRunner from "../timer/TimerRunner";
 
 const COMBAT_DURATION_TACTICAL_DISCUSSION = 60000; //ms
 const COMBAT_DURATION_FORCED_DODGE = 7000; //ms
@@ -28,11 +30,7 @@ export default class CombatIndicator extends AbstractSubModule {
   }
 
   static get moduleDependencies() {
-    return [
-      ...super.moduleDependencies,
-      ControllerManager.name,
-      AmbientLight.name,
-    ];
+    return [...super.moduleDependencies, ControllerManager.name, Timer.name];
   }
 
   /**
@@ -43,10 +41,10 @@ export default class CombatIndicator extends AbstractSubModule {
   }
 
   /**
-   * @returns {Ambilight}
+   * @returns {Timer}
    */
-  get ambilight() {
-    return this.instance.modules[Ambilight.name];
+  get timer() {
+    return this.instance.modules[Timer.name];
   }
 
   /**
@@ -119,61 +117,15 @@ export default class CombatIndicator extends AbstractSubModule {
       }
     }
   }
+
   async #startTacticalTimer(updateCombatCallback, timeInMS) {
-    const totalLEDs = this.instance.settings.ambilight.led.count;
-    if (this.#updateLEDsTimer !== null) {
-      window.clearInterval(this.#updateLEDsTimer);
-    }
-    if (totalLEDs <= 0) {
-      window.setTimeout(updateCombatCallback, timeInMS);
-    } else {
-      this.ambilight.enabled = false;
-      this.#updateLEDsTimer = window.setInterval(
-        this.#updateLEDs.bind(this, updateCombatCallback),
-        Math.floor(timeInMS / totalLEDs)
-      );
-      this.#currentLED = 0;
-      this.#updateLEDs(updateCombatCallback);
-    }
-  }
-
-  async #finishTacticalTimer(callback) {
-    this.ambilight.enabled = true;
-    window.clearInterval(this.#updateLEDsTimer);
-    this.#updateLEDsTimer = null;
-    callback();
-  }
-
-  #updateLEDs(callback) {
-    const total = this.instance.settings.ambilight.led.count;
-    const totalValues = total * 3;
-    const offset = this.instance.settings.ambilight.led.offset;
-    const minBright = this.instance.settings.ambilight.brightness.min;
-    const remaining = total - this.#currentLED;
-    const completion = remaining / total;
-    const leds = [];
-    let color;
-    this.#currentLED++;
-    if (completion > 2 / 3) {
-      color = hexToRgb("#00FF00");
-    } else if (completion > 1 / 3) {
-      color = hexToRgb("#FFFF00");
-    } else if (remaining <= 0) {
-      return this.#finishTacticalTimer(callback);
-    } else {
-      color = hexToRgb("#FF0000");
-    }
-    for (let i = 0; i < total; i++) {
-      if (i < remaining) {
-        leds[(offset + i * 3 + 0) % totalValues] = color.r;
-        leds[(offset + i * 3 + 1) % totalValues] = color.g;
-        leds[(offset + i * 3 + 2) % totalValues] = color.b;
-      } else {
-        leds[(offset + i * 3 + 0) % totalValues] = minBright;
-        leds[(offset + i * 3 + 1) % totalValues] = minBright;
-        leds[(offset + i * 3 + 2) % totalValues] = minBright;
-      }
-    }
-    this.ambilight.sendAmbilightData(leds);
+    const start = new Date().valueOf();
+    this.timer.addTimer({
+      start: start,
+      end: start + timeInMS,
+      options: {
+        onDone: updateCombatCallback,
+      },
+    });
   }
 }

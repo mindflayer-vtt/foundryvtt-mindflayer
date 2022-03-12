@@ -44,5 +44,13 @@
   "MindFlayer.Notifications.ConnectionClosed": "Connected to websocket closed, attempting to reconnect in 5 seconds...",
   "MindFlayer.Notifications.NewClient": "Controller \"{controller}\" assigned to player \"{player}\" connected!",
   "MindFlayer.Notifications.ClientDisconnected": "Controller \"{controller}\" assigned to player \"{player}\" disconnected!",
-  "MindFlayer.Notifications.ChangeDirection": "Player \"{player}\" changed orientation by {orientation}°"
+  "MindFlayer.Notifications.ChangeDirection": "Player \"{player}\" changed orientation by {orientation}°",
+
+  "module.MindFlayer.StartTimerDialog.title": "Start a Timer",
+  "module.MindFlayer.StartTimerDialog.field.duration.name": "Duration:",
+  "module.MindFlayer.StartTimerDialog.field.duration.description": "",
+  "module.MindFlayer.StartTimerDialog.field.neededRole.name": "Minimum user role:",
+  "module.MindFlayer.StartTimerDialog.field.neededRole.description": "If the Role is equal to None, Player or Trusted the table LEDs will show the Timer",
+  "module.MindFlayer.StartTimerDialog.buttons.start": "Start Timer",
+  "module.MindFlayer.StartTimerDialog.buttons.abort": "Abort"
 }
