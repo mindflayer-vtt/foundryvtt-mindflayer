@@ -143,6 +143,9 @@ export default class ControllerManager extends AbstractSubModule {
       const keypad = this.#keypads[name];
       const leds = keypad.getLEDsIfChanged();
       if (leds) {
+        console.debug(
+          `${SUB_LOG_PREFIX}Sending updated LEDs to keypad '${keypad.controllerId}'`
+        );
         const data = JSON.stringify({
           type: "configuration",
           "controller-id": keypad.controllerId,

@@ -41,7 +41,7 @@ export default class MindFlayer {
   }
 
   init() {
-    if (this.#settings.enabled && dependencies.warnIfAnyMissing()) {
+    if (dependencies.warnIfAnyMissing()) {
       console.debug(LOG_PREFIX + "Initializing modules");
       this._vttBugFixes();
       loader.init(this);
@@ -49,7 +49,7 @@ export default class MindFlayer {
   }
 
   ready() {
-    if (this.#settings.enabled && dependencies.warnIfAnyMissing(false)) {
+    if (dependencies.warnIfAnyMissing(false)) {
       console.debug(LOG_PREFIX + "Calling ready methods on modules");
       loader.ready(this);
     }
@@ -60,7 +60,7 @@ export default class MindFlayer {
       VTT_MODULE_NAME,
       WRAP_Application__activateCoreListeners,
       function _activateCoreListeners(wrapped, html) {
-        /** @type {Node} */
+        /** @type {Element} */
         let node = html[0];
         if (node.nodeType !== Node.ELEMENT_NODE) {
           node = node.nextElementSibling;

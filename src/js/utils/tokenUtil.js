@@ -20,7 +20,7 @@ const SUB_LOG_PREFIX = LOG_PREFIX + "TokenUtil: ";
 /**
  * Returns all controllable tokens of a player.
  *
- * @param {Player} player the player to search through
+ * @param {User} player the player to search through
  * @param {Boolean} ignoreEmpty if no exception should be thrown (necessary for initialization)
  * @returns {Token[]} all controllable tokens of a player
  * @throws an Error object if no tokens could be found and ignoreEmpty is false
@@ -120,7 +120,7 @@ export function getUserIfSelectedTokenIs(token) {
 /**
  * Returns all tokens that are in combat
  *
- * @returns {TokenDocument[]} the tokens in combat or empty array if no combat
+ * @returns {Token[]} the tokens in combat or empty array if no combat
  */
 export function getAllCombatTokens() {
   if (game.combat == null) {
@@ -150,6 +150,6 @@ export function deselectAllTokens() {
     );
     return;
   }
-  canvas.activeLayer.releaseAll();
+  canvas.activeLayer?.releaseAll();
   refreshTokenPlaceables();
 }

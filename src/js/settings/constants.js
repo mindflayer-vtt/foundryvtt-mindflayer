@@ -16,3 +16,10 @@
 
 export const VTT_MODULE_NAME = "mindflayer-token-controller";
 export const LOG_PREFIX = "Mind Flayer | ";
+
+export const TABLE_LED_PRIORITY = {
+  OFF: -100,
+  LOWEST: 0,
+  AMBILIGHT: 100,
+  TIMER: 200,
+};

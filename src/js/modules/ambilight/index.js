@@ -13,57 +13,60 @@
  * see <https://www.gnu.org/licenses/>.
  */
 "use strict";
+import { TABLE_LED_PRIORITY } from "../../settings/constants";
 import { Rectangle, Vector } from "../../utils/2d-geometry";
 import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
-import { default as Socket } from "../socket";
+import TableLEDRing from "../tableLedRing";
+import { TableLEDRingHandlerMixin } from "../tableLedRing/TableLEDRingHandlerMixin";
 
-export default class Ambilight extends AbstractSubModule {
+export default class Ambilight extends TableLEDRingHandlerMixin(
+  AbstractSubModule
+) {
   #enabled = true;
   #updateLEDsTimer = null;
-  #ambilightLastSent = "null";
 
   ready() {
     this.#enabled = game.canvas.initialized;
-    // setup the animation loop for reading the canvas for ambilight leds
-    this.#updateLEDsTimer = window.setInterval(
-      this._ambilightLoop.bind(this),
-      Math.round(1000 / this.instance.settings.ambilight.fps)
-    );
+    this.tableLEDRing.registerHandler(this);
   }
 
   unhook() {
     this.#enabled = false;
+    this.tableLEDRing.unregisterHandler(this);
     window.clearInterval(this.#updateLEDsTimer);
     super.unhook();
   }
 
   static get moduleDependencies() {
-    return [...super.moduleDependencies, Socket.name];
+    return [...super.moduleDependencies, TableLEDRing.name];
   }
 
-  /**
-   * @returns {Socket}
-   */
-  get socket() {
-    return this.instance.modules[Socket.name];
+  /** @returns {TableLEDRing} */
+  get tableLEDRing() {
+    return this.instance.modules[TableLEDRing.name];
   }
 
   set enabled(value) {
     this.#enabled = game.canvas.initialized && value;
   }
 
-  /**
-   * @protected
-   */
-  async _ambilightLoop() {
+  get priority() {
+    if (this.#enabled) {
+      return TABLE_LED_PRIORITY.AMBILIGHT;
+    } else {
+      return TABLE_LED_PRIORITY.OFF;
+    }
+  }
+
+  async updateLEDs(count) {
     this.ensureLoaded();
     if (!this.#enabled || !this.instance.settings.ambilight.enabled) {
       return;
     }
     const pixelsRaw = await this.loadPixels();
     if (pixelsRaw !== null) {
-      this.sendAmbilightData(this._compileLEDData(pixelsRaw));
+      return this._compileLEDData(pixelsRaw, count);
     }
   }
 
@@ -74,7 +77,7 @@ export default class Ambilight extends AbstractSubModule {
   }
 
   /**
-   * Will only function correctly if call from within requestAnimationFrame()
+   * Will only function correctly if called from within requestAnimationFrame()
    * @protected
    */
   _loadPixels(resolve, reject) {
@@ -107,8 +110,7 @@ export default class Ambilight extends AbstractSubModule {
   /**
    * @protected
    */
-  _compileLEDData(pixelsRaw) {
-    const ledCount = this.instance.settings.ambilight.led.count;
+  _compileLEDData(pixelsRaw, ledCount) {
     const brightMin = this.instance.settings.ambilight.brightness.min;
     const brightRange =
       (this.instance.settings.ambilight.brightness.max - brightMin) / 255;
@@ -177,21 +179,5 @@ export default class Ambilight extends AbstractSubModule {
       }
     }
     return Math.floor(bounds.center.x + bounds.center.y * bounds.p1.x) * 4;
-  }
-
-  sendAmbilightData(ledState) {
-    if (ledState === null) {
-      return;
-    }
-    const data = JSON.stringify({
-      type: "ambilight",
-      target: this.instance.settings.ambilight.target,
-      universe: this.instance.settings.ambilight.universe,
-      colors: Array.from(ledState),
-    });
-    if (this.#ambilightLastSent !== data) {
-      this.socket.send(data);
-      this.#ambilightLastSent = data;
-    }
   }
 }

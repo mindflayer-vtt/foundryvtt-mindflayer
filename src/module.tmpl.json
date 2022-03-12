@@ -33,6 +33,10 @@
     {
       "name": "lib-wrapper",
       "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json"
+    },
+    {
+      "name": "socketlib",
+      "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json"
     }
   ],
   "packs": [

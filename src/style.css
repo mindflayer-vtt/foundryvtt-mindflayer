@@ -47,3 +47,7 @@
 .hide-ui .illandril-npc-quick-actions--outer-container {
   display: none;
 }
+
+#mindflayer-token-controller__start-timer-content .form-fields span {
+  flex: 0;
+}

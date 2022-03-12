@@ -1,0 +1,85 @@
+<form id="mindflayer-token-controller__start-timer">
+  <!--
+  This file is part of the Foundry VTT Module Mindflayer.
+
+  The Foundry VTT Module Mindflayer is free software: you can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option)
+  any later version.
+
+  The Foundry VTT Module Mindflayer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  See the GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along with the Foundry VTT Module Mindflayer. If not,
+  see <https://www.gnu.org/licenses/>.
+  -->
+  <section
+    id="mindflayer-token-controller__start-timer-content"
+    class="content"
+  >
+    <div class="form-group">
+      <label for="hours"
+        >{{localize
+        "module.MindFlayer.StartTimerDialog.field.duration.name"}}</label
+      >
+      <div class="form-fields">
+        <input
+          type="text"
+          name="durationHours"
+          value="{{lookup object.durationHours }}"
+          data-dtype="number"
+        />
+        <span>h&nbsp;:&nbsp;</span>
+        <input
+          type="text"
+          name="durationMinutes"
+          value="{{lookup object.durationMinutes }}"
+          data-dtype="number"
+        />
+        <span>m&nbsp;:&nbsp;</span>
+        <input
+          type="text"
+          name="durationSeconds"
+          value="{{lookup object.durationSeconds }}"
+          data-dtype="number"
+        />
+        <span>s</span>
+      </div>
+      <p class="notes">
+        {{localize
+        "module.MindFlayer.StartTimerDialog.field.duration.description"}}
+      </p>
+    </div>
+    <div class="form-group">
+      <label for="neededRole"
+        >{{localize
+        "module.MindFlayer.StartTimerDialog.field.neededRole.name"}}</label
+      >
+      <div class="form-fields">
+        <select
+          name="neededRole"
+          value="{{lookup object.neededRole }}"
+          data-dtype="number"
+        >
+          {{#each object.roles as |level name|}}
+          <option value="{{level}}">{{name}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <p class="notes">
+        {{localize
+        "module.MindFlayer.StartTimerDialog.field.neededRole.description"}}
+      </p>
+    </div>
+  </section>
+  <footer class="sheet-footer flexrow">
+    <button type="button" name="reset">
+      <i class="fas fa-refresh"></i> {{localize
+      "module.MindFlayer.StartTimerDialog.buttons.abort"}}
+    </button>
+    <button type="submit" name="submit">
+      <i class="fas fa-save"></i> {{localize
+      "module.MindFlayer.StartTimerDialog.buttons.start"}}
+    </button>
+  </footer>
+</form>

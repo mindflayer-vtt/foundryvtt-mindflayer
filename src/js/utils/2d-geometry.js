@@ -18,6 +18,10 @@ export class Vector {
   x = 0;
   y = 0;
 
+  /**
+   * @param {number} x
+   * @param {number} y
+   */
   constructor(x, y) {
     this.x = x;
     this.y = y;
@@ -34,6 +38,10 @@ export class Vector {
     return this;
   }
 
+  /**
+   * @param {number} fact factor by which to scale
+   * @returns this object
+   */
   scale(fact) {
     this.x *= fact;
     this.y *= fact;
