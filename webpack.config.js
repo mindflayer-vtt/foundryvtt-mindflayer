@@ -69,7 +69,7 @@ module.exports = {
       patterns: [
         { from: "src/lang", to: "lang" },
         { from: "src/templates", to: "templates" },
-        { from: "LICENSE", to: "LICENSE" },
+        { from: "LICENSE", to: "." },
         { from: "src/style.css", to: "style.css" },
       ],
     }),
