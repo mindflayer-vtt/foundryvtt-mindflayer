@@ -46,6 +46,11 @@
   "MindFlayer.Notifications.ClientDisconnected": "Controller \"{controller}\" assigned to player \"{player}\" disconnected!",
   "MindFlayer.Notifications.ChangeDirection": "Player \"{player}\" changed orientation by {orientation}°",
 
+  "module.MindFlayer.setting.combatIndicator.tacticalDuration.name": "Duration of the Tactical Discussion",
+  "module.MindFlayer.setting.combatIndicator.tacticalDuration.hint": "Duration of the timer between combat rounds, 0 = disabled",
+  "module.MindFlayer.setting.combatIndicator.playerReactionTime.name": "Player reaction time",
+  "module.MindFlayer.setting.combatIndicator.playerReactionTime.hint": "Duration of the Timer for the Player to react",
+
   "module.MindFlayer.StartTimerDialog.title": "Start a Timer",
   "module.MindFlayer.StartTimerDialog.field.duration.name": "Duration:",
   "module.MindFlayer.StartTimerDialog.field.duration.description": "",

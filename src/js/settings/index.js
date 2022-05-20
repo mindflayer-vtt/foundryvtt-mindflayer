@@ -39,6 +39,11 @@ const SETT_AMBILIGHT_BRIGHTNESS_MAX = "ambilightBrightnessMax";
 
 const SETT_COMBAT_SKIP_DEFEATED = "combatSkipDefeated";
 
+const SETT_COMBAT_INDICATOR_TACTICAL_DURATION =
+  "combatIndicatorTacticalDuration";
+const SETT_COMBAT_INDICATOR_PLAYER_REACTION_DURATION =
+  "combatIndicator.playerReactionTime";
+
 const SETT_SETTINGS = "settings";
 
 export const settings = {
@@ -169,6 +174,23 @@ export const settings = {
           SETT_AMBILIGHT_BRIGHTNESS_MAX
         );
       },
+    },
+  },
+
+  combatIndicator: {
+    /** @returns {number} */
+    get tacticalDiscussionDuration() {
+      return game.settings.get(
+        VTT_MODULE_NAME,
+        SETT_COMBAT_INDICATOR_TACTICAL_DURATION
+      );
+    },
+    /** @returns {number} */
+    get playerReactionTime() {
+      return game.settings.get(
+        VTT_MODULE_NAME,
+        SETT_COMBAT_INDICATOR_PLAYER_REACTION_DURATION
+      );
     },
   },
 
@@ -376,6 +398,44 @@ export const settings = {
       config: false,
       default: true,
     });
+
+    game.settings.register(
+      VTT_MODULE_NAME,
+      SETT_COMBAT_INDICATOR_TACTICAL_DURATION,
+      {
+        name: "module.MindFlayer.setting.combatIndicator.tacticalDuration.name",
+        hint: "module.MindFlayer.setting.combatIndicator.tacticalDuration.hint",
+        scope: "client",
+        type: Number,
+        default: 0,
+        range: {
+          min: 0,
+          max: 120,
+          step: 1,
+        },
+        config: true,
+        restricted: false,
+      }
+    );
+
+    game.settings.register(
+      VTT_MODULE_NAME,
+      SETT_COMBAT_INDICATOR_PLAYER_REACTION_DURATION,
+      {
+        name: "module.MindFlayer.setting.combatIndicator.playerReactionTime.name",
+        hint: "module.MindFlayer.setting.combatIndicator.playerReactionTime.hint",
+        scope: "client",
+        type: Number,
+        default: 6,
+        range: {
+          min: 0,
+          max: 60,
+          step: 1,
+        },
+        config: true,
+        restricted: false,
+      }
+    );
 
     console.log(LOG_PREFIX + "Loaded settings");
     return this;

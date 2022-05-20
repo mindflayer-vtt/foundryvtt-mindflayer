@@ -30,7 +30,7 @@ export class TimerRenderContainer extends PIXI.Container {
    * Reposition children
    * @override
    */
-  onChildrenChange(count) {
+  onChildrenChange(_count) {
     /** @type {PIXI.Transform} */
     const wt = canvas.stage.worldTransform;
     const invertedScale = 1 / this.parent.scale.x;
