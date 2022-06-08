@@ -1,3 +1,4 @@
+import { COLORS } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
 import ControllerManager from "../ControllerManager";
 import Keypad from "../ControllerManager/Keypad";
@@ -95,17 +96,17 @@ export default class CombatIndicator extends AbstractSubModule {
           }
           if (i == currentTurn) {
             // keyboard with turn active colored red
-            keypad.setLED(1, "#FF0000");
+            keypad.setLED(1, COLORS.RED);
             this.#startTacticalTimer(() => {},
             this.instance.settings.combatIndicator.playerReactionTime * 1000);
           } else if (i > currentTurn) {
             if (!hasNext) {
               // keyboard who is up next colored yellow
-              keypad.setLED(1, "#FFFF00");
+              keypad.setLED(1, COLORS.YELLOW);
               hasNext = true;
             } else {
               // keyboards with outstanding turn colored green
-              keypad.setLED(1, "#00FF00");
+              keypad.setLED(1, COLORS.GREEN);
             }
           } else {
             // keypads that had their turn colored player.color
