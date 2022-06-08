@@ -14,6 +14,12 @@
  */
 "use strict";
 
+export const COLORS = {
+  GREEN: "#00FF00",
+  RED: "#FF0000",
+  YELLOW: "#FFFF00"
+};
+
 /**
  * Convert a hex color string to json color object
  * @param {string} hex the color as hex string in the format '#ffffff'
