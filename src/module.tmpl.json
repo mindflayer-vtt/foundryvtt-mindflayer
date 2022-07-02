@@ -5,7 +5,7 @@
   "title": "Mind Flayer - Token Controller",
   "description": "Adds functionality to control tokens through external applications or devices. Mind Flayer server (https://github.com/mindflayer-vtt/mindflayer-server) is required for the module to communicate with external services.",
   "minimumCoreVersion": "0.8.0",
-  "compatibleCoreVersion": "9.249",
+  "compatibleCoreVersion": "9.269",
   "author": "749, shawly",
   "authors": [
     {
