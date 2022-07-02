@@ -42,6 +42,14 @@ export default class SocketlibWrapper extends AbstractSubModule {
   }
 
   /**
+   * Always start this module as it allows crosscommunication between all clients
+   * @returns true
+   */
+  static shouldStart(instance) {
+    return true;
+  }
+
+  /**
    * Register or override a callback
    *
    * @param {string} name name of the function to register
