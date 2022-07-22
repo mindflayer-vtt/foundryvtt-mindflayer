@@ -56,10 +56,11 @@ export default class SocketlibWrapper extends AbstractSubModule {
    * @param {CallableFunction} callback the function to be called
    */
   provide(name, callback) {
+    console.debug(`${SUB_LOG_PREFIX}registering callback for '${name}'`);
     if (!this.#mapping.has(name)) {
       this.#socket.register(name, this.#callFunc.bind(this, name));
     }
-    this.#mapping[name] = callback;
+    this.#mapping.set(name, {callback});
   }
 
   /**
@@ -69,7 +70,7 @@ export default class SocketlibWrapper extends AbstractSubModule {
    */
   remove(name) {
     if (this.#mapping.has(name)) {
-      this.#mapping[name].callback = null;
+      this.#mapping.get(name).callback = null;
     }
   }
 
@@ -118,13 +119,14 @@ export default class SocketlibWrapper extends AbstractSubModule {
   }
 
   #callFunc(name, ...args) {
-    if (!this.#mapping.has(name) || this.#mapping[name].callback === null) {
+    if (!this.#mapping.has(name) || this.#mapping.get(name).callback === null) {
       console.warn(
         `${SUB_LOG_PREFIX}Tried to call unregistered method [${name}]`
       );
       return;
     }
 
-    this.#mapping[name].callback(...args);
+    console.debug(`${SUB_LOG_PREFIX}calling '${name}' with arguments: `, args)
+    this.#mapping.get(name).callback(...args);
   }
 }

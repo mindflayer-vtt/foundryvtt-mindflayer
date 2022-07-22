@@ -82,10 +82,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
    * @returns {boolean}
    */
   static shouldStart(instance) {
-    return (
-      game.data.users.find((u) => u._id === game.userId).role >=
-      CONST.USER_ROLES.ASSISTANT
-    );
+    return true;
   }
 
   /** @returns {TableLEDRing} */
@@ -186,11 +183,13 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
   }
 
   #addTimerInternal(start, end, options) {
-    const timer = new TimerRunner(start, end, options);
-    if (this.#renderingContainer) {
-      this.#renderingContainer.addChild(timer);
+    if(options.neededRole <= game.user.role) {
+      const timer = new TimerRunner(start, end, options);
+      if (this.#renderingContainer) {
+        this.#renderingContainer.addChild(timer);
+      }
+      this.#timers.push(timer);
     }
-    this.#timers.push(timer);
   }
 
   /**
