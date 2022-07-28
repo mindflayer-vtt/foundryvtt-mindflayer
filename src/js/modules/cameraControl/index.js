@@ -119,7 +119,7 @@ export default class CameraControl extends AbstractSubModule {
       return;
     }
     activeCharacterTokens = activeCharacterTokens.filter((token) =>
-      token.combatant
+      token.hasOwnProperty("combatant")
         ? !token.combatant.data.hidden && !token.combatant.data.defeated
         : true
     );
