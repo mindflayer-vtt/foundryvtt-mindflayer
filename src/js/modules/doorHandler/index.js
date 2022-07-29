@@ -76,7 +76,15 @@ export default class DoorHandler extends AbstractSubModule {
           `${doorCR.player.name}[${doorCR.token.name}]: toggling the door `,
         doorCR.door
       );
-      doorCR.door.doorControl._onMouseDown(new MouseEvent("mousedown"));
+      const evt = new PIXI.InteractionEvent();
+      // TODO: ugly hack to get the event to trigger properly
+      evt.data = {
+        button: 0,
+        originalEvent: {
+          button: 0
+        }
+      };
+      doorCR.door.doorControl._onMouseDown(evt);
       this.#nextDoorTimestamp = now + 150;
     }
   }
