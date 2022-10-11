@@ -206,7 +206,7 @@ export default class Keypad {
     try {
       const player = this.player;
       if (player) {
-        const playerColor = player.data.color;
+        const playerColor = player.color || player.data.color;
         this.setLED(0, playerColor);
         this.setLED(1, playerColor);
       } else {

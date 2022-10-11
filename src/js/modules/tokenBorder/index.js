@@ -90,7 +90,7 @@ export default class TokenBorder extends AbstractSubModule {
     if (this.socket.isConnected && token.actor && token.actor.hasPlayerOwner) {
       const player = TokenUtil.getUserIfSelectedTokenIs(token);
       if (player) {
-        const color = hexToRgb(player.data.color);
+        const color = hexToRgb(player.color || player.data.color);
         return (
           ((color.r & 0xff) << 16) | ((color.g & 0xff) << 8) | (color.b & 0xff)
         );
