@@ -157,7 +157,12 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
    */
   _findColorAlongVector(image, bounds, direction) {
     // scale vector so longer direction is length 1
-    const backgroundColor = hexToRgb(game.scenes.active.data.backgroundColor);
+    let backgroundColor;
+    if (isNewerVersion(game.version, "10")) {
+      backgroundColor = hexToRgb(game.scenes.active.backgroundColor);
+    } else {
+      backgroundColor = hexToRgb(game.scenes.active.data.backgroundColor);
+    }
     direction.scale(1 / Math.max(Math.abs(direction.x), Math.abs(direction.y)));
     const scale = Math.floor(bounds.intersectionFromCenter(direction));
     for (let i = scale; i >= 0; i--) {
