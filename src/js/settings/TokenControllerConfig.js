@@ -22,7 +22,7 @@ import { VTT_MODULE_NAME } from "./constants";
  */
 export class TokenControllerConfig extends FormApplication {
   static get defaultOptions() {
-    return mergeObject(super.defaultOptions, {
+    return foundry.utils.mergeObject(super.defaultOptions, {
       title: game.i18n.localize("MindFlayer.configTitle"),
       id: "mindflayer-token-controller-config",
       template:
@@ -42,7 +42,7 @@ export class TokenControllerConfig extends FormApplication {
 
   getData(options) {
     const existingSettings = settings.settings;
-    let data = mergeObject(
+    let data = foundry.utils.mergeObject(
       {
         playerList: game.users.contents.reduce((acc, user) => {
           acc[user.id] = user.name;
@@ -55,10 +55,7 @@ export class TokenControllerConfig extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    formData = this._parseInputs(formData);
-
-    const existingSettings = settings.settings;
-    let newSettings = mergeObject(existingSettings, formData);
+    let newSettings = this._parseInputs(formData);
 
     await game.settings.set(VTT_MODULE_NAME, "settings", newSettings);
 
@@ -92,8 +89,8 @@ export class TokenControllerConfig extends FormApplication {
 
       for (var i in parts) {
         var part = parts[i];
-        if (part.substr(-1) == "]") {
-          part = part.substr(0, part.length - 1);
+        if (part.substring(part.length - 1) == "]") {
+          part = part.substring(0, part.length - 1);
         }
 
         if (i == parts.length - 1) {

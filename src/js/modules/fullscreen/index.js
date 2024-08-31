@@ -25,6 +25,7 @@ const WRAP_Notifications_notify = "Notifications.prototype.notify";
 
 export default class Fullscreen extends AbstractSubModule {
   #keyboardManagerHandleKeysWrapperFun = null;
+  #cursorInterval = null;
 
   constructor(instance) {
     super(instance);
@@ -38,15 +39,17 @@ export default class Fullscreen extends AbstractSubModule {
       libWrapper.MIXED
     );
     /* prevent permanent notifications in fullscreen */
-    libWrapper.register(
-      VTT_MODULE_NAME,
-      WRAP_Notifications_notify,
-      this.#notificationsNotifyWrapper.bind(this),
-      libWrapper.MIXED
-    );
+    if (isFoundryNewerThan("10")) {
+      libWrapper.register(
+        VTT_MODULE_NAME,
+        WRAP_Notifications_notify,
+        this.#notificationsNotifyWrapper.bind(this),
+        libWrapper.WRAPPER
+      );
+    }
     this.#keyboardManagerHandleKeysWrapperFun =
       this.#keyboardManagerHandleKeysWrapper.bind(this);
-    if (isFoundryNewerThan(game.version || game.data.version, "9.0")) {
+    if (isFoundryNewerThan("9.0")) {
       game.keybindings.register(VTT_MODULE_NAME, "hideUI", {
         name: "Hide UI",
         hint: "When the key is released, the game UI is toggled invisible.",
@@ -77,11 +80,14 @@ export default class Fullscreen extends AbstractSubModule {
         libWrapper.MIXED
       );
     }
+    this.#cursorInterval = setInterval(this.#setCursorVisibility.bind(this), 1000);
   }
 
   unhook() {
     libWrapper.unregister(VTT_MODULE_NAME, WRAP_KeyboardManager_handleKeys);
     libWrapper.unregister(VTT_MODULE_NAME, WRAP_PlaceableObject_can);
+    clearInterval(this.#cursorInterval);
+    this.#cursorInterval = null;
     super.unhook();
   }
 
@@ -111,6 +117,17 @@ export default class Fullscreen extends AbstractSubModule {
     this.wakeLock.ensureWakeLock();
   }
 
+  #setCursorVisibility() {
+    if (!Array.isArray(canvas?.controls?.children)) {
+      return;
+    }
+    for(const element of canvas.controls.children) {
+      if(element.children[0]?.constructor.name === "Cursor") {
+        element.visible = this.enabled;
+      }
+    }
+  }
+
   #placeableObjectCanWrapper(wrapped, user, action) {
     if (action == "control" && this.enabled) {
       return false;
@@ -120,6 +137,7 @@ export default class Fullscreen extends AbstractSubModule {
 
   #notificationsNotifyWrapper(wrapped, message, type, options) {
     if (this.enabled) {
+      console.debug(SUB_LOG_PREFIX + "disabled permanent notification");
       options = {
         ...options,
         permanent: false,

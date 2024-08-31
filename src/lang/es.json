@@ -1,0 +1,61 @@
+{
+  "MindFlayer.config": "Asignaciones de controladores",
+  "MindFlayer.configTitle": "Asignaciones de controladores",
+  "MindFlayer.configHint": "Asignaciones de controladores a usuarios",
+
+  "MindFlayer.ambilightEnabled": "Habilitar Ambilight",
+  "MindFlayer.ambilightEnabledHint": "Permite que el Ambilight sea controlado desde este navegador",
+  "MindFlayer.ambilightTarget": "Destino E131",
+  "MindFlayer.ambilightTargetHint": "Puede ser una dirección IP o un Universo E131",
+  "MindFlayer.ambilightUniverse": "Universo E131",
+  "MindFlayer.ambilightUniverseHint": "El Universo al que pertenecen los LEDs",
+  "MindFlayer.ambilightLEDCount": "Cantidad de LEDs RGB E131",
+  "MindFlayer.ambilightLEDCountHint": "Debe ser un número entre 1 y 170 inclusive",
+  "MindFlayer.ambilightOffset": "Desplazamiento inicial de LED",
+  "MindFlayer.ambilightOffsetHint": "Cuántas veces debe rotarse la matriz por un LED. Los números positivos desplazan hacia arriba",
+  "MindFlayer.ambilightBrightnessMin": "Brillo mínimo de LED",
+  "MindFlayer.ambilightBrightnessMinHint": "Cada color de cada LED tendrá al menos este valor",
+  "MindFlayer.ambilightBrightnessMax": "Brillo máximo de LED",
+  "MindFlayer.ambilightBrightnessMaxHint": "Cada color de cada LED se limitará a este valor",
+
+  "MindFlayer.websocketHost": "Host de Websocket",
+  "MindFlayer.websocketHostHint": "Un servidor websocket al que se conectará el módulo",
+  "MindFlayer.websocketPort": "Puerto de Websocket",
+  "MindFlayer.websocketPortHint": "El puerto del websocket al que se conectará el módulo",
+  "MindFlayer.websocketPath": "Ruta de Websocket",
+  "MindFlayer.websocketPathHint": "La ruta del websocket al que se conectará el módulo",
+
+  "MindFlayer.cameraControl": "Comportamiento de la cámara",
+  "MindFlayer.cameraControlHint": "Esto cambia el comportamiento de la cámara cuando los tokens se mueven",
+  "MindFlayer.cameraControlDefault": "Predeterminado de VTT (enfocar token controlado)",
+  "MindFlayer.cameraControlFocusPlayers": "Automático (enfocar todos los tokens activos en la escena)",
+  "MindFlayer.cameraControlOff": "Modo GM (control manual de la cámara)",
+
+  "MindFlayer.moduleEnabled": "Habilitado",
+  "MindFlayer.moduleEnabledHint": "Habilita el módulo para este navegador",
+
+  "MindFlayer.Save": "Guardar",
+  "MindFlayer.Reset": "Restablecer",
+
+  "MindFlayer.saveMessage": "Asignaciones de controladores de Mind Flayer actualizadas",
+
+  "MindFlayer.Notifications.Connected": "Conectado a websocket en \"{host}:{port}\"",
+  "MindFlayer.Notifications.Error": "Ocurrió un error, consulte el registro para obtener más información",
+  "MindFlayer.Notifications.ConnectionClosed": "Conexión al websocket cerrada, intentando reconectar en 5 segundos...",
+  "MindFlayer.Notifications.NewClient": "¡Controlador \"{controller}\" asignado al jugador \"{player}\" conectado!",
+  "MindFlayer.Notifications.ClientDisconnected": "¡Controlador \"{controller}\" asignado al jugador \"{player}\" desconectado!",
+  "MindFlayer.Notifications.ChangeDirection": "El jugador \"{player}\" cambió la orientación en {orientation}°",
+
+  "module.MindFlayer.setting.combatIndicator.tacticalDuration.name": "Duración de la discusión táctica",
+  "module.MindFlayer.setting.combatIndicator.tacticalDuration.hint": "Duración del temporizador entre rondas de combate, 0 = deshabilitado",
+  "module.MindFlayer.setting.combatIndicator.playerReactionTime.name": "Tiempo de reacción del jugador",
+  "module.MindFlayer.setting.combatIndicator.playerReactionTime.hint": "Duración del temporizador para la reacción del jugador",
+
+  "module.MindFlayer.StartTimerDialog.title": "Iniciar un temporizador",
+  "module.MindFlayer.StartTimerDialog.field.duration.name": "Duración:",
+  "module.MindFlayer.StartTimerDialog.field.duration.description": "",
+  "module.MindFlayer.StartTimerDialog.field.neededRole.name": "Rol mínimo del usuario:",
+  "module.MindFlayer.StartTimerDialog.field.neededRole.description": "Si el rol es Ninguno, Jugador o Confiable, los LEDs de la mesa mostrarán el temporizador",
+  "MindFlayer.StartTimerDialog.buttons.start": "Iniciar temporizador",
+  "MindFlayer.StartTimerDialog.buttons.abort": "Abortar"
+}

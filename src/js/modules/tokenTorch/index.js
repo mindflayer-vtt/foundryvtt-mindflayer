@@ -71,7 +71,7 @@ export default class TokenTorch extends AbstractSubModule {
    * @param {Keypad} keypad keypad which initiated the torch request
    * @private
    */
-  #toggleTorch(keypad) {
+  async#toggleTorch(keypad) {
     const token = keypad.token;
     if (!token) {
       return;
@@ -84,7 +84,22 @@ export default class TokenTorch extends AbstractSubModule {
           ": Turn on torch for " +
           token.name
       );
-      if(token.hasOwnProperty("update")) {
+      if(typeof token.initializeLightSource === "function"){
+        await token.document.update({
+          light: {
+            bright: 20,
+            dim: 40,
+            alpha: 0.4,
+            color: "#ffad58",
+            animation: {
+              type: "flame",
+              speed: 5,
+              intensity: 5
+            }
+          }
+        })
+        token.initializeLightSource()
+      } else if(token.hasOwnProperty("update")) {
         token.update({
           brightLight: 20,
           dimLight: 40,
@@ -115,6 +130,14 @@ export default class TokenTorch extends AbstractSubModule {
 
       if(token.hasOwnProperty("update")) {
         token.update({ brightLight: 0, dimLight: 0 });
+      } else if(typeof token.initializeLightSource === "function"){
+        await token.document.update({
+          light: {
+            bright: 0,
+            dim: 0
+          }
+        });
+        token.initializeLightSource();
       } else {
         token.data.update({
           light: {

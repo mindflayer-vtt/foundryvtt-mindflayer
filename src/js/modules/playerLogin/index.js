@@ -15,6 +15,10 @@
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
 import { default as Socket } from "../socket";
+import SocketlibWrapper from "../socketlib";
+import { SOCKETLIB_TIMER_ADD } from "../timer";
+
+const SOCKETLIB_PLAYER_LOGIN_REGISTER = "PlayerLogin_register"
 
 export default class PlayerLogin extends AbstractSubModule {
   #messageHandlerFun;
@@ -26,15 +30,22 @@ export default class PlayerLogin extends AbstractSubModule {
 
   ready() {
     this.socket.registerListener("keyboard-login", this.#messageHandlerFun);
+    this.socketlib.provide(SOCKETLIB_TIMER_ADD, this.#register.bind(this));
   }
 
   unhook() {
     this.socket.unregisterListener("keyboard-login", this.#messageHandlerFun);
+    this.socketlib.remove(SOCKETLIB_TIMER_ADD);
     super.unhook();
   }
 
   static get moduleDependencies() {
-    return [...super.moduleDependencies, Socket.name];
+    return [...super.moduleDependencies, Socket.name, SocketlibWrapper.name];
+  }
+
+  /** @returns {SocketlibWrapper} */
+  get socketlib() {
+    return this.instance.modules[SocketlibWrapper.name];
   }
 
   /**
@@ -45,9 +56,16 @@ export default class PlayerLogin extends AbstractSubModule {
   }
 
   #messageHandler(message) {
+    this.socketlib.executeAsGM(SOCKETLIB_PLAYER_LOGIN_REGISTER, message["controller-id"], message["player-id"])
+  }
+
+  #register(controllerId, playerId) {
+    if(!game.user.isGM) {
+      return
+    }
     const settings = this.instance.settings.settings;
 
-    settings.mappings[message["player-id"]] = message["controller-id"];
+    settings.mappings[playerId] = controllerId;
 
     this.instance.settings.settings = settings;
   }

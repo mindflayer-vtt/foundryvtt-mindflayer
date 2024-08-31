@@ -57,7 +57,7 @@ export default class TableLEDRing extends AbstractSubModule {
   async #updateLEDs() {
     this.ensureLoaded();
     // Chill, we don't have a connection.
-    if (!this.socket.isConnected) return;
+    if (!this.socket || !this.socket.isConnected) return;
 
     /** @type {import("./TableLEDRingHandler").TableLEDRingHandler} */
     let handler = null;

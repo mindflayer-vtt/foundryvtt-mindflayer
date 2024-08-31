@@ -15,6 +15,7 @@
 "use strict";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import { hexToRgb } from "../../utils/color";
+import { isFoundryNewerThan } from "../../utils/module";
 import * as TokenUtil from "../../utils/tokenUtil";
 import AbstractSubModule from "../AbstractSubModule";
 import Fullscreen from "../fullscreen";
@@ -22,7 +23,7 @@ import { default as Socket } from "../socket";
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenBorder: ";
 
 const REF_Token_getBorderColor = "Token.prototype._getBorderColor";
-const REF_Token_refreshHUD = "Token.prototype.refreshHUD";
+const REF_Token_refreshState = "Token.prototype._refreshState";
 export default class TokenBorder extends AbstractSubModule {
   #onUpdateSceneFun = null;
   constructor(instance) {
@@ -47,13 +48,12 @@ export default class TokenBorder extends AbstractSubModule {
     );
     libWrapper.register(
       VTT_MODULE_NAME,
-      REF_Token_refreshHUD,
-      function refreshHUD(wrapped) {
-        if (!this.hud.hasOwnProperty("border")) {
-          this.removeChild(this.border);
-          this.hud.border = this.hud.addChild(this.border);
-        }
-        return wrapped();
+      REF_Token_refreshState,
+      function _refreshState(wrapped) {
+        const result = wrapped();
+        // always show the border on non-hidden tokens
+        this.border.visible = !this.document.isSecret
+        return result
       },
       libWrapper.WRAPPER
     );
@@ -87,12 +87,17 @@ export default class TokenBorder extends AbstractSubModule {
   }
 
   #getBorderColorWrapper(wrapped, token, ...args) {
-    if (this.socket.isConnected && token.actor && token.actor.hasPlayerOwner) {
+    if (
+      this.socket &&
+      this.socket.isConnected &&
+      token.actor &&
+      token.actor.hasPlayerOwner
+    ) {
       const player = TokenUtil.getUserIfSelectedTokenIs(token);
       if (player) {
-        const color = hexToRgb(player.color || player.data.color);
+        const color = player.color;
         return (
-          ((color.r & 0xff) << 16) | ((color.g & 0xff) << 8) | (color.b & 0xff)
+          (((color.r * 255) & 0xff) << 16) | (((color.g * 255) & 0xff) << 8) | ((color.b * 255) & 0xff)
         );
       }
     }

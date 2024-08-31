@@ -1,11 +1,14 @@
 {
-  "$schema": "https://raw.githubusercontent.com/typhonjs-fvtt-lib/validate-manifest/main/schema/strict/module+.json",
+  "$schema": "https://github.com/typhonjs-fvtt-lib/validate-manifest/raw/main/schema/module+.json",
+  "id": "mindflayer-token-controller",
   "name": "mindflayer-token-controller",
   "version": "{{version}}",
   "title": "Mind Flayer - Token Controller",
   "description": "Adds functionality to control tokens through external applications or devices. Mind Flayer server (https://github.com/mindflayer-vtt/mindflayer-server) is required for the module to communicate with external services.",
-  "minimumCoreVersion": "9.0",
-  "compatibleCoreVersion": "9.269",
+  "compatibility": {
+    "minimum": "11.0",
+    "verified": "12.331"
+  },
   "author": "749, shawly",
   "authors": [
     {
@@ -27,28 +30,54 @@
       "lang": "en",
       "name": "English",
       "path": "./lang/en.json"
-    }
-  ],
-  "dependencies": [
-    {
-      "name": "lib-wrapper",
-      "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json"
     },
     {
-      "name": "socketlib",
-      "manifest": "https://raw.githubusercontent.com/manuelVo/foundryvtt-socketlib/master/module.json"
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "./lang/de.json"
+    },
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "./lang/es.json"
     }
   ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/download/v1.12.15.0/module.json",
+        "compatibility": {
+          "verified": "1.12.15.0"
+        }
+      },
+      {
+        "id": "socketlib",
+        "type": "module",
+        "manifest": "https://github.com/manuelVo/foundryvtt-socketlib/raw/develop/module.json",
+        "compatibility": {
+          "verified": "1.1.0"
+        }
+      }
+    ]
+  },
   "packs": [
     {
       "name": "mindflayer-token-controller-macros",
       "label": "Mind Flayer: Macros",
       "path": "./packs/macros.db",
       "type": "Macro",
-      "entity": "Macro"
+      "entity": "Macro",
+      "module": "mindflayer-token-controller"
     }
   ],
-  "media": [],
+  "media": [
+    {
+      "type": "setup",
+      "url": "modules/mindflayer-token-controller/assets/images/mindflayer.png"
+    }
+  ],
   "url": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer",
   "changelog": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/releases/",
   "manifest": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer/releases/latest/download/module.json",

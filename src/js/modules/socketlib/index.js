@@ -75,6 +75,17 @@ export default class SocketlibWrapper extends AbstractSubModule {
   }
 
   /**
+   * Execute the given function for the GM
+   *
+   * @param {string} name name of the function to call
+   * @param {...any} parameters parameters for the function
+   * @returns {Promise<void>} finishes as soon as the command was sent
+   */
+  async executeAsGM(name, ...parameters) {
+    return this.#socket.executeAsGM(name, ...parameters);
+  }
+
+  /**
    * Execute the given function for all GM-Players
    *
    * @param {string} name name of the function to call

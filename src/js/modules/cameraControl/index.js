@@ -20,7 +20,7 @@ import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 
 const SUB_LOG_PREFIX = `${LOG_PREFIX}CameraControl: `;
 
-const WRAP_Token_setPosition = "Token.prototype.setPosition";
+const WRAP_Token__onUpdate = "Token.prototype._onUpdate";
 export default class CameraControl extends AbstractSubModule {
   constructor(instance) {
     super(instance);
@@ -35,9 +35,16 @@ export default class CameraControl extends AbstractSubModule {
       );
       libWrapper.register(
         VTT_MODULE_NAME,
-        WRAP_Token_setPosition,
-        async function wrapperTokenSetPosition(wrapped, ...args) {
-          return await $this.#Token_setPosition(this, wrapped, ...args);
+        WRAP_Token__onUpdate,
+        async function wrapperToken_onUpdate(wrapped, changed, options, userId) {
+          let cameraControl = $this.instance.settings.camera.control;
+          if (cameraControl == "off" || cameraControl == "focusPlayers") {
+            if (cameraControl == "focusPlayers") {
+              $this.panCamera();
+            }
+            options.pan = false
+          }
+          return wrapped(changed, options, userId);
         },
         libWrapper.MIXED
       );
@@ -47,7 +54,7 @@ export default class CameraControl extends AbstractSubModule {
   }
 
   unhook() {
-    libWrapper.unregister(VTT_MODULE_NAME, WRAP_Token_setPosition);
+    libWrapper.unregister(VTT_MODULE_NAME, WRAP_Token__onUpdate);
     super.unhook();
   }
 
@@ -62,45 +69,6 @@ export default class CameraControl extends AbstractSubModule {
     return this.instance.modules[ControllerManager.name];
   }
 
-  async #Token_setPosition(token, wrapped, x, y, { animate = true } = {}) {
-    let cameraControl = this.instance.settings.camera.control;
-    if (cameraControl == "off" || cameraControl == "focusPlayers") {
-      // Create a Ray for the requested movement
-      let origin = token._movement ? token.position : token._validPosition,
-        target = { x: x, y: y },
-        isVisible = token.isVisible;
-
-      // Create the movement ray
-      let ray = new Ray(origin, target);
-
-      // Update the new valid position
-      token._validPosition = target;
-
-      // Record the Token's new velocity
-      token._velocity = token._updateVelocity(ray);
-
-      // Update visibility for a non-controlled token which may have moved into the controlled tokens FOV
-      token.visible = isVisible;
-
-      // Conceal the HUD if it targets this Token
-      if (token.hasActiveHUD) token.layer.hud.clear();
-
-      // Either animate movement to the destination position, or set it directly if animation is disabled
-      if (animate) await token.animateMovement(new Ray(token.position, ray.B));
-      else token.position.set(x, y);
-
-      // Re-center the view on all players if the moved token is visible
-      if (cameraControl == "focusPlayers" && isVisible) {
-        this.panCamera();
-      }
-
-      return token;
-    }
-
-    // use default camera control behavior for token movement
-    return await wrapped(x, y, ({ animate = true } = {}));
-  }
-
   panCamera() {
     const sceneSize = canvas.scene.dimensions.sceneRect;
     const gridSize = canvas.scene.dimensions.size;
@@ -108,6 +76,9 @@ export default class CameraControl extends AbstractSubModule {
     activeCharacterTokens.push(
       ...this.controllerManager.keypads.map((keypad) => keypad.token)
     );
+    activeCharacterTokens.push(
+      ...canvas.tokens.controlled
+    )
     activeCharacterTokens = activeCharacterTokens.filter(
       (token) => token !== null
     );
@@ -161,15 +132,13 @@ export default class CameraControl extends AbstractSubModule {
       lowestXCoordinate + (highestXCoordinate - lowestXCoordinate) / 2;
     let targetYCoordinate =
       lowestYCoordinate + (highestYCoordinate - lowestYCoordinate) / 2;
-    const minPadX = (window.innerWidth * scale) / 2;
     targetXCoordinate = Math.max(
-      sceneSize.x + minPadX,
-      Math.min(targetXCoordinate, sceneSize.x + sceneSize.width - minPadX)
+      sceneSize.x + pad,
+      Math.min(targetXCoordinate, sceneSize.x + sceneSize.width - pad)
     );
-    const minPadY = (window.innerHeight * scale) / 2;
     targetYCoordinate = Math.max(
-      sceneSize.y + minPadY,
-      Math.min(targetYCoordinate, sceneSize.y + sceneSize.height - minPadY)
+      sceneSize.y + pad,
+      Math.min(targetYCoordinate, sceneSize.y + sceneSize.height - pad)
     );
 
     const cameraSettings = {

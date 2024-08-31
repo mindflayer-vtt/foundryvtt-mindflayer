@@ -228,6 +228,8 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,linux,macos,node,git
 
+.idea/
+
 # Project Specific
 chrome-overrides/
 /dependencies/

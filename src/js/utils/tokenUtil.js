@@ -14,6 +14,7 @@
  */
 "use strict";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../settings/constants";
+import { isFoundryNewerThan } from "./module";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenUtil: ";
 
@@ -27,9 +28,13 @@ const SUB_LOG_PREFIX = LOG_PREFIX + "TokenUtil: ";
  */
 export function findAllTokensFor(player, ignoreEmpty = false) {
   const tokens = canvas.tokens.placeables
-    .filter(
-      (token) => token.actor && token.actor.data.permission[player.id] >= 3
-    )
+    .filter((token) => {
+      if (isFoundryNewerThan("10")) {
+        return token.actor && token.actor.ownership[player.id] >= 3;
+      } else {
+        return token.actor && token.actor.data.permission[player.id] >= 3;
+      }
+    })
     .sort((a, b) => a.id.localeCompare(b.id));
   if (!ignoreEmpty && tokens.length <= 0) {
     console.warn(
@@ -46,12 +51,14 @@ export function findAllTokensFor(player, ignoreEmpty = false) {
  * @param {Player} player the player to search through
  * @param {boolean} ignoreNone if false an error will be thrown if no tokens are found
  * @throws {Error} if no selected token could be found and ignoreNone is false
+ * @returns {Token}
  */
 export function getTokenFor(player, ignoreNone = false) {
   const selectedToken = game.user.getFlag(
     VTT_MODULE_NAME,
     "selectedToken_" + player.id
   );
+  /** @var {Token} token */
   let token = canvas.tokens.placeables.find(
     (token) => token.id == selectedToken
   );
@@ -94,7 +101,7 @@ export function setDefaultToken(user) {
   game.user.setFlag(VTT_MODULE_NAME, "selectedToken_" + user.id, selectedToken);
   console.debug(
     LOG_PREFIX +
-      `Selected default token '${selectedToken.name}' for player '${user.name}'`
+      `Selected default token '${selectedToken?.name}' for player '${user.name}'`
   );
 }
 
@@ -138,10 +145,9 @@ function _refreshTokens() {
   }
   console.debug(SUB_LOG_PREFIX + "refreshing tokens");
   canvas.tokens.placeables.forEach((t) => t.refresh({}));
-  canvas.triggerPendingOperations();
 }
 
-export const refreshTokenPlaceables = debounce(_refreshTokens, 100);
+export const refreshTokenPlaceables = foundry.utils.debounce(_refreshTokens, 100);
 
 export function deselectAllTokens() {
   if (!game.canvas.initialized) {
