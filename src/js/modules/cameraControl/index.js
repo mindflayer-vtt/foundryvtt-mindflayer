@@ -89,11 +89,15 @@ export default class CameraControl extends AbstractSubModule {
       );
       return;
     }
-    activeCharacterTokens = activeCharacterTokens.filter((token) =>
-      token.hasOwnProperty("combatant")
-        ? !token.combatant.data.hidden && !token.combatant.data.defeated
-        : true
-    );
+    activeCharacterTokens = activeCharacterTokens.filter(function(token) {
+      if(!token) {
+        return false;
+      }
+      if(!Object.hasOwn(token, "combatant")) {
+        return true;
+      }
+      return !token.combatant.data.hidden && !token.combatant.data.defeated;
+    });
 
     const pad = gridSize * (30 / 5);
     const lowestXCoordinate = Math.max(

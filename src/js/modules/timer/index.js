@@ -63,7 +63,9 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
       game.canvas.controls.removeChild(this.#renderingContainer);
     }
     this.#renderingContainer = null;
-    this.timers.forEach((t) => t.abort());
+    for (const t of this.timers) {
+      t.abort();
+    }
     this.#timers = [];
     super.unhook();
   }
@@ -109,20 +111,22 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
   #updateTimers() {
     this.ensureLoaded();
     const now = new Date().valueOf();
-    this.#timers
-      .filter((t) => t.end >= now)
-      .forEach((timer) => {
+    for (const timer of this.#timers) {
+      if (timer.end >= now) {
         timer.update(now);
-      });
+      }
+    }
   }
 
   async updateLEDs(count) {
     const leds = await super.updateLEDs(count);
     if (this.#timers.length > 0) {
       const now = new Date().valueOf();
-      this.#timers
-        .filter((t) => t.end < now && t.options?.onDone)
-        .forEach((t) => t.options?.onDone());
+      for (const t1 of this.#timers) {
+        if(t1.end < now && t1.options?.onDone) {
+          t1.options?.onDone();
+        }
+      }
       const timers = this.#timers
         .filter((t) => t.end >= now)
         .sort((a, b) => {

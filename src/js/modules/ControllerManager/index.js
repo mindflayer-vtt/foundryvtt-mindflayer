@@ -20,11 +20,11 @@ import { default as Socket } from "../socket";
 import Keypad from "./Keypad";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "ControllerManager: ";
-const CONTROLLER_FPS = 30;
+const CONTROLLER_FPS = 60;
 
 export default class ControllerManager extends AbstractSubModule {
   /**
-   * @property {Keypad} #keypads.*
+   * @var {Record<string, Keypad>} #keypads.*
    */
   #keypads = {};
 
@@ -108,7 +108,7 @@ export default class ControllerManager extends AbstractSubModule {
 
   #onKeyEventHandler(msg) {
     const controllerId = msg["controller-id"];
-    if (!this.#keypads.hasOwnProperty(controllerId)) {
+    if (!Object.hasOwn(this.#keypads, controllerId)) {
       console.warn(
         SUB_LOG_PREFIX +
           `Keypad '${controllerId}' sent key-event before registration, ignoring!`
@@ -120,23 +120,25 @@ export default class ControllerManager extends AbstractSubModule {
 
   #tick() {
     const frameTime = new Date().getTime();
-    this.#tickListeners.forEach((callback, i) => {
+    for (let i = 0; i < this.#tickListeners.length; i++){
+      const callback = this.#tickListeners[i];
       try {
         callback(frameTime, this.#keypads);
       } catch (err) {
         console.error(
-          SUB_LOG_PREFIX + `Keypad Tick Listener [${i}] threw an error: `,
+          SUB_LOG_PREFIX + `Keypad Tick Listener [${i}] threw an error, unregistering: `,
           err,
           callback
         );
+        this.unregisterTickListener(callback)
       }
-    });
+    }
     this.#sendChangedLEDs();
   }
 
   #sendChangedLEDs() {
     for (let name in this.#keypads) {
-      if (!this.#keypads.hasOwnProperty(name)) {
+      if (!Object.hasOwn(this.#keypads, name)) {
         continue;
       }
       /** @type {Keypad}  */

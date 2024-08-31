@@ -62,13 +62,13 @@ export default class TableLEDRing extends AbstractSubModule {
     /** @type {import("./TableLEDRingHandler").TableLEDRingHandler} */
     let handler = null;
     let highestPriority = -1;
-    this.#handlers.forEach((h) => {
+    for (const h of this.#handlers) {
       const prio = h.priority;
       if (prio > highestPriority) {
         handler = h;
         highestPriority = prio;
       }
-    });
+    }
 
     this.#sendTableLEDData(
       await handler.updateLEDs(this.instance.settings.ambilight.led.count)

@@ -136,7 +136,7 @@ export default class Keypad {
   }
 
   registerKeyEvent(data) {
-    if (!this.#rawState.hasOwnProperty(data.key)) {
+    if (!Object.hasOwn(this.#rawState, data.key)) {
       console.warn(
         LOG_PREFIX +
           `Keypad[${
@@ -150,7 +150,7 @@ export default class Keypad {
   }
 
   isDown(wantedKey) {
-    if (!this.#rawState.hasOwnProperty(wantedKey)) {
+    if (!Object.hasOwn(this.#rawState, wantedKey)) {
       console.warn(
         LOG_PREFIX +
           `Keypad[${
@@ -163,7 +163,7 @@ export default class Keypad {
   }
 
   isJustDown(wantedKey, currentTime) {
-    if (!this.#rawState.hasOwnProperty(wantedKey)) {
+    if (!Object.hasOwn(this.#rawState, wantedKey)) {
       console.warn(
         LOG_PREFIX +
           `Keypad[${
@@ -176,7 +176,7 @@ export default class Keypad {
   }
 
   isRepeatedDown(wantedKey, currentTime) {
-    if (!this.#rawState.hasOwnProperty(wantedKey)) {
+    if (!Object.hasOwn(this.#rawState, wantedKey)) {
       console.warn(
         LOG_PREFIX +
           `Keypad[${
@@ -199,7 +199,9 @@ export default class Keypad {
     const latestTrigger = keys
       .map((key) => key.lastTrigger || currentTime)
       .reduce((lastMax, currentValue) => Math.max(lastMax, currentValue), 0);
-    keys.forEach((key) => (key.lastTrigger = latestTrigger));
+    for (const key of keys) {
+      key.lastTrigger = latestTrigger;
+    }
   }
 
   setDefaultLEDColor() {

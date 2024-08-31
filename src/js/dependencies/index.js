@@ -24,7 +24,7 @@ const moduleJson = require("../../module.tmpl.json");
 export function warnIfAnyMissing(warn = true) {
   let result = true;
   for (let i in moduleJson.dependencies) {
-    if (!moduleJson.dependencies.hasOwnProperty(i)) {
+    if (!Object.hasOwn(moduleJson.dependencies, i)) {
       continue;
     }
     const dependency = moduleJson.dependencies[i].name;

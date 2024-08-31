@@ -13,7 +13,7 @@
  * see <https://www.gnu.org/licenses/>.
  */
 "use strict";
-import { settings } from "./settings";
+import { settings as settingsObj } from "./settings";
 import * as dependencies from "./dependencies";
 import * as loader from "./modules/loader";
 import AbstractSubModule from "./modules/AbstractSubModule";
@@ -23,13 +23,13 @@ const WRAP_Application__activateCoreListeners =
   "Application.prototype._activateCoreListeners";
 
 export default class MindFlayer {
-  /** @type {settings} */
+  /** @type {settingsObj} */
   #settings = null;
   /** @type {AbstractSubModule[]} */
   #modules = [];
 
   constructor() {
-    this.#settings = settings.init();
+    this.#settings = settingsObj.init();
   }
 
   get settings() {

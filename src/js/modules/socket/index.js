@@ -176,7 +176,7 @@ export default class Socket extends AbstractSubModule {
 
   _dispatch(data) {
     Object.freeze(data);
-    if (!data.hasOwnProperty("type")) {
+    if (!Object.hasOwn(data, "type")) {
       console.error(SUB_LOG_PREFIX + "Received message without type: ", data);
       return;
     }
@@ -187,7 +187,8 @@ export default class Socket extends AbstractSubModule {
       );
       return;
     }
-    this.#handlers[data.type].forEach((callback, i) => {
+    for (let i = 0; i < this.#handlers[data.type].length; i++){
+      const callback = this.#handlers[data.type][i];
       try {
         callback(data);
       } catch (err) {
@@ -197,6 +198,6 @@ export default class Socket extends AbstractSubModule {
           err
         );
       }
-    });
+    }
   }
 }

@@ -96,7 +96,7 @@ export class TokenControllerConfig extends FormApplication {
         if (i == parts.length - 1) {
           last[part] = val;
           continue retloop;
-        } else if (!last.hasOwnProperty(part)) {
+        } else if (!Object.hasOwn(last, part)) {
           last[part] = {};
         }
         last = last[part];

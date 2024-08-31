@@ -17,7 +17,8 @@
 export const COLORS = {
   GREEN: "#00FF00",
   RED: "#FF0000",
-  YELLOW: "#FFFF00"
+  YELLOW: "#FFFF00",
+  OFF: "#000000",
 };
 
 /**

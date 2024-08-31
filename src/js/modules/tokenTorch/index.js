@@ -55,14 +55,14 @@ export default class TokenTorch extends AbstractSubModule {
    * Called once per Keypad tick/frame to handle interaction with the keypad
    *
    * @param {number} now the timestamp of the current Keypad "frame"
-   * @param {Keypad[]} keypads an array of all connected Keypads
+   * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
   #tickHandler(now, keypads) {
-    Object.values(keypads).forEach((keypad) => {
-      if (keypad.isJustDown("E", now)) {
+    for(const keypad of Object.values(keypads)) {
+      if (keypad.isJustDown("X", now)) {
         this.#toggleTorch(keypad);
       }
-    });
+    }
   }
 
   /**
@@ -71,19 +71,14 @@ export default class TokenTorch extends AbstractSubModule {
    * @param {Keypad} keypad keypad which initiated the torch request
    * @private
    */
-  async#toggleTorch(keypad) {
+  async #toggleTorch(keypad) {
     const token = keypad.token;
     if (!token) {
       return;
     }
 
     if (!token.emitsLight) {
-      console.debug(
-        SUB_LOG_PREFIX +
-          keypad.player.name +
-          ": Turn on torch for " +
-          token.name
-      );
+      console.debug(`${SUB_LOG_PREFIX}${keypad.player?.name}: Turn on torch for ${token.name}`);
       if(typeof token.initializeLightSource === "function"){
         await token.document.update({
           light: {
@@ -99,7 +94,7 @@ export default class TokenTorch extends AbstractSubModule {
           }
         })
         token.initializeLightSource()
-      } else if(token.hasOwnProperty("update")) {
+      } else if(Object.hasOwn(token, "update")) {
         token.update({
           brightLight: 20,
           dimLight: 40,
@@ -125,10 +120,10 @@ export default class TokenTorch extends AbstractSubModule {
       }
     } else {
       console.debug(
-        LOG_PREFIX + keypad.player.name + ": Turn off torch for " + token.name
+        LOG_PREFIX + keypad.player?.name + ": Turn off torch for " + token.name
       );
 
-      if(token.hasOwnProperty("update")) {
+      if(Object.hasOwn(token, "update")) {
         token.update({ brightLight: 0, dimLight: 0 });
       } else if(typeof token.initializeLightSource === "function"){
         await token.document.update({

@@ -156,7 +156,7 @@ export default class TimerRunner extends PIXI.Container {
     this.timer.removeTimer(this);
     if (
       this.options &&
-      this.options.hasOwnProperty("onDone") &&
+      Object.hasOwn(this.options, "onDone") &&
       typeof this.options.onDone === "function"
     ) {
       this.options.onDone();

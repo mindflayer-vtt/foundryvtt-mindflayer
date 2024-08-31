@@ -67,6 +67,8 @@ export default class Fullscreen extends AbstractSubModule {
         onDown: () => {},
         onUp: () => {
           this.enabled = !this.enabled;
+          // clear all notifications as some of them may be permanent
+          ui.notifications.clear();
         },
         restricted: false, // Restrict this Keybinding to gamemaster only?
         reservedModifiers: [], // If the ALT modifier is pressed, the notification is permanent instead of temporary
@@ -121,9 +123,10 @@ export default class Fullscreen extends AbstractSubModule {
     if (!Array.isArray(canvas?.controls?.children)) {
       return;
     }
-    for(const element of canvas.controls.children) {
-      if(element.children[0]?.constructor.name === "Cursor") {
-        element.visible = this.enabled;
+    for(const control of canvas.controls.children) {
+      if(control.visible === this.enabled && control?.children.find(elem => elem.constructor.name === "Cursor")) {
+        console.debug(SUB_LOG_PREFIX + "updating visibility of cursor:", control)
+        control.visible = !this.enabled;
       }
     }
   }
@@ -136,7 +139,7 @@ export default class Fullscreen extends AbstractSubModule {
   }
 
   #notificationsNotifyWrapper(wrapped, message, type, options) {
-    if (this.enabled) {
+    if (this.enabled && options?.permanent) {
       console.debug(SUB_LOG_PREFIX + "disabled permanent notification");
       options = {
         ...options,

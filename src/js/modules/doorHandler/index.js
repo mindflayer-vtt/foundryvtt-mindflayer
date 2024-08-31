@@ -59,12 +59,18 @@ export default class DoorHandler extends AbstractSubModule {
     return this.instance.modules[ControllerManager.name];
   }
 
+  /**
+   * Called once per Keypad tick/frame to handle interaction with the keypad
+   *
+   * @param {number} now the timestamp of the current Keypad "frame"
+   * @param {Record<string,Keypad>} keypads an array of all connected Keypads
+   */
   #tickHandler(now, keypads) {
-    Object.values(keypads).forEach((keypad) => {
-      if (keypad.isJustDown("SPC", now)) {
+    for (const keypad of Object.values(keypads)) {
+      if (keypad.isJustDown("E", now)) {
         this.#enqueueDoors(keypad);
       }
-    });
+    }
     this.#processDoorQueue(now);
   }
 
@@ -101,7 +107,7 @@ export default class DoorHandler extends AbstractSubModule {
       )
     );
 
-    canvas.walls.doors.forEach((door) => {
+    for (const door of canvas.walls.doors) {
       if (
         door.doorControl &&
         interactionBounds.intersect(Rectangle.fromBounds(door.bounds)) &&
@@ -113,6 +119,6 @@ export default class DoorHandler extends AbstractSubModule {
           door,
         });
       }
-    });
+    }
   }
 }

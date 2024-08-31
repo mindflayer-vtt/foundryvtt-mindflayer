@@ -62,15 +62,15 @@ export default class TokenMovement extends AbstractSubModule {
    * Called once per Keypad tick/frame to handle interaction with the keypad
    *
    * @param {number} now the timestamp of the current Keypad "frame"
-   * @param {Keypad[]} keypads an array of all connected Keypads
+   * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
   #tickHandler(now, keypads) {
-    Object.values(keypads).forEach((keypad) => {
+    for (const keypad of Object.values(keypads)) {
       this.#handleMovement(now, keypad);
       if (keypad.isDown("SHI") && keypad.isJustDown("C", now)) {
         this.#rotateKeypad(keypad);
       }
-    });
+    }
   }
 
   /**

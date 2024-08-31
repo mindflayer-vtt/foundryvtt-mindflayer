@@ -30,6 +30,7 @@ This module is transpiled from multiple files. Therefore you will need a Node in
 1. Install the latest Node 16 version, using a Node version manager like nvm is suggested but not required
 2. Run `npm install` in the root of the repository
 3. Create a `.devDomain` file and put the domain or ip address of your test system in it
+   for local development use: `localhost:30000`
 4. Run `npm run build`, when it finishes a `chrome-overrides` folder should be created
 5. Open the Foundry VTT instance you use for testing in a Chromium based browser (the module needs to be installed and activated)
 6. Use `F12` to open the dev tools

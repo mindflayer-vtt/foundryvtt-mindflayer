@@ -17,21 +17,22 @@ import AbstractSubModule from "../AbstractSubModule";
 import { default as ControllerManager } from "../ControllerManager";
 import * as TokenUtil from "../../utils/tokenUtil";
 import Keypad from "../ControllerManager/Keypad";
-import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
+import { Rectangle, Vector } from "../../utils/2d-geometry";
+import { LOG_PREFIX } from "../../settings/constants";
+import { isCombatActive } from "../../utils/combat";
 
-export default class TokenSelect extends AbstractSubModule {
+const SUB_LOG_PREFIX = `${LOG_PREFIX}CombatEndTurn: `;
+
+export default class CombatEndTurn extends AbstractSubModule {
   #tickHandlerFun;
 
   constructor(instance) {
     super(instance);
-
     this.#tickHandlerFun = this.#tickHandler.bind(this);
   }
 
   ready() {
-    this.instance.modules[ControllerManager.name].registerTickListener(
-      this.#tickHandlerFun
-    );
+    this.controllerManager.registerTickListener(this.#tickHandlerFun);
   }
 
   unhook() {
@@ -57,48 +58,36 @@ export default class TokenSelect extends AbstractSubModule {
    * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
   #tickHandler(now, keypads) {
+    if(!isCombatActive()) {
+      return
+    }
     for (const keypad of Object.values(keypads)) {
-      if (keypad.isJustDown("Q", now)) {
-        this.#selectNextToken(keypad);
+      if (keypad.isJustDown("SPC", now)) {
+        if(this.#endTurnFor(keypad)) {
+          // it does not make sense to advance more than one turn per frame
+          // (e.g. if there are multiple keypads connected)
+          // so we break out of the loop
+          break;
+        }
       }
     }
   }
 
   /**
-   * Select the next Token associated with the player of the given keypad
    * @param {Keypad} keypad
    */
-  #selectNextToken(keypad) {
+  #endTurnFor(keypad) {
+    const currentActor = game.combat.turns[game.combat.turn].actor
     const player = keypad.player;
-    if (player === null) {
-      return;
+    if(!player) {
+        return false;
     }
-    const currentTokenId = game.user.getFlag(
-      VTT_MODULE_NAME,
-      "selectedToken_" + player.id
-    );
+    if(!currentActor?.hasPlayerOwner || (currentActor.ownership[player.id] ?? 0) < 3) {
+      ui.notifications.warn(`Hey ${player.name}, You can only end your own turn!`);
+      return false;
+    }
 
-    if (!currentTokenId) {
-      TokenUtil.setDefaultToken(player);
-    } else {
-      const tokens = TokenUtil.findAllTokensFor(player);
-      let i = 0;
-      for (; i < tokens.length; i++) {
-        if (currentTokenId == tokens[i].id) {
-          break;
-        }
-      }
-      i = (i + 1) % tokens.length;
-      game.user.setFlag(
-        VTT_MODULE_NAME,
-        "selectedToken_" + player.id,
-        tokens[i].id
-      );
-      console.debug(
-        LOG_PREFIX +
-          `selected token '${tokens[i].name}' for player '${player.name}'`
-      );
-    }
-    TokenUtil.deselectAllTokens();
+    game.combat.nextTurn();
+    return true;
   }
 }

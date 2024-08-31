@@ -71,7 +71,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
     }
   }
 
-  loadPixels() {
+  async loadPixels() {
     return new Promise((resolve, reject) => {
       requestAnimationFrame(this._loadPixels.bind(this, resolve, reject));
     });

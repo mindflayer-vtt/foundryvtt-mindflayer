@@ -1,20 +1,29 @@
 import { COLORS } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
 import ControllerManager from "../ControllerManager";
-import Keypad from "../ControllerManager/Keypad";
 import Timer from "../timer";
+import { VTT_MODULE_NAME } from "../../settings/constants";
 
-const COMBAT_DURATION_TACTICAL_DISCUSSION = 60000; //ms
-const COMBAT_DURATION_FORCED_DODGE = 7000; //ms
+const WRAP_Combat_endCombat = "Combat.prototype.endCombat";
 
 export default class CombatIndicator extends AbstractSubModule {
   #updateLEDsTimer = null;
   #running = false;
 
+  #boundHandleCombatUpdate = this.#handleCombatUpdate.bind(this);
+
   constructor(instance) {
     super(instance);
 
-    Hooks.on("updateCombat", this.#handleCombatUpdate.bind(this));
+    Hooks.on("startCombat", this.#boundHandleCombatUpdate);
+    Hooks.on("updateCombat", this.#boundHandleCombatUpdate);
+
+    libWrapper.register(
+      VTT_MODULE_NAME,
+      WRAP_Combat_endCombat,
+      this.#endCombatWrapper.bind(this),
+      libWrapper.WRAPPER
+    );
   }
 
   unhook() {
@@ -22,6 +31,8 @@ export default class CombatIndicator extends AbstractSubModule {
       window.clearInterval(this.#updateLEDsTimer);
       this.#updateLEDsTimer = null;
     }
+    Hooks.off("updateCombat", this.#boundHandleCombatUpdate);
+    Hooks.off("startCombat", this.#boundHandleCombatUpdate);
     this.#running = false;
     super.unhook();
   }
@@ -62,22 +73,22 @@ export default class CombatIndicator extends AbstractSubModule {
       }
       return;
     }
-    if (update.hasOwnProperty("round") && currentTurn === 0) {
+    if (Object.hasOwn(update,"round") && currentTurn === 0) {
       this.#startTacticalTimer(
         this.#handleCombatUpdate.bind(this, combat, { turn: update.turn }),
         this.instance.settings.combatIndicator.tacticalDiscussionDuration * 1000
       );
       return;
-    } else if (update.hasOwnProperty("turn") && update.turn !== null) {
+    } else if (Object.hasOwn(update, "turn") && update.turn !== null) {
       const turns = combat.turns;
       /** @type {Map<string, Keypad>} */
       const keypads = new Map();
-      this.controllerManager.keypads.forEach((keypad) => {
+      for(const keypad of this.controllerManager.keypads) {
         const player = keypad.player;
         if (player) {
           keypads.set(player.id, keypad);
         }
-      });
+      }
       let hasNext = false;
       /** @type {Keypad} */
       let firstKeypad = null;
@@ -85,7 +96,7 @@ export default class CombatIndicator extends AbstractSubModule {
         if (this.instance.settings.skipDefeated && turns[i].isDefeated) {
           continue;
         }
-        turns[i].players.forEach((player) => {
+        for (const player of turns[i].players){
           if (!keypads.has(player.id)) {
             return;
           }
@@ -110,15 +121,32 @@ export default class CombatIndicator extends AbstractSubModule {
             }
           } else {
             // keypads that had their turn colored player.color
-            keypad.setDefaultLEDColor();
+            keypad.setLED(1, COLORS.OFF);
           }
-        });
+        }
       }
       if (!hasNext && firstKeypad) {
         // next player is in the next round
-        firstKeypad.setLED(1, "#FFFF00");
+        firstKeypad.setLED(1, COLORS.YELLOW);
       }
     }
+  }
+
+  /**
+   * Reset the keypad LEDs to their default color after combat ends.
+   *
+   * @param {Function} wrapped
+   * @returns {Promise<string>}
+   * @see: Combat.endCombat
+   */
+  async #endCombatWrapper(wrapped) {
+    const result = await wrapped();
+    if(result !== false) {
+      for(const keypad of this.controllerManager.keypads) {
+        keypad.setDefaultLEDColor();
+      }
+    }
+    return result;
   }
 
   async #startTacticalTimer(updateCombatCallback, timeInMS) {

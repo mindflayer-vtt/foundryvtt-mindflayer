@@ -58,7 +58,7 @@ export function init(instance) {
 
   let filteredModules = [];
   let requiredModuleNames = new Set();
-  subModules.forEach((module) => {
+  for (const module of subModules){
     const moduleName = module.default.name;
     if (
       module.default.shouldStart(instance) ||
@@ -66,11 +66,11 @@ export function init(instance) {
     ) {
       filteredModules.push(module);
       requiredModuleNames.delete(moduleName);
-      module.default.moduleDependencies.forEach((name) =>
-        requiredModuleNames.add(name)
-      );
+      for (const name of module.default.moduleDependencies) {
+        requiredModuleNames.add(name);
+      }
     }
-  });
+  }
   subModules = filteredModules.reverse();
 
   console.info(LOG_PREFIX + "Starting submodules");
@@ -103,7 +103,7 @@ export function ready(instance, modules = null) {
       .map((mod) => instance.modules[mod.default.name])
       .filter((mod) => mod !== undefined && mod !== null);
   }
-  modules.forEach((mod) => {
+  for (const mod of modules) {
     try {
       console.debug(`${LOG_PREFIX}Readying Module: ${mod.constructor.name}`);
       mod.ready();
@@ -113,7 +113,7 @@ export function ready(instance, modules = null) {
         e
       );
     }
-  });
+  }
 }
 
 function buildDependencyGraph() {
@@ -121,21 +121,21 @@ function buildDependencyGraph() {
     return;
   }
   dependencyGraph = new DepGraph();
-  subModules.forEach((mod) => {
+  for (const mod of subModules) {
     dependencyGraph.addNode(mod.default.name);
-  });
-  subModules.forEach((mod) => {
-    mod.default.moduleDependencies.forEach((dependency) => {
+  }
+  for (const mod of subModules) {
+    for (const dependency of mod.default.moduleDependencies) {
       dependencyGraph.addDependency(mod.default.name, dependency);
-    });
-  });
+    }
+  }
 }
 
 function __loadModules(instance, modules) {
-  modules.forEach((element) => {
+  for (const element of modules) {
     console.debug(`${LOG_PREFIX}Starting Module: ${element.default.name}`);
     instance.modules[element.default.name] = new element.default(instance);
-  });
+  }
 }
 
 function __unloadModules(instance, modules) {
@@ -164,9 +164,10 @@ function _reload(instance, module) {
 
   __unloadModules(instance, loadOrderNames);
 
-  const modules = loadOrderNames.map((name) =>
-    subModules.find((mod) => mod.default.name === name)
-  );
+  const modules = [];
+  for (const name of loadOrderNames) {
+    modules.push(subModules.find((mod) => mod.default.name === name));
+  }
   __loadModules(instance, modules);
   ready(instance, modules);
 }

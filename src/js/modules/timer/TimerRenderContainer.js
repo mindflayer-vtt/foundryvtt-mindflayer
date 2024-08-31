@@ -47,11 +47,11 @@ export class TimerRenderContainer extends PIXI.Container {
     );
 
     let i = 0;
-    this.children.forEach((timer) => {
+    for (const timer of this.children) {
       timer.position.x = base.x + i * timerSize * this.parent.scale.x;
       timer.position.y = base.y;
       timer.scale.set(invertedScale, invertedScale);
       i++;
-    });
+    }
   }
 }

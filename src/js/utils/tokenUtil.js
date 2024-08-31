@@ -82,7 +82,9 @@ export function getTokenFor(player, ignoreNone = false) {
  * Sets the users default characters as preselected tokens.
  */
 export function setDefaultTokens() {
-  game.users.contents.forEach(setDefaultToken);
+  for (const user of game.users.contents) {
+    setDefaultToken(user);
+  }
 }
 
 export function setDefaultToken(user) {
@@ -113,14 +115,14 @@ export function setDefaultToken(user) {
  */
 export function getUserIfSelectedTokenIs(token) {
   let result = null;
-  game.users.contents.forEach((player) => {
+  for (const player of game.users.contents) {
     if (
       game.user.getFlag(VTT_MODULE_NAME, "selectedToken_" + player.id) ==
       token.id
     ) {
       result = player;
     }
-  });
+  }
   return result;
 }
 
@@ -144,7 +146,9 @@ function _refreshTokens() {
     return;
   }
   console.debug(SUB_LOG_PREFIX + "refreshing tokens");
-  canvas.tokens.placeables.forEach((t) => t.refresh({}));
+  for (const t of canvas.tokens.placeables) {
+    t.refresh({});
+  }
 }
 
 export const refreshTokenPlaceables = foundry.utils.debounce(_refreshTokens, 100);
