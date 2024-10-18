@@ -162,7 +162,7 @@ export const settings = {
       get min() {
         return game.settings.get(
           VTT_MODULE_NAME,
-          SETT_AMBILIGHT_BRIGHTNESS_MIN
+          SETT_AMBILIGHT_BRIGHTNESS_MIN,
         );
       },
       /**
@@ -171,7 +171,7 @@ export const settings = {
       get max() {
         return game.settings.get(
           VTT_MODULE_NAME,
-          SETT_AMBILIGHT_BRIGHTNESS_MAX
+          SETT_AMBILIGHT_BRIGHTNESS_MAX,
         );
       },
     },
@@ -182,14 +182,14 @@ export const settings = {
     get tacticalDiscussionDuration() {
       return game.settings.get(
         VTT_MODULE_NAME,
-        SETT_COMBAT_INDICATOR_TACTICAL_DURATION
+        SETT_COMBAT_INDICATOR_TACTICAL_DURATION,
       );
     },
     /** @returns {number} */
     get playerReactionTime() {
       return game.settings.get(
         VTT_MODULE_NAME,
-        SETT_COMBAT_INDICATOR_PLAYER_REACTION_DURATION
+        SETT_COMBAT_INDICATOR_PLAYER_REACTION_DURATION,
       );
     },
   },
@@ -253,7 +253,7 @@ export const settings = {
       choices: {
         default: game.i18n.localize("MindFlayer.cameraControlDefault"),
         focusPlayers: game.i18n.localize(
-          "MindFlayer.cameraControlFocusPlayers"
+          "MindFlayer.cameraControlFocusPlayers",
         ),
         off: game.i18n.localize("MindFlayer.cameraControlOff"),
       },
@@ -415,7 +415,7 @@ export const settings = {
         },
         config: true,
         restricted: false,
-      }
+      },
     );
 
     game.settings.register(
@@ -434,7 +434,7 @@ export const settings = {
         },
         config: true,
         restricted: false,
-      }
+      },
     );
 
     console.log(LOG_PREFIX + "Loaded settings");

@@ -22,7 +22,7 @@ export default class CombatIndicator extends AbstractSubModule {
       VTT_MODULE_NAME,
       WRAP_Combat_endCombat,
       this.#endCombatWrapper.bind(this),
-      libWrapper.WRAPPER
+      libWrapper.WRAPPER,
     );
   }
 
@@ -68,22 +68,23 @@ export default class CombatIndicator extends AbstractSubModule {
         this.#startTacticalTimer(
           this.#handleCombatUpdate.bind(this, combat, { turn: update.turn }),
           this.instance.settings.combatIndicator.tacticalDiscussionDuration *
-            1000
+            1000,
         );
       }
       return;
     }
-    if (Object.hasOwn(update,"round") && currentTurn === 0) {
+    if (Object.hasOwn(update, "round") && currentTurn === 0) {
       this.#startTacticalTimer(
         this.#handleCombatUpdate.bind(this, combat, { turn: update.turn }),
-        this.instance.settings.combatIndicator.tacticalDiscussionDuration * 1000
+        this.instance.settings.combatIndicator.tacticalDiscussionDuration *
+          1000,
       );
       return;
     } else if (Object.hasOwn(update, "turn") && update.turn !== null) {
       const turns = combat.turns;
       /** @type {Map<string, Keypad>} */
       const keypads = new Map();
-      for(const keypad of this.controllerManager.keypads) {
+      for (const keypad of this.controllerManager.keypads) {
         const player = keypad.player;
         if (player) {
           keypads.set(player.id, keypad);
@@ -96,7 +97,7 @@ export default class CombatIndicator extends AbstractSubModule {
         if (this.instance.settings.skipDefeated && turns[i].isDefeated) {
           continue;
         }
-        for (const player of turns[i].players){
+        for (const player of turns[i].players) {
           if (!keypads.has(player.id)) {
             return;
           }
@@ -108,8 +109,10 @@ export default class CombatIndicator extends AbstractSubModule {
           if (i == currentTurn) {
             // keyboard with turn active colored red
             keypad.setLED(1, COLORS.RED);
-            this.#startTacticalTimer(() => {},
-            this.instance.settings.combatIndicator.playerReactionTime * 1000);
+            this.#startTacticalTimer(
+              () => {},
+              this.instance.settings.combatIndicator.playerReactionTime * 1000,
+            );
           } else if (i > currentTurn) {
             if (!hasNext) {
               // keyboard who is up next colored yellow
@@ -141,8 +144,8 @@ export default class CombatIndicator extends AbstractSubModule {
    */
   async #endCombatWrapper(wrapped) {
     const result = await wrapped();
-    if(result !== false) {
-      for(const keypad of this.controllerManager.keypads) {
+    if (result !== false) {
+      for (const keypad of this.controllerManager.keypads) {
         keypad.setDefaultLEDColor();
       }
     }

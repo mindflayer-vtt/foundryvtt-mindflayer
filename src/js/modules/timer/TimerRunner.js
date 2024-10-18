@@ -48,7 +48,7 @@ export default class TimerRunner extends PIXI.Container {
     this.#end = end;
     this.#timeout = window.setTimeout(
       this.#handleDone.bind(this),
-      this.durationMS
+      this.durationMS,
     );
     this.initDisplay();
     this.name = LOG_SUB_PREFIX + (end - start) / 1000 + "s";

@@ -31,7 +31,7 @@ export function warnIfAnyMissing(warn = true) {
     if (!game.modules.get(dependency)?.active) {
       if (warn && game.user.isGM) {
         ui.notifications.error(
-          `Module '${VTT_MODULE_NAME}' requires the '${dependency}' module. Please install and activate it.`
+          `Module '${VTT_MODULE_NAME}' requires the '${dependency}' module. Please install and activate it.`,
         );
       }
       result = false;

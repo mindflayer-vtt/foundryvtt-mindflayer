@@ -58,12 +58,12 @@ export default class CombatEndTurn extends AbstractSubModule {
    * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
   #tickHandler(now, keypads) {
-    if(!isCombatActive()) {
-      return
+    if (!isCombatActive()) {
+      return;
     }
     for (const keypad of Object.values(keypads)) {
       if (keypad.isJustDown("SPC", now)) {
-        if(this.#endTurnFor(keypad)) {
+        if (this.#endTurnFor(keypad)) {
           // it does not make sense to advance more than one turn per frame
           // (e.g. if there are multiple keypads connected)
           // so we break out of the loop
@@ -77,13 +77,18 @@ export default class CombatEndTurn extends AbstractSubModule {
    * @param {Keypad} keypad
    */
   #endTurnFor(keypad) {
-    const currentActor = game.combat.turns[game.combat.turn].actor
+    const currentActor = game.combat.turns[game.combat.turn].actor;
     const player = keypad.player;
-    if(!player) {
-        return false;
+    if (!player) {
+      return false;
     }
-    if(!currentActor?.hasPlayerOwner || (currentActor.ownership[player.id] ?? 0) < 3) {
-      ui.notifications.warn(`Hey ${player.name}, You can only end your own turn!`);
+    if (
+      !currentActor?.hasPlayerOwner ||
+      (currentActor.ownership[player.id] ?? 0) < 3
+    ) {
+      ui.notifications.warn(
+        `Hey ${player.name}, You can only end your own turn!`,
+      );
       return false;
     }
 

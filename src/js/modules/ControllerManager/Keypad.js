@@ -54,7 +54,7 @@ export default class Keypad {
     this.#controllerId = controllerId;
     this.setDefaultLEDColor();
     console.debug(
-      LOG_PREFIX + "Initialized keypad for controller " + this.#controllerId
+      LOG_PREFIX + "Initialized keypad for controller " + this.#controllerId,
     );
   }
 
@@ -71,7 +71,7 @@ export default class Keypad {
   get rotation() {
     let r = game.user.getFlag(
       VTT_MODULE_NAME,
-      "controllerRotation_" + this.#controllerId
+      "controllerRotation_" + this.#controllerId,
     );
     if (r === undefined) {
       r = 0;
@@ -94,7 +94,7 @@ export default class Keypad {
     game.user.setFlag(
       VTT_MODULE_NAME,
       "controllerRotation_" + this.#controllerId,
-      amount
+      amount,
     );
   }
 
@@ -106,10 +106,10 @@ export default class Keypad {
   get player() {
     const settings = this.#instance.settings.settings;
     const playerId = Object.keys(settings.mappings).find(
-      (key) => settings.mappings[key] == this.#controllerId
+      (key) => settings.mappings[key] == this.#controllerId,
     );
     const selectedPlayer = game.users.contents.find(
-      (player) => player.id == playerId
+      (player) => player.id == playerId,
     );
     if (!selectedPlayer) {
       return null;
@@ -142,7 +142,7 @@ export default class Keypad {
           `Keypad[${
             this.#controllerId
           }].registerKeyEvent() called with unknown key:`,
-        data
+        data,
       );
       return;
     }
@@ -155,7 +155,7 @@ export default class Keypad {
         LOG_PREFIX +
           `Keypad[${
             this.#controllerId
-          }].isDown() called with unknown key: ${wantedKey}`
+          }].isDown() called with unknown key: ${wantedKey}`,
       );
       return false;
     }
@@ -168,7 +168,7 @@ export default class Keypad {
         LOG_PREFIX +
           `Keypad[${
             this.#controllerId
-          }].isDown() called with unknown key: ${wantedKey}`
+          }].isDown() called with unknown key: ${wantedKey}`,
       );
       return false;
     }
@@ -181,7 +181,7 @@ export default class Keypad {
         LOG_PREFIX +
           `Keypad[${
             this.#controllerId
-          }].isDown() called with unknown key: ${wantedKey}`
+          }].isDown() called with unknown key: ${wantedKey}`,
       );
       return false;
     }
@@ -222,7 +222,7 @@ export default class Keypad {
           `Keypad[${
             this.#controllerId
           }].setDefaultLEDColor() could not determine associated player`,
-        err
+        err,
       );
     }
   }
@@ -233,7 +233,7 @@ export default class Keypad {
         LOG_PREFIX +
           `Keypad[${
             this.#controllerId
-          }].setLED() tried to set unknown led at '${index}'`
+          }].setLED() tried to set unknown led at '${index}'`,
       );
       return;
     }

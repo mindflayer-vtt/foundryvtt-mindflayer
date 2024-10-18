@@ -22,7 +22,7 @@ module.exports = {
         ? "dist"
         : "chrome-overrides/" +
             devDomain +
-            "/modules/mindflayer-token-controller"
+            "/modules/mindflayer-token-controller",
     ),
   },
   plugins: [
@@ -32,7 +32,10 @@ module.exports = {
         { from: "src/templates", to: "templates" },
         { from: "LICENSE", to: "." },
         { from: "src/style.css", to: "style.css" },
-        { from: ".github/foundryvtt-mindflayer-logo.png", to: "assets/images/mindflayer.png" },
+        {
+          from: ".github/foundryvtt-mindflayer-logo.png",
+          to: "assets/images/mindflayer.png",
+        },
       ],
     }),
     new ModuleJsonWebpackPlugin(),

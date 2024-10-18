@@ -25,7 +25,7 @@ export default class StartTimerDialog extends FormApplication {
         durationSeconds: 0,
         neededRole: 0,
       },
-      options
+      options,
     );
     this.options.buttons.start.callback = this.startTimer.bind(this);
   }
@@ -49,13 +49,13 @@ export default class StartTimerDialog extends FormApplication {
         start: {
           icon: '<i class="fas fa-check"></i>',
           label: game.i18n.localize(
-            "module.MindFlayer.StartTimerDialog.button.start"
+            "module.MindFlayer.StartTimerDialog.button.start",
           ),
         },
         abort: {
           icon: '<i class="fas fa-times"></i>',
           label: game.i18n.localize(
-            "module.MindFlayer.StartTimerDialog.button.abort"
+            "module.MindFlayer.StartTimerDialog.button.abort",
           ),
         },
       },

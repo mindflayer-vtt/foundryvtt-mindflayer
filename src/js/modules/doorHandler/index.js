@@ -80,7 +80,7 @@ export default class DoorHandler extends AbstractSubModule {
       console.debug(
         SUB_LOG_PREFIX +
           `${doorCR.player.name}[${doorCR.token.name}]: toggling the door `,
-        doorCR.door
+        doorCR.door,
       );
       const evt = new PIXI.FederatedMouseEvent();
       evt.button = 0;
@@ -99,12 +99,12 @@ export default class DoorHandler extends AbstractSubModule {
     const interactionBounds = new Rectangle(
       new Vector(
         token.x - canvas.grid.size,
-        token.y + token.height + canvas.grid.size
+        token.y + token.height + canvas.grid.size,
       ),
       new Vector(
         token.x + token.width + canvas.grid.size,
-        token.y - canvas.grid.size
-      )
+        token.y - canvas.grid.size,
+      ),
     );
 
     for (const door of canvas.walls.doors) {

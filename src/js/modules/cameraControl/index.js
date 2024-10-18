@@ -31,22 +31,27 @@ export default class CameraControl extends AbstractSubModule {
     if (game.canvas.initialized) {
       console.info(
         SUB_LOG_PREFIX +
-          "overriding camera pan to focus on all player tokens instead of the current moved one."
+          "overriding camera pan to focus on all player tokens instead of the current moved one.",
       );
       libWrapper.register(
         VTT_MODULE_NAME,
         WRAP_Token__onUpdate,
-        async function wrapperToken_onUpdate(wrapped, changed, options, userId) {
+        async function wrapperToken_onUpdate(
+          wrapped,
+          changed,
+          options,
+          userId,
+        ) {
           let cameraControl = $this.instance.settings.camera.control;
           if (cameraControl == "off" || cameraControl == "focusPlayers") {
             if (cameraControl == "focusPlayers") {
               $this.panCamera();
             }
-            options.pan = false
+            options.pan = false;
           }
           return wrapped(changed, options, userId);
         },
-        libWrapper.MIXED
+        libWrapper.MIXED,
       );
     } else {
       console.info(SUB_LOG_PREFIX + "canvas is disabled, so no camera control");
@@ -74,26 +79,24 @@ export default class CameraControl extends AbstractSubModule {
     const gridSize = canvas.scene.dimensions.size;
     let activeCharacterTokens = TokenUtil.getAllCombatTokens();
     activeCharacterTokens.push(
-      ...this.controllerManager.keypads.map((keypad) => keypad.token)
+      ...this.controllerManager.keypads.map((keypad) => keypad.token),
     );
-    activeCharacterTokens.push(
-      ...canvas.tokens.controlled
-    )
+    activeCharacterTokens.push(...canvas.tokens.controlled);
     activeCharacterTokens = activeCharacterTokens.filter(
-      (token) => token !== null
+      (token) => token !== null,
     );
     if (activeCharacterTokens.length <= 0) {
       console.warn(
         LOG_PREFIX +
-          "No active character tokens found. Automatic camera panning only works with active controllers that belong to a player with a character token in the same scene."
+          "No active character tokens found. Automatic camera panning only works with active controllers that belong to a player with a character token in the same scene.",
       );
       return;
     }
-    activeCharacterTokens = activeCharacterTokens.filter(function(token) {
-      if(!token) {
+    activeCharacterTokens = activeCharacterTokens.filter(function (token) {
+      if (!token) {
         return false;
       }
-      if(!Object.hasOwn(token, "combatant")) {
+      if (!Object.hasOwn(token, "combatant")) {
         return true;
       }
       return !token.combatant.data.hidden && !token.combatant.data.defeated;
@@ -102,22 +105,22 @@ export default class CameraControl extends AbstractSubModule {
     const pad = gridSize * (30 / 5);
     const lowestXCoordinate = Math.max(
       Math.min(...activeCharacterTokens.map((token) => token.x)) - pad,
-      sceneSize.x
+      sceneSize.x,
     );
     const highestXCoordinate = Math.min(
       Math.max(...activeCharacterTokens.map((token) => token.x + token.w)) +
         pad,
-      sceneSize.x + sceneSize.width
+      sceneSize.x + sceneSize.width,
     );
 
     const lowestYCoordinate = Math.max(
       Math.min(...activeCharacterTokens.map((token) => token.y)) - pad,
-      sceneSize.y
+      sceneSize.y,
     );
     const highestYCoordinate = Math.min(
       Math.max(...activeCharacterTokens.map((token) => token.y + token.h)) +
         pad,
-      sceneSize.y + sceneSize.height
+      sceneSize.y + sceneSize.height,
     );
 
     const boundingbox = {
@@ -138,11 +141,11 @@ export default class CameraControl extends AbstractSubModule {
       lowestYCoordinate + (highestYCoordinate - lowestYCoordinate) / 2;
     targetXCoordinate = Math.max(
       sceneSize.x + pad,
-      Math.min(targetXCoordinate, sceneSize.x + sceneSize.width - pad)
+      Math.min(targetXCoordinate, sceneSize.x + sceneSize.width - pad),
     );
     targetYCoordinate = Math.max(
       sceneSize.y + pad,
-      Math.min(targetYCoordinate, sceneSize.y + sceneSize.height - pad)
+      Math.min(targetYCoordinate, sceneSize.y + sceneSize.height - pad),
     );
 
     const cameraSettings = {
@@ -154,7 +157,7 @@ export default class CameraControl extends AbstractSubModule {
     console.debug(
       LOG_PREFIX +
         "Readjusting view to fit all player tokens on screen... Centering on: ",
-      cameraSettings
+      cameraSettings,
     );
     canvas.animatePan(cameraSettings);
   }

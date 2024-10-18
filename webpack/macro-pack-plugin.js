@@ -24,7 +24,7 @@ class FVTTMacroPackWebpackPlugin {
   apply(compiler) {
     compiler.hooks.thisCompilation.tap(
       FVTTMacroPackWebpackPlugin.name,
-      this.#compile.bind(this)
+      this.#compile.bind(this),
     );
   }
   /**
@@ -38,7 +38,7 @@ class FVTTMacroPackWebpackPlugin {
         name: FVTTMacroPackWebpackPlugin.name,
         stage: Compilation.PROCESS_ASSETS_STAGE_SUMMARIZE,
       },
-      this.#processAssets.bind(this, compilation)
+      this.#processAssets.bind(this, compilation),
     );
   }
   /**
@@ -49,7 +49,7 @@ class FVTTMacroPackWebpackPlugin {
    */
   #processAssets(compilation, assets) {
     const macroFiles = glob.sync(
-      path.join(this.options.srcFolder, this.options.globFile)
+      path.join(this.options.srcFolder, this.options.globFile),
     );
     let packContent = "";
     macroFiles.forEach((file) => {
@@ -58,7 +58,7 @@ class FVTTMacroPackWebpackPlugin {
       const macroContent = JSON.parse(fs.readFileSync(file).toString("utf-8"));
       const macroVarGlob = path.join(
         this.options.srcFolder,
-        this.options.globVarFile.replace("<<macro>>", macroName)
+        this.options.globVarFile.replace("<<macro>>", macroName),
       );
       glob.sync(macroVarGlob).forEach((varFile) => {
         const varFileName = path.basename(varFile);
@@ -66,8 +66,8 @@ class FVTTMacroPackWebpackPlugin {
           macroName.length + 1,
           varFileName.substring(
             0,
-            varFileName.indexOf(".", macroName.length + 2)
-          ).length
+            varFileName.indexOf(".", macroName.length + 2),
+          ).length,
         );
         macroContent[varName] = fs.readFileSync(varFile).toString("utf-8");
       });

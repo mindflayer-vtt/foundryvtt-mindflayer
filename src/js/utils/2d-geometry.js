@@ -80,7 +80,7 @@ export class Rectangle {
   static fromBounds(bounds) {
     return new Rectangle(
       new Vector(bounds.left, bounds.bottom),
-      new Vector(bounds.right, bounds.top)
+      new Vector(bounds.right, bounds.top),
     );
   }
 

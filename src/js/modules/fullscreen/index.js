@@ -23,7 +23,7 @@ const WRAP_KeyboardManager_handleKeys = "KeyboardManager.prototype._handleKeys";
 const WRAP_PlaceableObject_can = "PlaceableObject.prototype.can";
 const WRAP_Notifications_notify = "Notifications.prototype.notify";
 
-const FULLSCREEN_SHARED_IMAGE_KEEP_MS = 20*1000;
+const FULLSCREEN_SHARED_IMAGE_KEEP_MS = 20 * 1000;
 export default class Fullscreen extends AbstractSubModule {
   #keyboardManagerHandleKeysWrapperFun = null;
   #cursorInterval = null;
@@ -31,13 +31,13 @@ export default class Fullscreen extends AbstractSubModule {
   constructor(instance) {
     super(instance);
     console.debug(
-      SUB_LOG_PREFIX + "overriding Key handling to add F10 to hide UI."
+      SUB_LOG_PREFIX + "overriding Key handling to add F10 to hide UI.",
     );
     libWrapper.register(
       VTT_MODULE_NAME,
       WRAP_PlaceableObject_can,
       this.#placeableObjectCanWrapper.bind(this),
-      libWrapper.MIXED
+      libWrapper.MIXED,
     );
     /* prevent permanent notifications in fullscreen */
     if (isFoundryNewerThan("10")) {
@@ -45,7 +45,7 @@ export default class Fullscreen extends AbstractSubModule {
         VTT_MODULE_NAME,
         WRAP_Notifications_notify,
         this.#notificationsNotifyWrapper.bind(this),
-        libWrapper.WRAPPER
+        libWrapper.WRAPPER,
       );
     }
     this.#keyboardManagerHandleKeysWrapperFun =
@@ -80,10 +80,13 @@ export default class Fullscreen extends AbstractSubModule {
         VTT_MODULE_NAME,
         WRAP_KeyboardManager_handleKeys,
         this.#keyboardManagerHandleKeysWrapperFun,
-        libWrapper.MIXED
+        libWrapper.MIXED,
       );
     }
-    this.#cursorInterval = setInterval(this.#setCursorVisibility.bind(this), 1000);
+    this.#cursorInterval = setInterval(
+      this.#setCursorVisibility.bind(this),
+      1000,
+    );
     game.socket.on("shareImage", this.#onShareImage.bind(this));
   }
 
@@ -125,23 +128,34 @@ export default class Fullscreen extends AbstractSubModule {
     if (!Array.isArray(canvas?.controls?.children)) {
       return;
     }
-    for(const control of canvas.controls.children) {
-      if(control.visible === this.enabled && control?.children.find(elem => elem.constructor.name === "Cursor")) {
-        console.debug(SUB_LOG_PREFIX + "updating visibility of cursor:", control)
+    for (const control of canvas.controls.children) {
+      if (
+        control.visible === this.enabled &&
+        control?.children.find((elem) => elem.constructor.name === "Cursor")
+      ) {
+        console.debug(
+          SUB_LOG_PREFIX + "updating visibility of cursor:",
+          control,
+        );
         control.visible = !this.enabled;
       }
     }
   }
 
   #onShareImage() {
-      if (this.enabled) {
-        console.debug(SUB_LOG_PREFIX + `waiting ${FULLSCREEN_SHARED_IMAGE_KEEP_MS}ms before closing shared image`)
-        setTimeout(() => {
-          jQuery('.window-app.image-popout .control.close').click();
-        }, FULLSCREEN_SHARED_IMAGE_KEEP_MS)
-      } else {
-        console.debug(SUB_LOG_PREFIX + `fullscreen disabled, not closing shared image`)
-      }
+    if (this.enabled) {
+      console.debug(
+        SUB_LOG_PREFIX +
+          `waiting ${FULLSCREEN_SHARED_IMAGE_KEEP_MS}ms before closing shared image`,
+      );
+      setTimeout(() => {
+        jQuery(".window-app.image-popout .control.close").click();
+      }, FULLSCREEN_SHARED_IMAGE_KEEP_MS);
+    } else {
+      console.debug(
+        SUB_LOG_PREFIX + `fullscreen disabled, not closing shared image`,
+      );
+    }
   }
 
   #placeableObjectCanWrapper(wrapped, user, action) {

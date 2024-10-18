@@ -31,7 +31,7 @@ export default class TokenTorch extends AbstractSubModule {
 
   ready() {
     this.instance.modules[ControllerManager.name].registerTickListener(
-      this.#tickHandlerFun
+      this.#tickHandlerFun,
     );
   }
 
@@ -58,7 +58,7 @@ export default class TokenTorch extends AbstractSubModule {
    * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
   #tickHandler(now, keypads) {
-    for(const keypad of Object.values(keypads)) {
+    for (const keypad of Object.values(keypads)) {
       if (keypad.isJustDown("X", now)) {
         this.#toggleTorch(keypad);
       }
@@ -78,8 +78,10 @@ export default class TokenTorch extends AbstractSubModule {
     }
 
     if (!token.emitsLight) {
-      console.debug(`${SUB_LOG_PREFIX}${keypad.player?.name}: Turn on torch for ${token.name}`);
-      if(typeof token.initializeLightSource === "function"){
+      console.debug(
+        `${SUB_LOG_PREFIX}${keypad.player?.name}: Turn on torch for ${token.name}`,
+      );
+      if (typeof token.initializeLightSource === "function") {
         await token.document.update({
           light: {
             bright: 20,
@@ -89,12 +91,12 @@ export default class TokenTorch extends AbstractSubModule {
             animation: {
               type: "flame",
               speed: 5,
-              intensity: 5
-            }
-          }
-        })
-        token.initializeLightSource()
-      } else if(Object.hasOwn(token, "update")) {
+              intensity: 5,
+            },
+          },
+        });
+        token.initializeLightSource();
+      } else if (Object.hasOwn(token, "update")) {
         token.update({
           brightLight: 20,
           dimLight: 40,
@@ -112,35 +114,35 @@ export default class TokenTorch extends AbstractSubModule {
             animation: {
               type: "torch",
               speed: 5,
-              intensity: 5
-            }
-          }
+              intensity: 5,
+            },
+          },
         });
         token.updateSource();
       }
     } else {
       console.debug(
-        LOG_PREFIX + keypad.player?.name + ": Turn off torch for " + token.name
+        LOG_PREFIX + keypad.player?.name + ": Turn off torch for " + token.name,
       );
 
-      if(Object.hasOwn(token, "update")) {
+      if (Object.hasOwn(token, "update")) {
         token.update({ brightLight: 0, dimLight: 0 });
-      } else if(typeof token.initializeLightSource === "function"){
+      } else if (typeof token.initializeLightSource === "function") {
         await token.document.update({
           light: {
             bright: 0,
-            dim: 0
-          }
+            dim: 0,
+          },
         });
         token.initializeLightSource();
       } else {
         token.data.update({
           light: {
             bright: 0,
-            dim: 0
-          }
+            dim: 0,
+          },
         });
-        token.updateSource({deleted: true});
+        token.updateSource({ deleted: true });
       }
     }
   }

@@ -38,7 +38,7 @@ export function findAllTokensFor(player, ignoreEmpty = false) {
     .sort((a, b) => a.id.localeCompare(b.id));
   if (!ignoreEmpty && tokens.length <= 0) {
     console.warn(
-      SUB_LOG_PREFIX + `Player '${player.name}' does not have any Tokens: `
+      SUB_LOG_PREFIX + `Player '${player.name}' does not have any Tokens: `,
     );
     throw new Error("Could not find any tokens for player: " + player.name);
   }
@@ -56,11 +56,11 @@ export function findAllTokensFor(player, ignoreEmpty = false) {
 export function getTokenFor(player, ignoreNone = false) {
   const selectedToken = game.user.getFlag(
     VTT_MODULE_NAME,
-    "selectedToken_" + player.id
+    "selectedToken_" + player.id,
   );
   /** @var {Token} token */
   let token = canvas.tokens.placeables.find(
-    (token) => token.id == selectedToken
+    (token) => token.id == selectedToken,
   );
   if (!token) {
     const tokens = findAllTokensFor(player, true);
@@ -68,7 +68,7 @@ export function getTokenFor(player, ignoreNone = false) {
       if (!ignoreNone) {
         throw new Error(
           "Could not find token any tokens on current map for player " +
-            player.name
+            player.name,
         );
       }
     } else {
@@ -92,7 +92,7 @@ export function setDefaultToken(user) {
   const allTokens = findAllTokensFor(user, true);
   if (user.character) {
     selectedToken = allTokens.find(
-      (token) => token.actor.id == user.character.id
+      (token) => token.actor.id == user.character.id,
     );
     if (selectedToken) {
       selectedToken = selectedToken.id;
@@ -103,7 +103,7 @@ export function setDefaultToken(user) {
   game.user.setFlag(VTT_MODULE_NAME, "selectedToken_" + user.id, selectedToken);
   console.debug(
     LOG_PREFIX +
-      `Selected default token '${selectedToken?.name}' for player '${user.name}'`
+      `Selected default token '${selectedToken?.name}' for player '${user.name}'`,
   );
 }
 
@@ -141,7 +141,7 @@ export function getAllCombatTokens() {
 function _refreshTokens() {
   if (!game.canvas.initialized) {
     console.info(
-      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens"
+      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens",
     );
     return;
   }
@@ -151,12 +151,15 @@ function _refreshTokens() {
   }
 }
 
-export const refreshTokenPlaceables = foundry.utils.debounce(_refreshTokens, 100);
+export const refreshTokenPlaceables = foundry.utils.debounce(
+  _refreshTokens,
+  100,
+);
 
 export function deselectAllTokens() {
   if (!game.canvas.initialized) {
     console.info(
-      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens"
+      SUB_LOG_PREFIX + "canvas is disabled, cannot manipulate tokens",
     );
     return;
   }

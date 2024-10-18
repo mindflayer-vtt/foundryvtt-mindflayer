@@ -8,7 +8,7 @@ declare var canvas: Canvas & {
 };
 declare var PIXI = (await import("pixi.js")).default;
 declare var game: Game & {
-    users: {
-        contents: User[]
-    }
-}
+  users: {
+    contents: User[];
+  };
+};

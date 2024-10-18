@@ -71,7 +71,7 @@ export default class AbstractSubModule {
   ensureLoaded() {
     if (!this.#loaded) {
       throw new ReferenceError(
-        `the module ${this.name} needs to be loaded to use this functionality`
+        `the module ${this.name} needs to be loaded to use this functionality`,
       );
     }
   }

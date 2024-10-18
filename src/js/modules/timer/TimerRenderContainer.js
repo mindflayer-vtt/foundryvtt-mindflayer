@@ -42,8 +42,8 @@ export class TimerRenderContainer extends PIXI.Container {
     const base = wt.applyInverse(
       new PIXI.Point(
         screen.left + (screenSize.width - totalSize) / 2,
-        screen.top + screenSize.height - (MARGIN_BOTTOM + TIMER_DIAMETER)
-      )
+        screen.top + screenSize.height - (MARGIN_BOTTOM + TIMER_DIAMETER),
+      ),
     );
 
     let i = 0;

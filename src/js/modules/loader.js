@@ -58,7 +58,7 @@ export function init(instance) {
 
   let filteredModules = [];
   let requiredModuleNames = new Set();
-  for (const module of subModules){
+  for (const module of subModules) {
     const moduleName = module.default.name;
     if (
       module.default.shouldStart(instance) ||
@@ -110,7 +110,7 @@ export function ready(instance, modules = null) {
     } catch (e) {
       console.warn(
         `${LOG_PREFIX}Failed to ready module '${mod.constructor.name}', continuing...`,
-        e
+        e,
       );
     }
   }

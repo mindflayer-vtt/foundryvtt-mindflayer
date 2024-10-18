@@ -30,7 +30,7 @@ export default class TokenSelect extends AbstractSubModule {
 
   ready() {
     this.instance.modules[ControllerManager.name].registerTickListener(
-      this.#tickHandlerFun
+      this.#tickHandlerFun,
     );
   }
 
@@ -75,7 +75,7 @@ export default class TokenSelect extends AbstractSubModule {
     }
     const currentTokenId = game.user.getFlag(
       VTT_MODULE_NAME,
-      "selectedToken_" + player.id
+      "selectedToken_" + player.id,
     );
 
     if (!currentTokenId) {
@@ -92,11 +92,11 @@ export default class TokenSelect extends AbstractSubModule {
       game.user.setFlag(
         VTT_MODULE_NAME,
         "selectedToken_" + player.id,
-        tokens[i].id
+        tokens[i].id,
       );
       console.debug(
         LOG_PREFIX +
-          `selected token '${tokens[i].name}' for player '${player.name}'`
+          `selected token '${tokens[i].name}' for player '${player.name}'`,
       );
     }
     TokenUtil.deselectAllTokens();

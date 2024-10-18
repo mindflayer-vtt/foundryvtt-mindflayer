@@ -22,7 +22,7 @@ import { isFoundryNewerThan } from "../../utils/module";
 import { TableLEDRingHandlerMixin } from "../tableLedRing/TableLEDRingHandlerMixin";
 
 export default class Ambilight extends TableLEDRingHandlerMixin(
-  AbstractSubModule
+  AbstractSubModule,
 ) {
   #enabled = true;
   #updateLEDsTimer = null;
@@ -87,7 +87,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
       const pixelsRaw = {
         image: new Uint8Array(
           gl.drawingBufferWidth * gl.drawingBufferHeight * 4 +
-            gl.drawingBufferHeight
+            gl.drawingBufferHeight,
         ),
         drawingBufferWidth: gl.drawingBufferWidth,
         drawingBufferHeight: gl.drawingBufferHeight,
@@ -100,7 +100,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
         gl.drawingBufferHeight,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        pixelsRaw.image
+        pixelsRaw.image,
       );
       resolve(pixelsRaw);
     } catch (e) {
@@ -118,7 +118,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
     const ledState = new Uint32Array(ledCount * 3);
     const bounds = new Rectangle(
       new Vector(0, 0),
-      new Vector(pixelsRaw.drawingBufferWidth, pixelsRaw.drawingBufferHeight)
+      new Vector(pixelsRaw.drawingBufferWidth, pixelsRaw.drawingBufferHeight),
     );
     const direction = new Vector(0, 1);
     let ledOffset = this.instance.settings.ambilight.led.offset % ledCount;
@@ -133,7 +133,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
       const imageIndex = this._findColorAlongVector(
         pixelsRaw.image,
         bounds,
-        direction
+        direction,
       );
       totalColor +=
         pixelsRaw.image[imageIndex] +

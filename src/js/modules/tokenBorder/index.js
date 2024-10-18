@@ -36,7 +36,7 @@ export default class TokenBorder extends AbstractSubModule {
     const $this = this;
     console.debug(
       SUB_LOG_PREFIX +
-        "overriding Token Border Color to add display user select."
+        "overriding Token Border Color to add display user select.",
     );
     libWrapper.register(
       VTT_MODULE_NAME,
@@ -44,7 +44,7 @@ export default class TokenBorder extends AbstractSubModule {
       function (wrapped, ...args) {
         return $this.#getBorderColorWrapper(wrapped, this, ...args);
       },
-      libWrapper.MIXED
+      libWrapper.MIXED,
     );
     libWrapper.register(
       VTT_MODULE_NAME,
@@ -52,10 +52,10 @@ export default class TokenBorder extends AbstractSubModule {
       function _refreshState(wrapped) {
         const result = wrapped();
         // always show the border on non-hidden tokens
-        this.border.visible = !this.document.isSecret
-        return result
+        this.border.visible = !this.document.isSecret;
+        return result;
       },
-      libWrapper.WRAPPER
+      libWrapper.WRAPPER,
     );
 
     Hooks.on("updateScene", this.#onUpdateSceneFun);
@@ -97,7 +97,9 @@ export default class TokenBorder extends AbstractSubModule {
       if (player) {
         const color = player.color;
         return (
-          (((color.r * 255) & 0xff) << 16) | (((color.g * 255) & 0xff) << 8) | ((color.b * 255) & 0xff)
+          (((color.r * 255) & 0xff) << 16) |
+          (((color.g * 255) & 0xff) << 8) |
+          ((color.b * 255) & 0xff)
         );
       }
     }

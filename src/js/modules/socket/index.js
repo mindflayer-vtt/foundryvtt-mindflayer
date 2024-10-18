@@ -53,7 +53,7 @@ export default class Socket extends AbstractSubModule {
           status: "disconnected",
           receiver: true,
           players: [],
-        })
+        }),
       );
     } catch (err) {
       console.debug(SUB_LOG_PREFIX + "Failed to send disconnect message", err);
@@ -90,7 +90,7 @@ export default class Socket extends AbstractSubModule {
     this.ensureLoaded();
     if (!this.isConnected) {
       throw new ReferenceError(
-        `The module 'Socket' does not have a connection`
+        `The module 'Socket' does not have a connection`,
       );
     }
   }
@@ -131,7 +131,7 @@ export default class Socket extends AbstractSubModule {
           host: this.instance.settings.websocket.host,
           port: this.instance.settings.websocket.port,
           path: this.instance.settings.websocket.path,
-        })
+        }),
     );
     console.log(SUB_LOG_PREFIX + "Connected! ", data);
     this.send(
@@ -143,7 +143,7 @@ export default class Socket extends AbstractSubModule {
           id: player.id,
           name: player.name,
         })),
-      })
+      }),
     );
   }
 
@@ -155,7 +155,7 @@ export default class Socket extends AbstractSubModule {
     if (this.loaded) {
       ui.notifications.error(
         "Mind Flayer: " +
-          game.i18n.localize("MindFlayer.Notifications.ConnectionClosed")
+          game.i18n.localize("MindFlayer.Notifications.ConnectionClosed"),
       );
       console.debug(SUB_LOG_PREFIX + "Websocket connection closed:", evt);
       console.warn(SUB_LOG_PREFIX + "Attempting to reconnect in 5 seconds...");
@@ -168,7 +168,7 @@ export default class Socket extends AbstractSubModule {
    */
   _onerror(error) {
     ui.notifications.error(
-      "Mind Flayer: " + game.i18n.localize("MindFlayer.Notifications.Error")
+      "Mind Flayer: " + game.i18n.localize("MindFlayer.Notifications.Error"),
     );
     console.error(SUB_LOG_PREFIX + "Error! ", error);
     this.#connection.close();
@@ -183,11 +183,11 @@ export default class Socket extends AbstractSubModule {
     if (!Array.isArray(this.#handlers[data.type])) {
       console.warn(
         SUB_LOG_PREFIX + "Received message with unhandled type: ",
-        data
+        data,
       );
       return;
     }
-    for (let i = 0; i < this.#handlers[data.type].length; i++){
+    for (let i = 0; i < this.#handlers[data.type].length; i++) {
       const callback = this.#handlers[data.type][i];
       try {
         callback(data);
@@ -195,7 +195,7 @@ export default class Socket extends AbstractSubModule {
         // ignore and log any errors
         console.warn(
           SUB_LOG_PREFIX + `Handler [${data.type}][${i}] threw an error: `,
-          err
+          err,
         );
       }
     }

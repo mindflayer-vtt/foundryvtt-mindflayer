@@ -45,7 +45,7 @@ export default class ControllerManager extends AbstractSubModule {
   ready() {
     this.#tickThread = window.setInterval(
       this.#tick.bind(this),
-      Math.round(1000 / CONTROLLER_FPS)
+      Math.round(1000 / CONTROLLER_FPS),
     );
   }
 
@@ -80,7 +80,7 @@ export default class ControllerManager extends AbstractSubModule {
     if (msg.receiver) {
       console.debug(
         SUB_LOG_PREFIX +
-          "Got registration message from other receiver, ignoring!"
+          "Got registration message from other receiver, ignoring!",
       );
       return;
     }
@@ -92,7 +92,7 @@ export default class ControllerManager extends AbstractSubModule {
           game.i18n.format("MindFlayer.Notifications.NewClient", {
             controller: controllerId,
             player: this.#keypads[controllerId].player?.name || "unassigned",
-          })
+          }),
       );
     } else if (msg.status === "disconnected") {
       ui.notifications.warn(
@@ -100,7 +100,7 @@ export default class ControllerManager extends AbstractSubModule {
           game.i18n.format("MindFlayer.Notifications.ClientDisconnected", {
             controller: controllerId,
             player: this.#keypads[controllerId].player?.name || "unassigned",
-          })
+          }),
       );
       delete this.#keypads[controllerId];
     }
@@ -111,7 +111,7 @@ export default class ControllerManager extends AbstractSubModule {
     if (!Object.hasOwn(this.#keypads, controllerId)) {
       console.warn(
         SUB_LOG_PREFIX +
-          `Keypad '${controllerId}' sent key-event before registration, ignoring!`
+          `Keypad '${controllerId}' sent key-event before registration, ignoring!`,
       );
       return;
     }
@@ -120,17 +120,18 @@ export default class ControllerManager extends AbstractSubModule {
 
   #tick() {
     const frameTime = new Date().getTime();
-    for (let i = 0; i < this.#tickListeners.length; i++){
+    for (let i = 0; i < this.#tickListeners.length; i++) {
       const callback = this.#tickListeners[i];
       try {
         callback(frameTime, this.#keypads);
       } catch (err) {
         console.error(
-          SUB_LOG_PREFIX + `Keypad Tick Listener [${i}] threw an error, unregistering: `,
+          SUB_LOG_PREFIX +
+            `Keypad Tick Listener [${i}] threw an error, unregistering: `,
           err,
-          callback
+          callback,
         );
-        this.unregisterTickListener(callback)
+        this.unregisterTickListener(callback);
       }
     }
     this.#sendChangedLEDs();
@@ -146,7 +147,7 @@ export default class ControllerManager extends AbstractSubModule {
       const leds = keypad.getLEDsIfChanged();
       if (leds) {
         console.debug(
-          `${SUB_LOG_PREFIX}Sending updated LEDs to keypad '${keypad.controllerId}'`
+          `${SUB_LOG_PREFIX}Sending updated LEDs to keypad '${keypad.controllerId}'`,
         );
         const data = JSON.stringify({
           type: "configuration",

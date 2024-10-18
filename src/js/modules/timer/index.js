@@ -40,7 +40,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
       canvas.stage.addChild(this.#renderingContainer);
       this.#timerUpdateInterval = window.setInterval(
         this.#updateTimers.bind(this),
-        200
+        200,
       );
     }
     if (this.instance.settings.ambilight.enabled) {
@@ -48,7 +48,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
     }
     this.socketlib.provide(
       SOCKETLIB_TIMER_ADD,
-      this.#addTimerInternal.bind(this)
+      this.#addTimerInternal.bind(this),
     );
   }
 
@@ -123,7 +123,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
     if (this.#timers.length > 0) {
       const now = new Date().valueOf();
       for (const t1 of this.#timers) {
-        if(t1.end < now && t1.options?.onDone) {
+        if (t1.end < now && t1.options?.onDone) {
           t1.options?.onDone();
         }
       }
@@ -134,7 +134,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
         });
       this.#timers = timers;
       const ledTimer = timers.find(
-        (t) => t.options.neededRole <= CONST.USER_ROLES.TRUSTED
+        (t) => t.options.neededRole <= CONST.USER_ROLES.TRUSTED,
       );
       this.#displayTimer(ledTimer, leds, now);
     }
@@ -187,7 +187,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
   }
 
   #addTimerInternal(start, end, options) {
-    if(options.neededRole <= game.user.role) {
+    if (options.neededRole <= game.user.role) {
       const timer = new TimerRunner(start, end, options);
       if (this.#renderingContainer) {
         this.#renderingContainer.addChild(timer);
@@ -211,7 +211,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
         {
           ...timer.options,
           onDone: null,
-        }
+        },
       );
     }
   }

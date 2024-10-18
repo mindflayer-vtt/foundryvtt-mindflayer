@@ -49,7 +49,7 @@ export class TokenControllerConfig extends FormApplication {
           return acc;
         }, {}),
       },
-      this.reset ? { mappings: {} } : existingSettings
+      this.reset ? { mappings: {} } : existingSettings,
     );
     return data;
   }

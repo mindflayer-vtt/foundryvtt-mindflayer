@@ -31,7 +31,7 @@ export default class TableLEDRing extends AbstractSubModule {
     if (!Socket.shouldStart(this.instance)) return;
     this.#updateLEDsTimer = setInterval(
       this.#updateLEDs.bind(this),
-      1000 / this.instance.settings.ambilight.fps
+      1000 / this.instance.settings.ambilight.fps,
     );
   }
 
@@ -71,7 +71,7 @@ export default class TableLEDRing extends AbstractSubModule {
     }
 
     this.#sendTableLEDData(
-      await handler.updateLEDs(this.instance.settings.ambilight.led.count)
+      await handler.updateLEDs(this.instance.settings.ambilight.led.count),
     );
   }
 
@@ -98,7 +98,7 @@ export default class TableLEDRing extends AbstractSubModule {
         this.#tableLEDsLastSent = data;
       } catch (e) {
         console.warn(
-          `${LOG_SUB_PREFIX}Socket threw an exception, may not be connected yet...`
+          `${LOG_SUB_PREFIX}Socket threw an exception, may not be connected yet...`,
         );
         console.debug(e);
       }

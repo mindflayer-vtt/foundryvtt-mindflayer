@@ -18,7 +18,7 @@ import { default as Socket } from "../socket";
 import SocketlibWrapper from "../socketlib";
 import { SOCKETLIB_TIMER_ADD } from "../timer";
 
-const SOCKETLIB_PLAYER_LOGIN_REGISTER = "PlayerLogin_register"
+const SOCKETLIB_PLAYER_LOGIN_REGISTER = "PlayerLogin_register";
 
 export default class PlayerLogin extends AbstractSubModule {
   #messageHandlerFun;
@@ -56,12 +56,16 @@ export default class PlayerLogin extends AbstractSubModule {
   }
 
   #messageHandler(message) {
-    this.socketlib.executeAsGM(SOCKETLIB_PLAYER_LOGIN_REGISTER, message["controller-id"], message["player-id"])
+    this.socketlib.executeAsGM(
+      SOCKETLIB_PLAYER_LOGIN_REGISTER,
+      message["controller-id"],
+      message["player-id"],
+    );
   }
 
   #register(controllerId, playerId) {
-    if(!game.user.isGM) {
-      return
+    if (!game.user.isGM) {
+      return;
     }
     const settings = this.instance.settings.settings;
 

@@ -33,12 +33,12 @@ export default class TokenMovement extends AbstractSubModule {
   ready() {
     if (!game.canvas.initialized) {
       console.info(
-        SUB_LOG_PREFIX + "canvas is disabled, cannot control tokens"
+        SUB_LOG_PREFIX + "canvas is disabled, cannot control tokens",
       );
       return;
     }
     this.instance.modules[ControllerManager.name].registerTickListener(
-      this.#tickHandlerFun
+      this.#tickHandlerFun,
     );
   }
 
@@ -95,7 +95,7 @@ export default class TokenMovement extends AbstractSubModule {
         game.i18n.format("MindFlayer.Notifications.ChangeDirection", {
           player: keypad.player?.name || "unassigned",
           orientation: newRotation,
-        })
+        }),
     );
     keypad.rotation = newRotation;
   }
@@ -140,7 +140,7 @@ export default class TokenMovement extends AbstractSubModule {
           `${keypad.player.name}: ${rotateOnly ? "Rotating" : "Moving"} ${
             token.name
           } to direction`,
-        direction
+        direction,
       );
 
       // Perform the shift or rotation

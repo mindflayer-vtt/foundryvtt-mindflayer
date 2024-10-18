@@ -67,7 +67,7 @@ export default class MindFlayer {
         }
         return wrapped(jQuery(node));
       },
-      libWrapper.MIXED
+      libWrapper.MIXED,
     );
   }
 }
