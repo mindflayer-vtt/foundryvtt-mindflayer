@@ -8,6 +8,11 @@
   display: none;
 }
 
+/* ensure elments in the top ui added by other modules are positioned correctly */
+.hide-ui #ui-top.offset {
+  margin-left: 0;
+}
+
 .hide-ui #logo {
   display: none;
 }

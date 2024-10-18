@@ -23,6 +23,7 @@ const WRAP_KeyboardManager_handleKeys = "KeyboardManager.prototype._handleKeys";
 const WRAP_PlaceableObject_can = "PlaceableObject.prototype.can";
 const WRAP_Notifications_notify = "Notifications.prototype.notify";
 
+const FULLSCREEN_SHARED_IMAGE_KEEP_MS = 20*1000;
 export default class Fullscreen extends AbstractSubModule {
   #keyboardManagerHandleKeysWrapperFun = null;
   #cursorInterval = null;
@@ -83,6 +84,7 @@ export default class Fullscreen extends AbstractSubModule {
       );
     }
     this.#cursorInterval = setInterval(this.#setCursorVisibility.bind(this), 1000);
+    game.socket.on("shareImage", this.#onShareImage.bind(this));
   }
 
   unhook() {
@@ -129,6 +131,17 @@ export default class Fullscreen extends AbstractSubModule {
         control.visible = !this.enabled;
       }
     }
+  }
+
+  #onShareImage() {
+      if (this.enabled) {
+        console.debug(SUB_LOG_PREFIX + `waiting ${FULLSCREEN_SHARED_IMAGE_KEEP_MS}ms before closing shared image`)
+        setTimeout(() => {
+          jQuery('.window-app.image-popout .control.close').click();
+        }, FULLSCREEN_SHARED_IMAGE_KEEP_MS)
+      } else {
+        console.debug(SUB_LOG_PREFIX + `fullscreen disabled, not closing shared image`)
+      }
   }
 
   #placeableObjectCanWrapper(wrapped, user, action) {
