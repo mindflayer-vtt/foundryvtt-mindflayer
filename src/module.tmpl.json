@@ -1,12 +1,11 @@
 {
-  "$schema": "https://github.com/typhonjs-fvtt-lib/validate-manifest/raw/main/schema/module+.json",
   "id": "mindflayer-token-controller",
   "name": "mindflayer-token-controller",
   "version": "{{version}}",
   "title": "Mind Flayer - Token Controller",
   "description": "Adds functionality to control tokens through external applications or devices. Mind Flayer server (https://github.com/mindflayer-vtt/mindflayer-server) is required for the module to communicate with external services.",
   "compatibility": {
-    "minimum": "11.0",
+    "minimum": "12.0",
     "verified": "12.331"
   },
   "author": "749, shawly",
