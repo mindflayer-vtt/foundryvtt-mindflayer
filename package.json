@@ -1,6 +1,6 @@
 {
   "name": "foundryvtt-mindflayer",
-  "version": "2.3.3",
+  "version": "3.0.0",
   "description": "<div align=\"center\"> <img width=\"460\" src=\"https://raw.githubusercontent.com/mindflayer-vtt/foundryvtt-mindflayer/main/.github/foundryvtt-mindflayer-logo.png\"> </div>",
   "private": true,
   "scripts": {
