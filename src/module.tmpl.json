@@ -74,7 +74,7 @@
   "media": [
     {
       "type": "setup",
-      "url": "modules/mindflayer-token-controller/assets/images/mindflayer.png"
+      "url": "modules/mindflayer-token-controller/assets/images/mindflayer.webp"
     }
   ],
   "url": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer",

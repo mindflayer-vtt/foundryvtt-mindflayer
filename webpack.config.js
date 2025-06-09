@@ -5,6 +5,7 @@ const ModuleJsonWebpackPlugin = require("./webpack/module-json-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const FVTTMacroPackWebpackPlugin = require("./webpack/macro-pack-plugin");
+const sharp = require("sharp");
 
 let devDomain = "localhost";
 if (fs.existsSync(".devDomain")) {
@@ -34,7 +35,13 @@ module.exports = {
         { from: "src/style.css", to: "style.css" },
         {
           from: ".github/foundryvtt-mindflayer-logo.png",
-          to: "assets/images/mindflayer.png",
+          to: "assets/images/mindflayer.webp",
+          transform(content) {
+            return sharp(content)
+              .resize({ width: 500, withoutEnlargement: true })
+              .webp()
+              .toBuffer();
+          },
         },
       ],
     }),
