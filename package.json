@@ -27,7 +27,7 @@
     "@semantic-release/npm": "^12.0.1",
     "@semantic-release/release-notes-generator": "^14.0.3",
     "@types/pixi.js": "^5.0.0",
-    "copy-webpack-plugin": "^13.0.0",
+    "copy-webpack-plugin": "^14.0.0",
     "glob": "^11.0.2",
     "greensock": "^1.20.2",
     "handlebars": "^4.7.8",
@@ -36,7 +36,7 @@
     "prettier": "3.5.3",
     "semantic-release": "^24.2.5",
     "sharp": "^0.34.2",
-    "terser-webpack-plugin": "^5.3.14",
+    "terser-webpack-plugin": "^5.4.0",
     "webpack": "^5.99.9",
     "webpack-cli": "^6.0.1"
   },
