@@ -18,6 +18,7 @@ import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
 import { default as Socket } from "../socket";
 import Keypad from "./Keypad";
+import { createControllerConfiguration } from "../../utils/protocol";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "ControllerManager: ";
 const CONTROLLER_FPS = 60;
@@ -149,12 +150,13 @@ export default class ControllerManager extends AbstractSubModule {
         console.debug(
           `${SUB_LOG_PREFIX}Sending updated LEDs to keypad '${keypad.controllerId}'`,
         );
-        const data = JSON.stringify({
-          type: "configuration",
-          "controller-id": keypad.controllerId,
-          led1: hexToRgb(leds[0]),
-          led2: hexToRgb(leds[1]),
-        });
+        const data = JSON.stringify(
+          createControllerConfiguration(
+            keypad.controllerId,
+            hexToRgb(leds[0]),
+            hexToRgb(leds[1]),
+          ),
+        );
         this.socket.send(data);
       }
     }

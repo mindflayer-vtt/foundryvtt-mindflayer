@@ -16,6 +16,7 @@
 import { LOG_PREFIX } from "../../settings/constants";
 import AbstractSubModule from "../AbstractSubModule";
 import Socket from "../socket";
+import { createAmbilightMessage } from "../../utils/protocol";
 
 const LOG_SUB_PREFIX = `${LOG_PREFIX}TableLEDRing: `;
 
@@ -86,12 +87,13 @@ export default class TableLEDRing extends AbstractSubModule {
     if (ledState === null || !this.instance.settings.ambilight.enabled) {
       return;
     }
-    const data = JSON.stringify({
-      type: "ambilight",
-      target: this.instance.settings.ambilight.target,
-      universe: this.instance.settings.ambilight.universe,
-      colors: Array.from(ledState),
-    });
+    const data = JSON.stringify(
+      createAmbilightMessage(
+        this.instance.settings.ambilight.target,
+        this.instance.settings.ambilight.universe,
+        ledState,
+      ),
+    );
     if (this.#tableLEDsLastSent !== data) {
       try {
         this.socket.send(data);

@@ -15,6 +15,7 @@
 "use strict";
 import { LOG_PREFIX } from "../../settings/constants";
 import AbstractSubModule from "../AbstractSubModule";
+import { createReceiverRegistration } from "../../utils/protocol";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "Socket: ";
 
@@ -134,17 +135,7 @@ export default class Socket extends AbstractSubModule {
         }),
     );
     console.log(SUB_LOG_PREFIX + "Connected! ", data);
-    this.send(
-      JSON.stringify({
-        type: "registration",
-        status: "connected",
-        receiver: true,
-        players: game.users.players.map((player) => ({
-          id: player.id,
-          name: player.name,
-        })),
-      }),
-    );
+    this.send(JSON.stringify(createReceiverRegistration(game.users.players)));
   }
 
   /**
