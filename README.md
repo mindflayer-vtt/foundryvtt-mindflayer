@@ -27,8 +27,8 @@ This module is transpiled from multiple files. Therefore you will need a Node in
 
 ## Preparation of the dev environment
 
-1. Install the latest Node 16 version, using a Node version manager like nvm is suggested but not required
-2. Run `npm install` in the root of the repository
+1. Install Node.js 24, preferably with fnm; the exact major is recorded in `.nvmrc`
+2. Run `npm ci` in the root of the repository
 3. Create a `.devDomain` file and put the domain or ip address of your test system in it
    for local development use: `localhost:30000`
 4. Run `npm run build`, when it finishes a `chrome-overrides` folder should be created
