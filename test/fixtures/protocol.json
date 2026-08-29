@@ -1,0 +1,37 @@
+{
+  "controllerRegistration": {
+    "type": "registration",
+    "controller-id": "controller1",
+    "status": "connected",
+    "receiver": false
+  },
+  "receiverRegistration": {
+    "type": "registration",
+    "status": "connected",
+    "receiver": true,
+    "players": [{ "id": "player1", "name": "Player One" }]
+  },
+  "keyEvent": {
+    "type": "key-event",
+    "controller-id": "controller1",
+    "key": "W",
+    "state": "down"
+  },
+  "configuration": {
+    "type": "configuration",
+    "controller-id": "controller1",
+    "led1": { "r": 1, "g": 2, "b": 3 },
+    "led2": { "r": 4, "g": 5, "b": 6 }
+  },
+  "keyboardLogin": {
+    "type": "keyboard-login",
+    "controller-id": "controller1",
+    "player-id": "player1"
+  },
+  "ambilight": {
+    "type": "ambilight",
+    "target": "127.0.0.1",
+    "universe": 1,
+    "colors": [255, 0, 127]
+  }
+}

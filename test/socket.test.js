@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 vi.mock("../src/js/MindFlayer", () => ({ default: class MindFlayer {} }));
 
 import Socket from "../src/js/modules/socket";
+import protocol from "./fixtures/protocol.json";
 
 class FakeWebSocket {
   static instances = [];
@@ -33,7 +34,7 @@ describe("Foundry WebSocket boundary", () => {
     globalThis.WebSocket = FakeWebSocket;
     globalThis.ui = { notifications: { info: vi.fn(), error: vi.fn() } };
     globalThis.game = {
-      users: { players: [{ id: "p1", name: "Player One" }] },
+      users: { players: protocol.receiverRegistration.players },
       i18n: { format: vi.fn(() => "connected"), localize: vi.fn(() => "closed") },
     };
   });
@@ -49,12 +50,9 @@ describe("Foundry WebSocket boundary", () => {
     const connection = FakeWebSocket.instances[0];
     expect(connection.url).toBe("wss://server/ws");
     connection.emit("open");
-    expect(JSON.parse(connection.send.mock.calls[0][0])).toEqual({
-      type: "registration",
-      status: "connected",
-      receiver: true,
-      players: [{ id: "p1", name: "Player One" }],
-    });
+    expect(JSON.parse(connection.send.mock.calls[0][0])).toEqual(
+      protocol.receiverRegistration,
+    );
   });
 
   test("dispatches parsed messages, isolates handler errors, and ignores unsupported messages", () => {
@@ -63,13 +61,30 @@ describe("Foundry WebSocket boundary", () => {
     const second = vi.fn();
     socket.registerListener("key-event", first);
     socket.registerListener("key-event", second);
-    expect(() => socket._onmessage({ data: JSON.stringify({
-      type: "key-event", "controller-id": "controller1", key: "W", state: "down",
-    }) })).not.toThrow();
+    expect(() => socket._onmessage({
+      data: JSON.stringify(protocol.keyEvent),
+    })).not.toThrow();
     expect(first).toHaveBeenCalledOnce();
     expect(second).toHaveBeenCalledOnce();
     expect(() => socket._onmessage({ data: "{}" })).not.toThrow();
     expect(() => socket._onmessage({ data: JSON.stringify({ type: "unknown" }) })).not.toThrow();
+  });
+
+  test("preserves canonical payloads for every message crossing the Foundry socket", () => {
+    const socket = new Socket({ settings: { enabled: false } });
+    for (const message of [
+      protocol.controllerRegistration,
+      protocol.keyEvent,
+      protocol.configuration,
+      protocol.keyboardLogin,
+      protocol.ambilight,
+    ]) {
+      const handler = vi.fn();
+      socket.registerListener(message.type, handler);
+      socket._onmessage({ data: JSON.stringify(message) });
+      expect(handler).toHaveBeenCalledWith(message);
+      expect(Object.isFrozen(handler.mock.calls[0][0])).toBe(true);
+    }
   });
 
   test("propagates malformed JSON as the existing implementation does", () => {
