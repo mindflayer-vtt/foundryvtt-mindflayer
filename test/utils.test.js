@@ -2,6 +2,12 @@ import { describe, expect, test } from "vitest";
 import { deg2rad, Rectangle, Vector } from "../src/js/utils/2d-geometry";
 import { hexToRgb } from "../src/js/utils/color";
 import Key from "../src/js/modules/ControllerManager/Key";
+import {
+  createAmbilightMessage,
+  createControllerConfiguration,
+  createReceiverRegistration,
+} from "../src/js/utils/protocol";
+import protocol from "./fixtures/protocol.json";
 
 describe("controller geometry", () => {
   test("rotates and combines movement vectors", () => {
@@ -26,6 +32,34 @@ describe("protocol color conversion", () => {
   test("serializes valid LED colors and rejects invalid input", () => {
     expect(hexToRgb("#00ff7F")).toEqual({ r: 0, g: 255, b: 127 });
     expect(hexToRgb("invalid")).toBeNull();
+  });
+});
+
+describe("outbound protocol messages", () => {
+  test("creates the canonical receiver registration", () => {
+    expect(
+      createReceiverRegistration(protocol.receiverRegistration.players),
+    ).toEqual(protocol.receiverRegistration);
+  });
+
+  test("creates the canonical controller configuration", () => {
+    expect(
+      createControllerConfiguration(
+        protocol.configuration["controller-id"],
+        protocol.configuration.led1,
+        protocol.configuration.led2,
+      ),
+    ).toEqual(protocol.configuration);
+  });
+
+  test("creates the canonical numeric ambilight slots", () => {
+    expect(
+      createAmbilightMessage(
+        protocol.ambilight.target,
+        protocol.ambilight.universe,
+        new Uint32Array(protocol.ambilight.colors),
+      ),
+    ).toEqual(protocol.ambilight);
   });
 });
 
