@@ -7,7 +7,8 @@
     "build": "webpack --config webpack.config.js",
     "prod": "NODE_ENV=production webpack --config webpack.config.js",
     "style": "prettier --write src/ webpack/ *.json *.md webpack.config.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "semantic-release": "semantic-release"
   },
   "repository": {
@@ -37,6 +38,7 @@
     "semantic-release": "^24.2.5",
     "sharp": "^0.34.2",
     "terser-webpack-plugin": "^5.3.14",
+    "vitest": "^4.1.11",
     "webpack": "^5.99.9",
     "webpack-cli": "^6.0.1"
   },
