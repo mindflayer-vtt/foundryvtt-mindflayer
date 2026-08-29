@@ -12,7 +12,8 @@ webpack also pass unchanged under Node 24.16.0/npm 11.13.0.
   copy-webpack-plugin 13.0.0, terser-webpack-plugin 5.3.14,
   semantic-release 24.2.5, sharp 0.34.2
 
-The eight tests cover receiver registration, canonical message dispatch,
+The eleven tests cover receiver registration, outbound protocol serialization,
+canonical message dispatch,
 malformed/unknown messages, handler isolation, key timing, LED color
 serialization, and movement geometry without requiring Foundry.
 
