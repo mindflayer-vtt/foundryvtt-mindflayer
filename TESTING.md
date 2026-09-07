@@ -20,6 +20,36 @@ running, licensed, disposable Foundry installation. Optional variables are
 `FOUNDRY_TEST_WORLD`, `FOUNDRY_TEST_USER`, and `FOUNDRY_TEST_PASSWORD`. Foundry
 and browser binaries are never downloaded by the ordinary test or CI path.
 
+### Local Foundry 12 smoke instance
+
+The local Compose setup uses `ghcr.io/felddy/foundryvtt:12.331`, the exact
+Foundry release declared as verified in `src/module.tmpl.json`. It bind-mounts
+the production build into Foundry's module directory and keeps all disposable
+Foundry state under the ignored `.foundry-test-data/` directory.
+
+1. Copy `.env.example` to `.env` and fill in either `FOUNDRY_RELEASE_URL` or
+   `FOUNDRY_USERNAME` and `FOUNDRY_PASSWORD`. The former is a time-limited
+   Node.js download URL from the Foundry licenses page; the latter are the
+   credentials for an account with a Foundry license.
+2. Install the browser once with `npx playwright install chromium` (or
+   `npx playwright install --with-deps chromium` on a minimal Linux host).
+3. On the first run, start the setup screen without auto-launching the not-yet
+   created world using `FOUNDRY_TEST_WORLD= npm run test:foundry:up`, then open
+   `http://127.0.0.1:30000`. Create the world whose id is
+   `FOUNDRY_TEST_WORLD`, set the Gamemaster access key to
+   `FOUNDRY_TEST_PASSWORD`, install and enable `lib-wrapper`, `socketlib`, and
+   `Mind Flayer - Token Controller`, and activate a scene.
+4. Run `npm run test:foundry:local` for subsequent smoke runs. It builds the
+   module, starts and waits for the Foundry container, runs Playwright, and
+   stops the container even when the smoke test fails. Use
+   `npm run test:foundry:up` and `npm run test:foundry:down` when debugging and
+   you want to control the server lifetime yourself.
+
+To discard the instance completely, run
+`npm run test:foundry:down` and remove `.foundry-test-data/`. The directory is
+deliberately not removed by the npm script because it contains the activated
+Foundry license. Do not run multiple instances using the same license.
+
 ## Foundry API inventory
 
 The exact call sites remain searchable with:

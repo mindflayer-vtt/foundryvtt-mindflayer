@@ -1,0 +1,20 @@
+services:
+  foundry:
+    image: ghcr.io/felddy/foundryvtt:12.331
+    hostname: mindflayer-foundry-test
+    environment:
+      FOUNDRY_RELEASE_URL: ${FOUNDRY_RELEASE_URL:-}
+      FOUNDRY_USERNAME: ${FOUNDRY_USERNAME:-}
+      FOUNDRY_PASSWORD: ${FOUNDRY_PASSWORD:-}
+      FOUNDRY_VERSION: "12.331"
+      FOUNDRY_ADMIN_KEY: ${FOUNDRY_ADMIN_KEY}
+      FOUNDRY_TELEMETRY: "false"
+      FOUNDRY_UPNP: "false"
+      FOUNDRY_IP_DISCOVERY: "false"
+      FOUNDRY_WORLD: ${FOUNDRY_TEST_WORLD}
+    ports:
+      - "${FOUNDRY_TEST_PORT:-30000}:30000"
+    volumes:
+      - ./.foundry-test-data:/data
+      - ./dist:/data/Data/modules/mindflayer-token-controller:ro
+    restart: "no"

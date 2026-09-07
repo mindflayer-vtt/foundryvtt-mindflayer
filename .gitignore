@@ -85,6 +85,8 @@ lib-cov
 # Coverage directory used by tools like istanbul
 coverage
 *.lcov
+.env
+.foundry-test-data/
 
 # nyc test coverage
 .nyc_output
