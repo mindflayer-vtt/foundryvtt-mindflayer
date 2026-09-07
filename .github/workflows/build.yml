@@ -18,6 +18,8 @@ jobs:
         run: npm ci
       - name: Run validation suite
         run: npm run check
+      - name: Run coverage suite
+        run: npm run test:coverage
       - name: Audit dependencies
         run: npm audit
   version:
