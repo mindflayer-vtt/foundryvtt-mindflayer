@@ -92,6 +92,20 @@ post-migration smoke described below.
   passed to existing ApplicationV1 listeners. The controller mapping UI works
   in v14.367; its classified ApplicationV1 deprecation is deferred rather than
   triggering an unrelated UI rewrite.
+- `Token._onUpdate` remains wrapped so camera-follow updates can remove Foundry's
+  default `pan` option before core handles the update and then invoke the
+  deliberately gradual Mindflayer camera. A post-update public hook cannot
+  suppress the already-requested core pan.
+- `Token._getBorderColor` and `Token._refreshState` remain wrapped to replace the
+  computed border color for controller-associated players and force the border
+  visible for non-secret tokens at the exact rendering phase. Foundry 14 has no
+  public hook that can replace those return/state decisions with equivalent
+  semantics.
+- `PlaceableObject.can` remains wrapped to deny control while fullscreen mode is
+  active, and `Notifications.notify` remains wrapped to turn permanent notices
+  into temporary ones in that mode. Public hooks do not provide equivalent
+  pre-call return/argument control. Both targets use their supported v14
+  namespaces and unregister during Fullscreen cleanup.
 - `Combat.prototype.endCombat` remains wrapped because its result determines
   whether controller LEDs should reset. Public combat hooks do not provide the
   same ability to condition behavior on the cancelled/completed call.
