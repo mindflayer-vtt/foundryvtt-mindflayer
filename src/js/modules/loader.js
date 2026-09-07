@@ -14,9 +14,12 @@
  */
 "use strict";
 import { LOG_PREFIX } from "../settings/constants";
-import { DepGraph } from "dependency-graph";
-import MindFlayer from "../MindFlayer";
-import AbstractSubModule from "./AbstractSubModule";
+import {
+  createModulePlan,
+  loadModules,
+  readyModules,
+  reloadModules,
+} from "./lifecycle";
 
 function importAll(contextRequire) {
   return contextRequire.keys().map((module) => contextRequire(module));
@@ -25,57 +28,25 @@ function importAll(contextRequire) {
 let subModules = importAll(require.context("./", true, /\/index\.js$/));
 
 /**
- * @var {DepGraph} dependencyGraph
+ * @type {ReturnType<typeof createModulePlan> | null}
  */
-let dependencyGraph = null;
+let modulePlan = null;
 
 /**
  * Load all submodules in the order in which they are dependent on one another
  *
- * @param {MindFlayer} instance
+ * @param {import("../MindFlayer").default} instance
  */
 export function init(instance) {
   console.debug(LOG_PREFIX + "Sorting submodules");
 
-  subModules.sort((a, b) => {
-    /*
-     * This functions sorts modules by their dependencies.
-     * starting with the modules with the most dependencies,
-     * ending with the ones who don't have any
-     */
-    const bDeps = b.default.moduleDependencies;
-    if (bDeps.includes(a.default.name)) {
-      return 1;
-    }
-    const aDeps = a.default.moduleDependencies;
-    if (aDeps.includes(b.default.name)) {
-      return -1;
-    }
-    return aDeps.length - bDeps.length;
-  });
-
   console.debug(LOG_PREFIX + "Filtering unnecessary modules");
-
-  let filteredModules = [];
-  let requiredModuleNames = new Set();
-  for (const module of subModules) {
-    const moduleName = module.default.name;
-    if (
-      module.default.shouldStart(instance) ||
-      requiredModuleNames.has(moduleName)
-    ) {
-      filteredModules.push(module);
-      requiredModuleNames.delete(moduleName);
-      for (const name of module.default.moduleDependencies) {
-        requiredModuleNames.add(name);
-      }
-    }
-  }
-  subModules = filteredModules.reverse();
+  modulePlan = createModulePlan(subModules, instance);
+  subModules = modulePlan.descriptors;
 
   console.info(LOG_PREFIX + "Starting submodules");
 
-  __loadModules(instance, filteredModules);
+  loadModules(instance, subModules);
 
   console.info(LOG_PREFIX + "Submodules initialized");
 }
@@ -83,67 +54,24 @@ export function init(instance) {
 /**
  * Ready all submodules in the order in which they are dependent on one another
  *
- * @param {MindFlayer} instance
- * @param {AbstractSubModule[]|null} modules
+ * @param {import("../MindFlayer").default} instance
+ * @param {import("./AbstractSubModule").default[]|null} modules
  */
 export function ready(instance, modules = null) {
   if (!modules) {
     modules = subModules
-      .sort((a, b) => {
-        const bDeps = b.default.moduleDependencies;
-        if (bDeps.includes(a.default.name)) {
-          return -1;
-        }
-        const aDeps = a.default.moduleDependencies;
-        if (aDeps.includes(b.default.name)) {
-          return 1;
-        }
-        return aDeps.length - bDeps.length;
-      })
       .map((mod) => instance.modules[mod.default.name])
       .filter((mod) => mod !== undefined && mod !== null);
   }
   for (const mod of modules) {
-    try {
-      console.debug(`${LOG_PREFIX}Readying Module: ${mod.constructor.name}`);
-      mod.ready();
-    } catch (e) {
-      console.warn(
-        `${LOG_PREFIX}Failed to ready module '${mod.constructor.name}', continuing...`,
-        e,
-      );
-    }
+    console.debug(`${LOG_PREFIX}Readying Module: ${mod.constructor.name}`);
   }
-}
-
-function buildDependencyGraph() {
-  if (dependencyGraph !== null) {
-    return;
-  }
-  dependencyGraph = new DepGraph();
-  for (const mod of subModules) {
-    dependencyGraph.addNode(mod.default.name);
-  }
-  for (const mod of subModules) {
-    for (const dependency of mod.default.moduleDependencies) {
-      dependencyGraph.addDependency(mod.default.name, dependency);
-    }
-  }
-}
-
-function __loadModules(instance, modules) {
-  for (const element of modules) {
-    console.debug(`${LOG_PREFIX}Starting Module: ${element.default.name}`);
-    instance.modules[element.default.name] = new element.default(instance);
-  }
-}
-
-function __unloadModules(instance, modules) {
-  for (let i = modules.length - 1; i >= 0; i--) {
-    const mod = modules[i];
-    instance.modules[mod].unhook();
-    delete instance.modules[mod];
-  }
+  readyModules(modules, (mod, e) => {
+    console.warn(
+      `${LOG_PREFIX}Failed to ready module '${mod.constructor.name}', continuing...`,
+      e,
+    );
+  });
 }
 
 /**
@@ -153,23 +81,12 @@ function __unloadModules(instance, modules) {
  * @param {string} module
  */
 function _reload(instance, module) {
-  buildDependencyGraph();
-  const moduleNamesToReload = [
-    module,
-    ...dependencyGraph.dependantsOf(module, false),
-  ];
-  const loadOrderNames = dependencyGraph
-    .overallOrder(false)
-    .filter(moduleNamesToReload.includes);
-
-  __unloadModules(instance, loadOrderNames);
-
-  const modules = [];
-  for (const name of loadOrderNames) {
-    modules.push(subModules.find((mod) => mod.default.name === name));
-  }
-  __loadModules(instance, modules);
-  ready(instance, modules);
+  reloadModules(instance, modulePlan, module, (mod, e) => {
+    console.warn(
+      `${LOG_PREFIX}Failed to ready module '${mod.constructor.name}', continuing...`,
+      e,
+    );
+  });
 }
 
 export const reload = foundry.utils.debounce(_reload, 500);

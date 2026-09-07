@@ -16,14 +16,13 @@
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import Key from "./Key";
 import * as TokenUtil from "../../utils/tokenUtil";
-import MindFlayer from "../../MindFlayer";
 
 /**
  * Keypad class representing a keypad
  */
 export default class Keypad {
   /**
-   * @type {MindFlayer}
+   * @type {import("../../MindFlayer").default}
    */
   #instance;
   #controllerId;

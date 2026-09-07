@@ -13,13 +13,12 @@
  * see <https://www.gnu.org/licenses/>.
  */
 "use strict";
-import MindFlayer from "../MindFlayer";
 import { VTT_MODULE_NAME } from "../settings/constants";
 
 /**
  * Get the stored instance of this module
  *
- * @returns {MindFlayer} the modules main instance
+ * @returns {import("../MindFlayer").default} the modules main instance
  */
 export function getModuleInstance() {
   return game.modules.get(VTT_MODULE_NAME).instance;
@@ -27,7 +26,7 @@ export function getModuleInstance() {
 /**
  * Set the stored instance of this module
  *
- * @param {MindFlayer} inst instance to be stored
+ * @param {import("../MindFlayer").default} inst instance to be stored
  */
 export function setModuleInstance(inst) {
   game.modules.get(VTT_MODULE_NAME).instance = inst;

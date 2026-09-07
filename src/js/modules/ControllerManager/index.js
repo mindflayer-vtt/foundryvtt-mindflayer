@@ -121,8 +121,7 @@ export default class ControllerManager extends AbstractSubModule {
 
   #tick() {
     const frameTime = new Date().getTime();
-    for (let i = 0; i < this.#tickListeners.length; i++) {
-      const callback = this.#tickListeners[i];
+    for (const [i, callback] of [...this.#tickListeners].entries()) {
       try {
         callback(frameTime, this.#keypads);
       } catch (err) {

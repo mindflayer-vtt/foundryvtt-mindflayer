@@ -13,12 +13,11 @@
  * see <https://www.gnu.org/licenses/>.
  */
 "use strict";
-import MindFlayer from "../MindFlayer";
 
 export default class AbstractSubModule {
   #loaded = false;
   /**
-   * @type {MindFlayer | null}
+   * @type {import("../MindFlayer").default | null}
    */
   #instance = null;
 

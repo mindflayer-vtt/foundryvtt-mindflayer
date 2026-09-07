@@ -1,0 +1,10 @@
+[
+  { "module": "MindFlayer", "target": "Application.prototype._activateCoreListeners", "mode": "MIXED", "condition": "module initialization", "cleanup": "module lifetime" },
+  { "module": "CameraControl", "target": "Token.prototype._onUpdate", "mode": "MIXED", "condition": "canvas initialized", "cleanup": "unhook" },
+  { "module": "TokenBorder", "target": "Token.prototype._getBorderColor", "mode": "MIXED", "condition": "module ready", "cleanup": "unhook" },
+  { "module": "TokenBorder", "target": "Token.prototype._refreshState", "mode": "WRAPPER", "condition": "module ready", "cleanup": "module lifetime (no unregister in current code)" },
+  { "module": "Fullscreen", "target": "PlaceableObject.prototype.can", "mode": "MIXED", "condition": "module construction", "cleanup": "unhook" },
+  { "module": "Fullscreen", "target": "Notifications.prototype.notify", "mode": "WRAPPER", "condition": "Foundry newer than 10", "cleanup": "module lifetime (no unregister in current code)" },
+  { "module": "Fullscreen", "target": "KeyboardManager.prototype._handleKeys", "mode": "MIXED", "condition": "Foundry 10 or older", "cleanup": "unhook" },
+  { "module": "CombatIndicator", "target": "Combat.prototype.endCombat", "mode": "WRAPPER", "condition": "module construction", "cleanup": "module lifetime (no unregister in current code)" }
+]

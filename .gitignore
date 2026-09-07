@@ -235,3 +235,5 @@ chrome-overrides/
 /dependencies/
 foundry.js
 .devDomain
+.briefing
+!test/helpers/foundry.js

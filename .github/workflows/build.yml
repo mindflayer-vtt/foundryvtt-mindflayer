@@ -16,10 +16,10 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run tests
-        run: npm test
-      - name: Run development build
-        run: npm run build
+      - name: Run validation suite
+        run: npm run check
+      - name: Audit dependencies
+        run: npm audit
   version:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

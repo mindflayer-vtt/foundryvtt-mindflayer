@@ -27,6 +27,7 @@ export default class Socket extends AbstractSubModule {
   #oncloseFun = null;
   #onerrorFun = null;
   #initializeWebsocketFun = null;
+  #reconnectTimeout = null;
   #handlers = {};
 
   constructor(instance) {
@@ -47,6 +48,10 @@ export default class Socket extends AbstractSubModule {
   }
 
   unhook() {
+    if (this.#reconnectTimeout !== null) {
+      clearTimeout(this.#reconnectTimeout);
+      this.#reconnectTimeout = null;
+    }
     try {
       this.send(
         JSON.stringify({
@@ -102,6 +107,8 @@ export default class Socket extends AbstractSubModule {
   }
 
   _initializeWebsocket() {
+    if (!this.loaded) return;
+    this.#reconnectTimeout = null;
     this.#connection = new WebSocket(this.instance.settings.websocket.url);
     this.#connection.addEventListener("open", this.#onopenFun);
     this.#connection.addEventListener("error", this.#onerrorFun);
@@ -150,7 +157,7 @@ export default class Socket extends AbstractSubModule {
       );
       console.debug(SUB_LOG_PREFIX + "Websocket connection closed:", evt);
       console.warn(SUB_LOG_PREFIX + "Attempting to reconnect in 5 seconds...");
-      setTimeout(this.#initializeWebsocketFun, 5000);
+      this.#reconnectTimeout = setTimeout(this.#initializeWebsocketFun, 5000);
     }
   }
 
