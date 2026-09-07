@@ -136,3 +136,26 @@ page errors fail the smoke.
 - No physical keypad, LED ring, Ambilight device, or projector was available.
   Those checks remain `REQUIRES HARDWARE` and are listed in `TESTING.md`.
 - Broad npm/jQuery/PIXI upgrades are deferred in `MODERNIZATION.md`.
+
+## Final automated validation
+
+Run from a clean lockfile install on Node 24:
+
+- `npm ci`: pass; 664 packages installed, 0 vulnerabilities reported.
+- `npm run lint`: pass.
+- `npm test`: pass; 10 files and 49 tests.
+- `npm run test:coverage`: pass; statements 39.61% (509/1285),
+  branches 28.07% (130/463), functions 40.05% (137/342), and lines
+  39.82% (501/1258).
+- `npm run build`: pass, including Macro pack round-trip validation.
+- `npm run prod`: pass, including the minimized bundle and Macro pack
+  round-trip validation.
+- `npm audit`: pass; 0 vulnerabilities.
+- `npm run test:foundry:local`: pass; one real Foundry 14.367 Playwright
+  smoke test, followed by automatic container teardown.
+- `git diff --check`: pass.
+
+GitHub Actions runs `npm run check`, `npm run test:coverage`, and `npm audit`
+on pushes and pull requests. The licensed real-Foundry smoke remains local
+because credentials and explicit EULA acceptance are intentionally not stored
+in CI.
