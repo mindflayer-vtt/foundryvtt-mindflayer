@@ -30,20 +30,41 @@ Foundry state under the ignored `.foundry-test-data/` directory.
 1. Copy `.env.example` to `.env` and fill in either `FOUNDRY_RELEASE_URL` or
    `FOUNDRY_USERNAME` and `FOUNDRY_PASSWORD`. The former is a time-limited
    Node.js download URL from the Foundry licenses page; the latter are the
-   credentials for an account with a Foundry license.
+   credentials for an account with a Foundry license. After reviewing Foundry's
+   EULA, set `FOUNDRY_EULA_ACCEPT=true` to let the local harness accept it on
+   first startup. It remains opt-in and defaults to `false`.
 2. Install the browser once with `npx playwright install chromium` (or
    `npx playwright install --with-deps chromium` on a minimal Linux host).
 3. On the first run, start the setup screen without auto-launching the not-yet
    created world using `FOUNDRY_TEST_WORLD= npm run test:foundry:up`, then open
    `http://127.0.0.1:30000`. Create the world whose id is
-   `FOUNDRY_TEST_WORLD`, set the Gamemaster access key to
-   `FOUNDRY_TEST_PASSWORD`, install and enable `lib-wrapper`, `socketlib`, and
-   `Mind Flayer - Token Controller`, and activate a scene.
+   `FOUNDRY_TEST_WORLD` using Simple Worldbuilding, set the Gamemaster access
+   key to `FOUNDRY_TEST_PASSWORD`, and activate a scene. Install and enable
+   libWrapper 1.12.15.0, socketlib 1.1.0, and Mind Flayer - Token Controller.
+   The Mind Flayer build is mounted directly from this checkout's `dist/`, so
+   `npm run test:foundry:up` always rebuilds the exact code under test.
 4. Run `npm run test:foundry:local` for subsequent smoke runs. It builds the
    module, starts and waits for the Foundry container, runs Playwright, and
    stops the container even when the smoke test fails. Use
    `npm run test:foundry:up` and `npm run test:foundry:down` when debugging and
    you want to control the server lifetime yourself.
+
+A successful run executes one test (it does not skip) and prints a sanitized
+runtime record containing Foundry, world, module and dependency versions plus
+the result of every inventoried libWrapper boundary. Foundry 12 exposes its
+core constructors as global lexical bindings, not `window` properties. Seven
+inventory targets apply and must be callable. The eighth,
+`KeyboardManager.prototype._handleKeys`, is explicitly a Foundry 9-or-older
+boundary and does not apply on Foundry 12, which provides
+`_handleKeyboardEvent` instead.
+
+Known harmless output in this headless setup is limited to Foundry's hardware
+acceleration warning, Chromium WebGL performance warnings, the legacy `author`
+manifest-key warning, and Simple Worldbuilding's deprecated grid-field warnings.
+The smoke test still fails on browser console errors and uncaught page errors.
+Mind Flayer's `enabled` client setting defaults to `false`, so its WebSocket
+submodule stays off and a Mindflayer server is not required for this API-boundary
+smoke test.
 
 To discard the instance completely, run
 `npm run test:foundry:down` and remove `.foundry-test-data/`. The directory is
@@ -94,8 +115,8 @@ removed to break accidental circular coupling without changing behavior.
 Known/suspicious current behavior intentionally retained:
 
 - Socket malformed JSON escapes `_onmessage`; handler exceptions are isolated.
-- Socket reconnect uses an untracked five-second timeout. The loaded-state guard
-  prevents reconnection after normal asynchronous close-on-unhook.
+- Socket reconnect uses a tracked five-second timeout. `unhook()` cancels it,
+  and the loaded-state guard prevents reconnection after asynchronous close.
 - several libWrapper registrations have module-lifetime rather than explicit
   cleanup, as recorded in the inventory;
 - camera padding is six grid squares and center clamping can dominate the raw

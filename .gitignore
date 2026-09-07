@@ -87,6 +87,8 @@ coverage
 *.lcov
 .env
 .foundry-test-data/
+/playwright-report/
+/test-results/
 
 # nyc test coverage
 .nyc_output
