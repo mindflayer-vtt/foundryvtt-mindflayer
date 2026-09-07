@@ -59,3 +59,23 @@ were not exercised by the baseline smoke and therefore remain unvalidated.
   Timer` Macro document and its command successfully.
 
 Production API boundaries and behavioral smoke coverage remain in progress.
+
+### Application and token contracts
+
+- The DM controller-assignment UI renders and closes successfully in real
+  Foundry 14.367. It remains on deprecated Application v1/FormApplication
+  because v14 still provides that compatibility API and no behavioral rewrite
+  is required.
+- Token ownership lookup now uses the public
+  `Actor.testUserPermission(user, "OWNER")` API instead of reading raw ownership
+  data.
+- Combatant hidden/defeated filtering now reads current Combatant document
+  properties rather than the removed v12-era `.data` path.
+- Door proximity geometry now uses Token placeable pixel dimensions (`w`/`h`)
+  consistently with its pixel coordinates.
+- Torch toggling now exclusively updates `TokenDocument.light`; the obsolete
+  pre-document token update branches were removed. Document updates drive the
+  v14 canvas refresh without manually reinitializing the light source.
+- With the external Mindflayer WebSocket endpoint narrowly stubbed, all feature
+  submodules initialize and reach ready without an uncaught page or console
+  error in Foundry 14.367.

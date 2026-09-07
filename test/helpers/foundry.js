@@ -28,7 +28,7 @@ export function resetFoundryFakes() {
     mergeObject: (left, right) => ({ ...left, ...right }),
   } };
   globalThis.game = {
-    version: "12", canvas: { initialized: true }, combat: null,
+    version: "14.367", canvas: { initialized: true }, combat: null,
     users: { contents: [], players: [] }, scenes: { active: null },
     modules: new Map([["mindflayer", { active: true, instance: null }]]),
     user: {

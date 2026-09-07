@@ -61,8 +61,8 @@ describe("camera control characterization", () => {
   });
 
   test("includes visible combat and keypad tokens but excludes hidden/defeated combatants", () => {
-    const visible = { x: 200, y: 200, w: 100, h: 100, combatant: { data: { hidden: false, defeated: false } } };
-    const hidden = { x: 1800, y: 800, w: 100, h: 100, combatant: { data: { hidden: true, defeated: false } } };
+    const visible = { x: 200, y: 200, w: 100, h: 100, combatant: { hidden: false, defeated: false } };
+    const hidden = { x: 1800, y: 800, w: 100, h: 100, combatant: { hidden: true, defeated: false } };
     game.combat = { turns: [{ token: { object: visible } }, { token: { object: hidden } }] };
     canvas.scene = { dimensions: { sceneRect: { x: 0, y: 0, width: 2000, height: 1000 }, size: 100 } };
     const control = new CameraControl(instanceWith(managerWith([])));
@@ -105,7 +105,7 @@ describe("camera control characterization", () => {
 describe("keypad feature integrations", () => {
   test("door input targets only an intersecting door and cleans up", () => {
     const player = { name: "One" };
-    const token = { name: "Hero", x: 100, y: 100, width: 100, height: 100 };
+    const token = { name: "Hero", x: 100, y: 100, w: 100, h: 100 };
     const keypad = { player, isJustDown: vi.fn(() => true) };
     game.user.getFlag.mockReturnValue("hero");
     canvas.tokens.placeables = [{ ...token, id: "hero" }];
@@ -122,9 +122,9 @@ describe("keypad feature integrations", () => {
     expect(manager.unregisterTickListener).toHaveBeenCalledOnce();
   });
 
-  test("torch input toggles the selected token on and off and handles no token", async () => {
+  test("torch input toggles the selected token on and off", async () => {
     const update = vi.fn(() => Promise.resolve());
-    const token = { name: "Hero", emitsLight: false, document: { update }, initializeLightSource: vi.fn() };
+    const token = { name: "Hero", emitsLight: false, document: { update } };
     const keypad = { player: { name: "One" }, token, isJustDown: vi.fn(() => true) };
     const manager = managerWith([keypad]);
     const torch = new TokenTorch(instanceWith(manager));
@@ -133,28 +133,22 @@ describe("keypad feature integrations", () => {
     await Promise.resolve();
     expect(update).toHaveBeenCalledWith({ light: expect.objectContaining({ bright: 20, dim: 40 }) });
     token.emitsLight = true;
-    token.update = vi.fn();
     manager.tick(2);
-    expect(token.update).toHaveBeenCalledWith({ brightLight: 0, dimLight: 0 });
-    keypad.token = null;
-    expect(() => manager.tick(3)).not.toThrow();
+    expect(update).toHaveBeenCalledWith({ light: { bright: 0, dim: 0 } });
     torch.unhook();
     expect(manager.unregisterTickListener).toHaveBeenCalledOnce();
   });
 
-  test("preserves both legacy torch-on Foundry API branches", () => {
-    const keypad = { player: { name: "One" }, isJustDown: vi.fn(() => true) };
+  test("torch input safely ignores a keypad without a selected token", () => {
+    const keypad = {
+      player: { name: "One" },
+      token: null,
+      isJustDown: vi.fn(() => true),
+    };
     const manager = managerWith([keypad]);
     const torch = new TokenTorch(instanceWith(manager));
     torch.ready();
-
-    keypad.token = { name: "Legacy", emitsLight: false, update: vi.fn() };
-    manager.tick(1);
-    expect(keypad.token.update).toHaveBeenCalledWith(expect.objectContaining({ brightLight: 20, dimLight: 40 }));
-
-    const dataUpdate = vi.fn();
-    keypad.token = { name: "Old", emitsLight: false, data: { update: dataUpdate }, updateSource: vi.fn() };
-    manager.tick(2);
-    expect(dataUpdate).toHaveBeenCalledWith({ light: expect.objectContaining({ bright: 20, dim: 40 }) });
+    expect(() => manager.tick(1)).not.toThrow();
   });
+
 });

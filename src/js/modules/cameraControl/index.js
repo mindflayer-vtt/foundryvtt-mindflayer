@@ -99,7 +99,7 @@ export default class CameraControl extends AbstractSubModule {
       if (!Object.hasOwn(token, "combatant")) {
         return true;
       }
-      return !token.combatant.data.hidden && !token.combatant.data.defeated;
+      return !token.combatant.hidden && !token.combatant.defeated;
     });
 
     const pad = gridSize * (30 / 5);

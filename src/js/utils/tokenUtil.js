@@ -14,7 +14,6 @@
  */
 "use strict";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../settings/constants";
-import { isFoundryNewerThan } from "./module";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenUtil: ";
 
@@ -28,13 +27,9 @@ const SUB_LOG_PREFIX = LOG_PREFIX + "TokenUtil: ";
  */
 export function findAllTokensFor(player, ignoreEmpty = false) {
   const tokens = canvas.tokens.placeables
-    .filter((token) => {
-      if (isFoundryNewerThan("10")) {
-        return token.actor && token.actor.ownership[player.id] >= 3;
-      } else {
-        return token.actor && token.actor.data.permission[player.id] >= 3;
-      }
-    })
+    .filter(
+      (token) => token.actor?.testUserPermission(player, "OWNER") === true,
+    )
     .sort((a, b) => a.id.localeCompare(b.id));
   if (!ignoreEmpty && tokens.length <= 0) {
     console.warn(

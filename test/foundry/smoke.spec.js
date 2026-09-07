@@ -12,6 +12,35 @@ test.describe("real Foundry compatibility", () => {
 
   test("Mindflayer and its critical Foundry 14 boundaries are available", async ({ page }) => {
     const startupErrors = [];
+    await page.addInitScript(() => {
+      const NativeWebSocket = globalThis.WebSocket;
+      class MindflayerSocket {
+        OPEN = 1;
+        readyState = 1;
+        listeners = new Map();
+        constructor() {
+          queueMicrotask(() => this.listeners.get("open")?.forEach((fn) => fn(new Event("open"))));
+        }
+        addEventListener(type, listener) {
+          if (!this.listeners.has(type)) this.listeners.set(type, []);
+          this.listeners.get(type).push(listener);
+        }
+        send() {}
+        close() {
+          this.readyState = 3;
+        }
+      }
+      globalThis.WebSocket = class WebSocketProxy {
+        static CONNECTING = 0;
+        static OPEN = 1;
+        static CLOSING = 2;
+        static CLOSED = 3;
+        constructor(url, protocols) {
+          if (String(url) === "wss://localhost:443/ws/vtt") return new MindflayerSocket();
+          return new NativeWebSocket(url, protocols);
+        }
+      };
+    });
     page.on("pageerror", (error) => startupErrors.push(error.message));
     page.on("console", (message) => {
       if (message.type() === "error") startupErrors.push(`console: ${message.text()}`);
@@ -40,6 +69,19 @@ test.describe("real Foundry compatibility", () => {
         timeout: 30_000,
       })
       .toBe(true);
+
+    await page.evaluate(() => {
+      const menu = game.settings.menus.get(
+        "mindflayer-token-controller.mindflayer-token-controller",
+      );
+      globalThis.__mindflayerSmokeConfig = new menu.type();
+      globalThis.__mindflayerSmokeConfig.render(true);
+    });
+    const config = page.locator("#mindflayer-token-controller-config");
+    await expect(config).toBeVisible();
+    await expect(config.locator('input[name^="mappings"]')).toHaveCount(1);
+    await page.evaluate(() => globalThis.__mindflayerSmokeConfig.close());
+
     const state = await page.evaluate(async (boundaries) => {
       const resolve = (path) => {
         const [root, ...parts] = path.split(".");
@@ -99,6 +141,26 @@ test.describe("real Foundry compatibility", () => {
     expect(state.targets).toHaveLength(wrapperBoundaries.length);
     expect(state.targets.filter(({ applicable, exists }) => applicable && !exists)).toEqual([]);
     expect(state.macroPack.timerCommand).toContain(".instance.modules.Timer.dialog()");
+    await page
+      .evaluate(() => game.settings.set("mindflayer-token-controller", "enabled", true))
+      .catch(() => {});
+    await page.waitForLoadState("domcontentloaded");
+    await expect
+      .poll(
+        () => page.evaluate(() => globalThis.game?.ready === true).catch(() => false),
+        { timeout: 30_000 },
+      )
+      .toBe(true);
+    const loadedSubmodules = await page.evaluate(() =>
+      Object.keys(game.modules.get("mindflayer-token-controller").instance.modules),
+    );
+    expect(loadedSubmodules).toEqual(
+      expect.arrayContaining(["Socket", "ControllerManager", "CameraControl", "DoorHandler", "TokenTorch"]),
+    );
+    await page
+      .evaluate(() => game.settings.set("mindflayer-token-controller", "enabled", false))
+      .catch(() => {});
+    await page.waitForLoadState("domcontentloaded");
     expect(startupErrors).toEqual([]);
     console.log(JSON.stringify(state, null, 2));
   });

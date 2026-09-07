@@ -2,10 +2,19 @@ import { describe, expect, test, vi } from "vitest";
 import * as TokenUtil from "../../src/js/utils/tokenUtil";
 
 function token(id, owners = {}, actorId = id) {
-  return { id, actor: { id: actorId, ownership: owners }, refresh: vi.fn() };
+  return {
+    id,
+    actor: {
+      id: actorId,
+      testUserPermission: vi.fn((user, permission) =>
+        permission === "OWNER" && owners[user.id] >= 3,
+      ),
+    },
+    refresh: vi.fn(),
+  };
 }
 
-describe("token utilities at the Foundry 12 boundary", () => {
+describe("token utilities at the Foundry 14 boundary", () => {
   test("finds owned controllable tokens in stable id order", () => {
     const player = { id: "p1", name: "Player" };
     canvas.tokens.placeables = [token("z", { p1: 3 }), token("a", { p1: 3 }), token("ignored", { p1: 2 }), { id: "actorless", actor: null }];

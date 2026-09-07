@@ -99,10 +99,10 @@ export default class DoorHandler extends AbstractSubModule {
     const interactionBounds = new Rectangle(
       new Vector(
         token.x - canvas.grid.size,
-        token.y + token.height + canvas.grid.size,
+        token.y + token.h + canvas.grid.size,
       ),
       new Vector(
-        token.x + token.width + canvas.grid.size,
+        token.x + token.w + canvas.grid.size,
         token.y - canvas.grid.size,
       ),
     );
