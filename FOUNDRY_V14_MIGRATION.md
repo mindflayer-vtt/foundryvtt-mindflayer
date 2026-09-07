@@ -8,8 +8,9 @@
 - Physical-table validation: not performed; it remains required after automated migration.
 
 The requested `PRE_UPGRADE_BASELINE.md` and `MODERNIZATION.md` files were not
-present at the migration starting SHA. `TESTING.md` and `AGENTS.md` contain the
-available baseline and modernization guidance.
+present at the migration starting SHA. `TESTING.md` and `AGENTS.md` contained
+the available baseline guidance; `MODERNIZATION.md` has now been created for
+explicitly deferred work.
 
 ## Unchanged-module diagnostic
 
@@ -39,7 +40,8 @@ Observed before migration fixes:
 - The baseline smoke emitted no uncaught page error or browser console error.
 
 Configuration UI, camera, door, torch, macro-pack, and selective reload behavior
-were not exercised by the baseline smoke and therefore remain unvalidated.
+were not exercised by that unchanged-code diagnostic. They are covered by the
+post-migration smoke described below.
 
 ## Migration log
 
@@ -55,10 +57,9 @@ were not exercised by the baseline smoke and therefore remain unvalidated.
 - Replaced the generated NeDB `packs/macro.db` file with a LevelDB
   `packs/macros` directory built by `@foundryvtt/foundryvtt-cli` 3.0.4.
 - Updated the macro source's legacy `permission` field to `ownership`.
-- Real Foundry 14.367 indexed the pack with one entry and loaded the `Start
-  Timer` Macro document and its command successfully.
-
-Production API boundaries and behavioral smoke coverage remain in progress.
+- Builds compile and then extract the pack with the official CLI, validating
+  the expected Macro IDs before succeeding. Real Foundry 14.367 indexed the
+  pack with one entry and loaded the `Start Timer` document and its command.
 
 ### Application and token contracts
 
@@ -71,11 +72,67 @@ Production API boundaries and behavioral smoke coverage remain in progress.
   data.
 - Combatant hidden/defeated filtering now reads current Combatant document
   properties rather than the removed v12-era `.data` path.
-- Door proximity geometry now uses Token placeable pixel dimensions (`w`/`h`)
-  consistently with its pixel coordinates.
+- Camera framing and door proximity geometry now use the v14 Token placeable's
+  scene-space `bounds`. Runtime probing showed direct `x`/`y` values are local
+  while `bounds` contains the disposable token's scene coordinates.
 - Torch toggling now exclusively updates `TokenDocument.light`; the obsolete
   pre-document token update branches were removed. Document updates drive the
   v14 canvas refresh without manually reinitializing the light source.
 - With the external Mindflayer WebSocket endpoint narrowly stubbed, all feature
   submodules initialize and reach ready without an uncaught page or console
   error in Foundry 14.367.
+
+### Runtime boundaries and cleanup
+
+- Token and PlaceableObject wrapper targets use
+  `foundry.canvas.placeables`; Notifications uses
+  `foundry.applications.ui`. This removes v13-deprecated global-alias access.
+- The top-level Application wrapper now targets
+  `foundry.appv1.api.Application`. It remains necessary to normalize the HTML
+  passed to existing ApplicationV1 listeners. The controller mapping UI works
+  in v14.367; its classified ApplicationV1 deprecation is deferred rather than
+  triggering an unrelated UI rewrite.
+- `Combat.prototype.endCombat` remains wrapped because its result determines
+  whether controller LEDs should reset. Public combat hooks do not provide the
+  same ability to condition behavior on the cancelled/completed call.
+- Door interaction retains the contained DoorControl `_onMouseDown` call. A
+  real v14 probe showed it performs the state transition while preserving
+  Foundry's interaction, permission, socket, and hook semantics; Wall
+  `_onClickLeft` did not provide equivalent behavior.
+- Selective reload now unregisters every reloaded libWrapper target. Fullscreen
+  also releases its `shareImage` socket listener, and its dead v9 keyboard
+  wrapper branch was removed.
+- Timer cleanup now aborts its private timer list, detaches and destroys its
+  PIXI container from the same stage to which it was added, and unregisters its
+  `canvasPan` hook.
+- Ambilight reads the current Scene `backgroundColor` property; the obsolete
+  `.data.backgroundColor` branch was removed.
+
+### Automated v14 behavioral result
+
+The real Foundry 14.367 smoke verifies:
+
+- exact runtime build, active module, initialized canvas, readable settings,
+  libWrapper 1.13.5.1, and socketlib 1.1.4;
+- all seven v14-applicable wrapper targets resolve and the v9-only target is
+  explicitly non-applicable;
+- the DM mapping UI renders and closes;
+- the generated Macro pack indexes and loads its `Start Timer` document;
+- a synthetic controller drives reversible token movement, camera pan, door
+  open, and torch off/on/off behavior against disposable documents;
+- three WebSocket-path changes unload and replace all 14 modules in Socket's
+  dependant closure, preserve three unrelated module instances, call `ready`
+  on the new Socket, keep hook counts stable, and leave one live WebSocket;
+- disposable token, wall, flags, mappings, and settings are restored or removed.
+
+The warning policy permits only the classified ApplicationV1 deprecation and
+headless Chromium/graphics warnings. Other browser warnings and all console or
+page errors fail the smoke.
+
+## Deferred validation
+
+- Foundry 14.359 is not claimed or tested; manifest minimum and verified are
+  both the exact tested build 14.367.
+- No physical keypad, LED ring, Ambilight device, or projector was available.
+  Those checks remain `REQUIRES HARDWARE` and are listed in `TESTING.md`.
+- Broad npm/jQuery/PIXI upgrades are deferred in `MODERNIZATION.md`.

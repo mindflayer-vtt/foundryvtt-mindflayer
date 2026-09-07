@@ -49,19 +49,30 @@ Foundry state under the ignored `.foundry-test-data/` directory.
 
 A successful run executes one test (it does not skip) and prints a sanitized
 runtime record containing Foundry, world, module and dependency versions plus
-the result of every inventoried libWrapper boundary. Foundry exposes its
-core constructors as global lexical bindings, not `window` properties. Seven
-inventory targets apply and must be callable. The eighth,
+the result of every inventoried libWrapper boundary. Seven inventory targets
+apply and must be callable through their v14 namespaces. The eighth,
 `KeyboardManager.prototype._handleKeys`, is explicitly a Foundry 9-or-older
 boundary and does not apply on Foundry 14.
 
+The smoke opens the DM configuration UI, reads the shipped Macro compendium,
+enables Mindflayer, and uses a narrowly scoped in-browser WebSocket double only
+for `wss://localhost:443/`. Foundry's own Socket.IO connection remains native.
+It registers a synthetic controller and uses a disposable token and wall to
+verify keypad movement, camera pan invocation, door open, and torch on/off. It
+restores settings and document state and removes both documents afterwards.
+It then changes the WebSocket path three times and verifies the complete Socket
+dependant closure is unloaded, recreated, readied, and free of accumulating
+canvas hooks or WebSocket connections.
+
 Known harmless output in this headless setup is limited to Foundry's hardware
-acceleration warning and Chromium WebGL performance warnings. Manifest and
-module-generated warnings are migration failures until explicitly classified.
-The smoke test still fails on browser console errors and uncaught page errors.
-Mind Flayer's `enabled` client setting defaults to `false`, so its WebSocket
-submodule stays off and a Mindflayer server is not required for this API-boundary
-smoke test.
+acceleration warning and Chromium WebGL performance warnings. The v14-supported
+but deprecated ApplicationV1 warning is explicitly classified because the
+unchanged controller-mapping FormApplication is exercised successfully and Foundry declares
+support through v15. Other manifest/module warnings are migration failures.
+The smoke fails on browser console errors and uncaught page errors. A real
+Mindflayer server is not required because wire-level protocol behavior remains
+covered by the ordinary regression suite and the browser double drives the real
+module's Socket and ControllerManager paths.
 
 To use another disposable location, set `FOUNDRY_TEST_DATA` in `.env`. To
 discard the default instance completely, run `npm run test:foundry:down` and
@@ -84,11 +95,11 @@ Current boundaries are:
   `game.users`, `game.user` flags/role, `game.i18n`, `game.socket`, `game.keybindings`,
   `game.combat`, `game.scenes`, and `game.canvas`;
 - canvas/documents: `canvas.tokens.placeables/controlled/moveMany`, token actor
-  ownership, token refresh/update/document update/light-source initialization,
+  ownership, token refresh/update/document update and light documents,
   `canvas.walls.doors`, door-control `_onMouseDown`, `canvas.animatePan`, scene/grid
   dimensions, active-layer release, stage/controls/app renderer;
 - UI/framework: `ui.notifications`, `FormApplication`, `Application`, jQuery,
-  `foundry.utils.debounce/mergeObject/isNewerVersion`, PIXI containers, graphics,
+  `foundry.utils.debounce/mergeObject`, PIXI containers, graphics,
   text, points, rectangles, transforms, and `FederatedMouseEvent`;
 - wrappers: the machine-checked list is in
   `test/fixtures/libwrapper-boundaries.json`, including registration conditions
@@ -115,12 +126,12 @@ Known/suspicious current behavior intentionally retained:
 - Socket malformed JSON escapes `_onmessage`; handler exceptions are isolated.
 - Socket reconnect uses a tracked five-second timeout. `unhook()` cancels it,
   and the loaded-state guard prevents reconnection after asynchronous close.
-- several libWrapper registrations have module-lifetime rather than explicit
-  cleanup, as recorded in the inventory;
+- the top-level Application listener wrapper has module/page lifetime; every
+  selectively reloaded wrapper has explicit cleanup as recorded in the inventory;
 - camera padding is six grid squares and center clamping can dominate the raw
   bounding-box center on small scenes;
-- torch code contains three historical Foundry API branches and preserves their
-  differing animation/alpha payloads.
+- torch uses the v14 TokenDocument light contract; historical token-data and
+  manual light-source initialization branches were removed.
 
 ## Physical-table regression checklist
 
