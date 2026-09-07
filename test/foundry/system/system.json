@@ -1,0 +1,11 @@
+{
+  "id": "mindflayer-smoke-system",
+  "title": "Mindflayer Smoke Test System",
+  "description": "Minimal disposable system for the Mindflayer Foundry runtime smoke suite.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "14.359",
+    "verified": "14.367"
+  },
+  "esmodules": ["system.js"]
+}

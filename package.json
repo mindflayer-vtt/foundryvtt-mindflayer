@@ -14,7 +14,7 @@
     "test:foundry": "node --env-file-if-exists=.env node_modules/@playwright/test/cli.js test --config playwright.foundry.config.mjs",
     "test:foundry:eula": "node --env-file-if-exists=.env test/foundry/accept-eula.mjs",
     "test:foundry:prepare": "node --env-file-if-exists=.env test/foundry/setup-runtime.mjs",
-    "test:foundry:up": "npm run prod && docker compose --env-file .env -f compose.foundry-test.yml up -d --wait && npm run test:foundry:eula",
+    "test:foundry:up": "node --env-file-if-exists=.env test/foundry/prepare-data.mjs && npm run prod && docker compose --env-file .env -f compose.foundry-test.yml up -d --wait && npm run test:foundry:eula",
     "test:foundry:setup": "npm run test:foundry:up && npm run test:foundry:prepare",
     "test:foundry:down": "docker compose --env-file .env -f compose.foundry-test.yml down",
     "test:foundry:local": "sh -c 'npm run test:foundry:setup && trap \"npm run test:foundry:down\" EXIT INT TERM && npm run test:foundry'",

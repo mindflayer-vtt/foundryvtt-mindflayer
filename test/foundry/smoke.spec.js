@@ -10,7 +10,7 @@ const configured = Boolean(process.env.FOUNDRY_URL);
 test.describe("real Foundry compatibility", () => {
   test.skip(!configured, "FOUNDRY_URL is not configured");
 
-  test("Mindflayer and its critical Foundry 12 boundaries are available", async ({ page }) => {
+  test("Mindflayer and its critical Foundry 14 boundaries are available", async ({ page }) => {
     const startupErrors = [];
     page.on("pageerror", (error) => startupErrors.push(error.message));
     page.on("console", (message) => {
@@ -26,9 +26,9 @@ test.describe("real Foundry compatibility", () => {
     if (process.env.FOUNDRY_TEST_PASSWORD) {
       const user = process.env.FOUNDRY_TEST_USER;
       if (user) {
-        await page.locator('select[name="userid"], select[name="user"]').selectOption({
-          label: user,
-        });
+        const userSelect = page.locator('select[name="userid"], select[name="user"]');
+        if (await userSelect.count()) await userSelect.selectOption({ label: user });
+        else await page.locator('input[name="username"]').fill(user);
       }
       await page.locator("input[name=password]").fill(process.env.FOUNDRY_TEST_PASSWORD);
       await page.locator("button[name=join]").click();
@@ -71,6 +71,7 @@ test.describe("real Foundry compatibility", () => {
       };
     }, wrapperBoundaries);
     expect(state).toMatchObject({
+      foundryVersion: "14.367",
       moduleActive: true,
       instanceLoaded: true,
       canvasReady: true,

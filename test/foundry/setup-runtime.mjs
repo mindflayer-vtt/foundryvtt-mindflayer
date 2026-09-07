@@ -2,25 +2,18 @@ import { chromium } from "@playwright/test";
 
 const packages = [
   {
-    type: "system",
-    id: "worldbuilding",
-    version: "0.8.2",
-    manifest:
-      "https://raw.githubusercontent.com/foundryvtt/worldbuilding/release-082/system.json",
-  },
-  {
     type: "module",
     id: "lib-wrapper",
-    version: "1.12.15.0",
+    version: "1.13.5.1",
     manifest:
-      "https://github.com/ruipin/fvtt-lib-wrapper/releases/download/v1.12.15.0/module.json",
+      "https://github.com/ruipin/fvtt-lib-wrapper/releases/download/v1.13.5.1/module.json",
   },
   {
     type: "module",
     id: "socketlib",
-    version: "1.1.0",
+    version: "v1.1.4",
     manifest:
-      "https://github.com/manuelVo/foundryvtt-socketlib/raw/v1.1.0/module.json",
+      "https://github.com/farling42/foundryvtt-socketlib/releases/download/v1.1.4/module.json",
   },
 ];
 
@@ -50,7 +43,7 @@ async function authenticateSetup(page) {
 
 async function dismissTour(page) {
   const exit = page.locator('.tour a[data-action="exit"]');
-  if (await exit.isVisible()) await exit.click();
+  if (await exit.count()) await exit.click({ force: true });
 }
 
 async function preparePackagesAndWorld(page) {
@@ -68,7 +61,7 @@ async function preparePackagesAndWorld(page) {
     if (!installed) {
       console.log(`Installing ${dependency.id} ${dependency.version}`);
       await page.evaluate(
-        ({ type, manifest }) => Setup.installPackage({ type, manifest }).then(() => null),
+        ({ type, manifest }) => game.installPackage({ type, manifest }).then(() => null),
         dependency,
       );
       await page.waitForFunction(
@@ -88,14 +81,13 @@ async function preparePackagesAndWorld(page) {
     });
     await dismissTour(page);
     await page.locator('button[data-action="worldCreate"]').click();
-    const form = page.locator('form:has(input[name="id"])');
+    const form = page.locator('form:has(input[name="world-id"])');
     await form.locator('input[name="title"]').fill("Mindflayer Smoke Test");
-    await form.locator('input[name="id"]').fill(worldId);
-    await form.locator('select[name="system"]').selectOption("worldbuilding");
-    await form.locator('button[type="submit"]').click();
-    await page.waitForFunction((id) => game.worlds.has(id), worldId, {
-      timeout: 60_000,
-    });
+    await form.locator('input[name="world-id"]').fill(worldId);
+    await form.locator('select[name="system"]').selectOption("mindflayer-smoke-system");
+    await form.getByRole("button", { name: "Continue" }).click();
+    await page.waitForURL((url) => url.pathname === "/join", { timeout: 60_000 });
+    return true;
   }
 
   await dismissTour(page);
@@ -110,9 +102,9 @@ async function joinWorld(page, password) {
   const target = new URL("/join", foundryUrl);
   target.searchParams.set("world", worldId);
   if (new URL(page.url()).pathname !== "/join") await page.goto(target.toString());
-  await page.locator('select[name="userid"], select[name="user"]').selectOption({
-    label: userName,
-  });
+  const userSelect = page.locator('select[name="userid"], select[name="user"]');
+  if (await userSelect.count()) await userSelect.selectOption({ label: userName });
+  else await page.locator('input[name="username"]').fill(userName);
   if (password) await page.locator('input[name="password"]').fill(password);
   await page.locator('button[name="join"]').click();
   await page.waitForFunction(() => globalThis.game?.ready === true, null, {
@@ -122,25 +114,32 @@ async function joinWorld(page, password) {
 
 const browser = await chromium.launch({ headless: true });
 try {
-  const page = await browser.newPage();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const target = new URL("/join", foundryUrl);
   target.searchParams.set("world", worldId);
   await page.goto(target.toString());
 
   await page.waitForFunction(
     () =>
-      Boolean(document.querySelector('select[name="userid"], select[name="user"]')) ||
+      Boolean(
+        document.querySelector(
+          'select[name="userid"], select[name="user"], input[name="username"]',
+        ),
+      ) ||
       document.body.textContent.includes("There is currently no active game session"),
   );
 
   const noActiveWorld = await page.getByText("There is currently no active game session").isVisible();
   const freshWorld = noActiveWorld ? await preparePackagesAndWorld(page) : false;
 
-  await page.locator('select[name="userid"], select[name="user"]').waitFor({
+  const userControl = page.locator(
+    'select[name="userid"], select[name="user"], input[name="username"]',
+  );
+  await userControl.waitFor({
     state: "visible",
     timeout: 60_000,
   });
-  const existingWorld = await page.locator('select[name="userid"], select[name="user"]').isVisible();
+  const existingWorld = await userControl.isVisible();
   if (!existingWorld) throw new Error(`Foundry did not expose the ${worldId} join form`);
 
   let configuredPassword = !freshWorld;

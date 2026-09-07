@@ -20,10 +20,11 @@ running, licensed, disposable Foundry installation. Optional variables are
 `FOUNDRY_TEST_WORLD`, `FOUNDRY_TEST_USER`, and `FOUNDRY_TEST_PASSWORD`. Foundry
 and browser binaries are never downloaded by the ordinary test or CI path.
 
-### Local Foundry 12 smoke instance
+### Local Foundry 14 smoke instance
 
-The local Compose setup uses `ghcr.io/felddy/foundryvtt:12.331`, the exact
-Foundry release declared as verified in `src/module.tmpl.json`. It bind-mounts
+The local Compose setup defaults to `ghcr.io/felddy/foundryvtt:14.367`, the
+exact migration target. `FOUNDRY_VERSION` is the single exact-build override;
+the harness never falls back to `latest`. It bind-mounts
 the production build into Foundry's module directory and keeps all disposable
 Foundry state under the ignored `.foundry-test-data/` directory.
 
@@ -36,10 +37,11 @@ Foundry state under the ignored `.foundry-test-data/` directory.
 2. Install the browser once with `npx playwright install chromium` (or
    `npx playwright install --with-deps chromium` on a minimal Linux host).
 3. Run `npm run test:foundry:setup`. It builds the exact checkout, starts
-   Foundry, applies the explicit EULA opt-in, installs Simple Worldbuilding
-   0.8.2, libWrapper 1.12.15.0 and socketlib 1.1.0, creates and launches the
+   Foundry, applies the explicit EULA opt-in, installs libWrapper 1.13.5.1 and
+   socketlib 1.1.4, creates and launches the
    configured disposable world, sets the Gamemaster access key, enables all
-   three modules, and creates an active scene. The command is idempotent.
+   three modules, and creates an active scene using the repository's minimal
+   v14-only smoke-test system. The command is idempotent.
 4. Run `npm run test:foundry:local` to perform setup, execute the smoke test,
    and stop the container even when the test fails. Use `test:foundry:up`,
    `test:foundry:prepare`, `test:foundry`, and `test:foundry:down` separately
@@ -47,16 +49,15 @@ Foundry state under the ignored `.foundry-test-data/` directory.
 
 A successful run executes one test (it does not skip) and prints a sanitized
 runtime record containing Foundry, world, module and dependency versions plus
-the result of every inventoried libWrapper boundary. Foundry 12 exposes its
+the result of every inventoried libWrapper boundary. Foundry exposes its
 core constructors as global lexical bindings, not `window` properties. Seven
 inventory targets apply and must be callable. The eighth,
 `KeyboardManager.prototype._handleKeys`, is explicitly a Foundry 9-or-older
-boundary and does not apply on Foundry 12, which provides
-`_handleKeyboardEvent` instead.
+boundary and does not apply on Foundry 14.
 
 Known harmless output in this headless setup is limited to Foundry's hardware
-acceleration warning, Chromium WebGL performance warnings, the legacy `author`
-manifest-key warning, and Simple Worldbuilding's deprecated grid-field warnings.
+acceleration warning and Chromium WebGL performance warnings. Manifest and
+module-generated warnings are migration failures until explicitly classified.
 The smoke test still fails on browser console errors and uncaught page errors.
 Mind Flayer's `enabled` client setting defaults to `false`, so its WebSocket
 submodule stays off and a Mindflayer server is not required for this API-boundary

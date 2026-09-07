@@ -1,12 +1,12 @@
 services:
   foundry:
-    image: ghcr.io/felddy/foundryvtt:12.331
+    image: ghcr.io/felddy/foundryvtt:${FOUNDRY_VERSION:-14.367}
     hostname: mindflayer-foundry-test
     environment:
       FOUNDRY_RELEASE_URL: ${FOUNDRY_RELEASE_URL:-}
       FOUNDRY_USERNAME: ${FOUNDRY_USERNAME:-}
       FOUNDRY_PASSWORD: ${FOUNDRY_PASSWORD:-}
-      FOUNDRY_VERSION: "12.331"
+      FOUNDRY_VERSION: ${FOUNDRY_VERSION:-14.367}
       FOUNDRY_ADMIN_KEY: ${FOUNDRY_ADMIN_KEY}
       FOUNDRY_TELEMETRY: "false"
       FOUNDRY_UPNP: "false"
@@ -19,4 +19,5 @@ services:
       # The felddy entrypoint normalizes ownership below /data at startup, so
       # this bind mount must be writable even though Foundry only reads it.
       - ./dist:/data/Data/modules/mindflayer-token-controller
+      - ./test/foundry/system:/data/Data/systems/mindflayer-smoke-system:ro
     restart: "no"

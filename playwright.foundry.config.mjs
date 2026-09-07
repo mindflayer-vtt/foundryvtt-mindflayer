@@ -6,5 +6,6 @@ export default defineConfig({
   use: {
     baseURL: process.env.FOUNDRY_URL,
     headless: true,
+    viewport: { width: 1440, height: 900 },
   },
 });
