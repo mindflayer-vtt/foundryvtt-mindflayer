@@ -18,7 +18,6 @@ import { Rectangle, Vector } from "../../utils/2d-geometry";
 import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
 import TableLEDRing from "../tableLedRing";
-import { isFoundryNewerThan } from "../../utils/module";
 import { TableLEDRingHandlerMixin } from "../tableLedRing/TableLEDRingHandlerMixin";
 
 export default class Ambilight extends TableLEDRingHandlerMixin(
@@ -158,12 +157,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
    */
   _findColorAlongVector(image, bounds, direction) {
     // scale vector so longer direction is length 1
-    let backgroundColor;
-    if (isFoundryNewerThan("10")) {
-      backgroundColor = hexToRgb(game.scenes.active.backgroundColor);
-    } else {
-      backgroundColor = hexToRgb(game.scenes.active.data.backgroundColor);
-    }
+    const backgroundColor = hexToRgb(game.scenes.active.backgroundColor);
     direction.scale(1 / Math.max(Math.abs(direction.x), Math.abs(direction.y)));
     const scale = Math.floor(bounds.intersectionFromCenter(direction));
     for (let i = scale; i >= 0; i--) {

@@ -20,7 +20,7 @@ import AbstractSubModule from "./modules/AbstractSubModule";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "./settings/constants";
 
 const WRAP_Application__activateCoreListeners =
-  "Application.prototype._activateCoreListeners";
+  "foundry.appv1.api.Application.prototype._activateCoreListeners";
 
 export default class MindFlayer {
   /** @type {settingsObj} */

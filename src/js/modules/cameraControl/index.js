@@ -20,7 +20,8 @@ import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 
 const SUB_LOG_PREFIX = `${LOG_PREFIX}CameraControl: `;
 
-const WRAP_Token__onUpdate = "Token.prototype._onUpdate";
+const WRAP_Token__onUpdate =
+  "foundry.canvas.placeables.Token.prototype._onUpdate";
 export default class CameraControl extends AbstractSubModule {
   constructor(instance) {
     super(instance);

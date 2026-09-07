@@ -18,8 +18,10 @@ import AbstractSubModule from "../AbstractSubModule";
 import { default as WakeLock } from "../wakeLock";
 const SUB_LOG_PREFIX = LOG_PREFIX + "Fullscreen: ";
 
-const WRAP_PlaceableObject_can = "PlaceableObject.prototype.can";
-const WRAP_Notifications_notify = "Notifications.prototype.notify";
+const WRAP_PlaceableObject_can =
+  "foundry.canvas.placeables.PlaceableObject.prototype.can";
+const WRAP_Notifications_notify =
+  "foundry.applications.ui.Notifications.prototype.notify";
 
 const FULLSCREEN_SHARED_IMAGE_KEEP_MS = 20 * 1000;
 export default class Fullscreen extends AbstractSubModule {

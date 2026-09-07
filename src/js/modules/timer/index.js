@@ -59,14 +59,15 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
       window.clearInterval(this.#timerUpdateInterval);
     }
     this.#timerUpdateInterval = null;
-    if (!this.instance.settings.core.noCanvas) {
-      game.canvas.controls.removeChild(this.#renderingContainer);
-    }
-    this.#renderingContainer = null;
     for (const t of this.#timers) {
       t.abort();
     }
     this.#timers = [];
+    if (this.#renderingContainer) {
+      this.#renderingContainer.parent?.removeChild(this.#renderingContainer);
+      this.#renderingContainer.destroy({ children: true });
+      this.#renderingContainer = null;
+    }
     super.unhook();
   }
 

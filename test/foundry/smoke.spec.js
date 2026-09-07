@@ -12,6 +12,7 @@ test.describe("real Foundry compatibility", () => {
 
   test("Mindflayer and its critical Foundry 14 boundaries are available", async ({ page }) => {
     const startupErrors = [];
+    const consoleWarnings = [];
     await page.addInitScript(() => {
       globalThis.__mindflayerWindowErrors = [];
       globalThis.addEventListener("error", (event) => {
@@ -52,6 +53,7 @@ test.describe("real Foundry compatibility", () => {
     page.on("pageerror", (error) => startupErrors.push(error.message));
     page.on("console", (message) => {
       if (message.type() === "error") startupErrors.push(`console: ${message.text()}`);
+      if (message.type() === "warning") consoleWarnings.push(message.text());
     });
     const target = new URL(process.env.FOUNDRY_URL);
     if (process.env.FOUNDRY_TEST_WORLD) {
@@ -138,11 +140,19 @@ test.describe("real Foundry compatibility", () => {
           timerCommand: timerMacro?.command,
         },
         globals: ["game", "canvas", "Hooks", "foundry"].every((name) => globalThis[name]),
-        targets: boundaries.map(({ target, maximumFoundry }) => ({
-          target,
-          applicable: maximumFoundry === undefined || Number(game.version.split(".")[0]) <= maximumFoundry,
-          exists: typeof resolve(target) === "function",
-        })),
+        pixiGlobals: ["Container", "Graphics", "LegacyGraphics", "Text", "Point"].every(
+          (name) => typeof PIXI[name] === "function",
+        ),
+        targets: boundaries.map(({ target, maximumFoundry }) => {
+          const applicable =
+            maximumFoundry === undefined ||
+            Number(game.version.split(".")[0]) <= maximumFoundry;
+          return {
+            target,
+            applicable,
+            exists: applicable ? typeof resolve(target) === "function" : false,
+          };
+        }),
       };
     }, wrapperBoundaries);
     expect(state).toMatchObject({
@@ -157,6 +167,7 @@ test.describe("real Foundry compatibility", () => {
         timerName: "Start Timer",
       },
       globals: true,
+      pixiGlobals: true,
     });
     expect(state.targets).toHaveLength(wrapperBoundaries.length);
     expect(state.targets.filter(({ applicable, exists }) => applicable && !exists)).toEqual([]);
@@ -226,6 +237,26 @@ test.describe("real Foundry compatibility", () => {
           "ControllerManager did not register the disposable keypad",
         );
 
+        const originalPosition = { x: tokenDocument.x, y: tokenDocument.y };
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "W",
+          state: "down",
+        });
+        await waitFor(
+          () => tokenDocument.x !== originalPosition.x || tokenDocument.y !== originalPosition.y,
+          "TokenMovement did not move the disposable token",
+        );
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "W",
+          state: "up",
+        });
+        const movedPosition = { x: tokenDocument.x, y: tokenDocument.y };
+        await tokenDocument.update(originalPosition);
+
         const originalAnimatePan = canvas.animatePan;
         let cameraAction;
         canvas.animatePan = (options) => {
@@ -294,6 +325,8 @@ test.describe("real Foundry compatibility", () => {
           doorOpened: wallDocument.ds === CONST.WALL_DOOR_STATES.OPEN,
           torchDisabled:
             tokenDocument.light.bright === 0 && tokenDocument.light.dim === 0,
+          tokenMoved:
+            movedPosition.x !== originalPosition.x || movedPosition.y !== originalPosition.y,
           keypadCount: instance.modules.ControllerManager.keypads.length,
         };
       } finally {
@@ -312,6 +345,7 @@ test.describe("real Foundry compatibility", () => {
       cameraAction: { duration: 1000 },
       doorOpened: true,
       torchDisabled: true,
+      tokenMoved: true,
       keypadCount: 1,
     });
     expect(behavior.cameraAction.x).toEqual(expect.any(Number));
@@ -339,6 +373,7 @@ test.describe("real Foundry compatibility", () => {
         "Timer",
       ];
       const unaffectedNames = ["SocketlibWrapper", "WakeLock", "Fullscreen"];
+      const hookCount = (name) => Hooks.events[name]?.length ?? 0;
       const waitFor = async (predicate, message, timeout = 5000) => {
         const started = Date.now();
         while (!predicate()) {
@@ -357,6 +392,7 @@ test.describe("real Foundry compatibility", () => {
       };
       for (const path of [`${originalPath}?smoke=1`, `${originalPath}?smoke=2`, originalPath]) {
         const before = { ...game.modules.get(moduleId).instance.modules };
+        const canvasPanHooksBefore = hookCount("canvasPan");
         await game.settings.set(moduleId, "websocketPath", path);
         await waitFor(() => {
           const modules = game.modules.get(moduleId).instance.modules;
@@ -370,6 +406,7 @@ test.describe("real Foundry compatibility", () => {
           replaced: affectedNames.every((name) => after[name] !== before[name]),
           unloaded: affectedNames.every((name) => before[name].loaded === false),
           unaffected: unaffectedNames.every((name) => after[name] === before[name]),
+          hookCountsStable: hookCount("canvasPan") === canvasPanHooksBefore,
           ready: after.Socket.isConnected,
         });
       }
@@ -382,9 +419,9 @@ test.describe("real Foundry compatibility", () => {
       };
     });
     expect(reload.snapshots).toEqual([
-      { replaced: true, unloaded: true, unaffected: true, ready: true },
-      { replaced: true, unloaded: true, unaffected: true, ready: true },
-      { replaced: true, unloaded: true, unaffected: true, ready: true },
+      { replaced: true, unloaded: true, unaffected: true, hookCountsStable: true, ready: true },
+      { replaced: true, unloaded: true, unaffected: true, hookCountsStable: true, ready: true },
+      { replaced: true, unloaded: true, unaffected: true, hookCountsStable: true, ready: true },
     ]);
     expect(reload.closedSocketCount).toBe(reload.socketCount - 1);
 
@@ -393,6 +430,14 @@ test.describe("real Foundry compatibility", () => {
       .catch(() => {});
     await page.waitForLoadState("domcontentloaded");
     expect(startupErrors).toEqual([]);
+    const relevantWarnings = consoleWarnings.filter(
+      (warning) =>
+        !warning.includes("hardware acceleration") &&
+        !warning.includes("GL Driver Message") &&
+        !warning.includes("performance warning: READ-usage buffer") &&
+        !warning.includes("The V1 Application framework is deprecated"),
+    );
+    expect(relevantWarnings).toEqual([]);
     console.log(JSON.stringify(state, null, 2));
   });
 });

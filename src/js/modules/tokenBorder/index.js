@@ -21,8 +21,10 @@ import Fullscreen from "../fullscreen";
 import { default as Socket } from "../socket";
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenBorder: ";
 
-const REF_Token_getBorderColor = "Token.prototype._getBorderColor";
-const REF_Token_refreshState = "Token.prototype._refreshState";
+const REF_Token_getBorderColor =
+  "foundry.canvas.placeables.Token.prototype._getBorderColor";
+const REF_Token_refreshState =
+  "foundry.canvas.placeables.Token.prototype._refreshState";
 export default class TokenBorder extends AbstractSubModule {
   #onUpdateSceneFun = null;
   constructor(instance) {

@@ -31,20 +31,3 @@ export function getModuleInstance() {
 export function setModuleInstance(inst) {
   game.modules.get(VTT_MODULE_NAME).instance = inst;
 }
-/**
- * Check if Foundry VTT version is greater than given
- */
-export function isFoundryNewerThan(version) {
-  if (
-    foundry &&
-    foundry.utils &&
-    typeof foundry.utils.isNewerVersion == "function"
-  ) {
-    return foundry.utils.isNewerVersion(
-      game.version || game.data.version,
-      version,
-    );
-  } else {
-    return isNewerVersion(game.version || game.data.version, version);
-  }
-}

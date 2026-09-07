@@ -20,10 +20,18 @@ const MARGIN_BETWEEN_TIMERS = 10;
 const MARGIN_BOTTOM = 60;
 
 export class TimerRenderContainer extends PIXI.Container {
+  #onCanvasPanFun;
+
   constructor() {
     super();
     this.name = "Timer Renderer Container";
-    Hooks.on("canvasPan", this.onChildrenChange.bind(this));
+    this.#onCanvasPanFun = this.onChildrenChange.bind(this);
+    Hooks.on("canvasPan", this.#onCanvasPanFun);
+  }
+
+  destroy(options) {
+    Hooks.off("canvasPan", this.#onCanvasPanFun);
+    super.destroy(options);
   }
 
   /**

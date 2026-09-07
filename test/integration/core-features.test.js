@@ -98,7 +98,7 @@ describe("camera control characterization", () => {
     canvas.scene = { dimensions: { sceneRect: { x: 0, y: 0, width: 2000, height: 1000 }, size: 100 } };
     const control = new CameraControl(instanceWith(managerWith([{ token: { x: 500, y: 300, w: 100, h: 100 } }])));
     control.ready();
-    expect(libWrapper.register).toHaveBeenCalledWith("mindflayer-token-controller", "Token.prototype._onUpdate", expect.any(Function), "MIXED");
+    expect(libWrapper.register).toHaveBeenCalledWith("mindflayer-token-controller", "foundry.canvas.placeables.Token.prototype._onUpdate", expect.any(Function), "MIXED");
     const wrapper = libWrapper.register.mock.calls[0][2];
     const wrapped = vi.fn();
     const options = { pan: true };
@@ -106,7 +106,7 @@ describe("camera control characterization", () => {
     expect(options.pan).toBe(false);
     expect(canvas.animatePan).toHaveBeenCalledOnce();
     control.unhook();
-    expect(libWrapper.unregister).toHaveBeenCalledWith("mindflayer-token-controller", "Token.prototype._onUpdate");
+    expect(libWrapper.unregister).toHaveBeenCalledWith("mindflayer-token-controller", "foundry.canvas.placeables.Token.prototype._onUpdate");
   });
 
   test("does nothing when there are no relevant tokens", () => {
@@ -125,12 +125,12 @@ describe("keypad feature integrations", () => {
 
     expect(libWrapper.unregister).toHaveBeenCalledWith(
       "mindflayer-token-controller",
-      "PlaceableObject.prototype.can",
+      "foundry.canvas.placeables.PlaceableObject.prototype.can",
       false,
     );
     expect(libWrapper.unregister).toHaveBeenCalledWith(
       "mindflayer-token-controller",
-      "Notifications.prototype.notify",
+      "foundry.applications.ui.Notifications.prototype.notify",
       false,
     );
     expect(game.socket.off).toHaveBeenCalledWith("shareImage", shareImageListener);
