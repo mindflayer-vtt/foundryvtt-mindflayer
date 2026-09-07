@@ -15,7 +15,7 @@ services:
     ports:
       - "${FOUNDRY_TEST_PORT:-30000}:30000"
     volumes:
-      - ./.foundry-test-data:/data
+      - ${FOUNDRY_TEST_DATA:-./.foundry-test-data}:/data
       # The felddy entrypoint normalizes ownership below /data at startup, so
       # this bind mount must be writable even though Foundry only reads it.
       - ./dist:/data/Data/modules/mindflayer-token-controller

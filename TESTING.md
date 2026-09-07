@@ -35,19 +35,15 @@ Foundry state under the ignored `.foundry-test-data/` directory.
    first startup. It remains opt-in and defaults to `false`.
 2. Install the browser once with `npx playwright install chromium` (or
    `npx playwright install --with-deps chromium` on a minimal Linux host).
-3. On the first run, start the setup screen without auto-launching the not-yet
-   created world using `FOUNDRY_TEST_WORLD= npm run test:foundry:up`, then open
-   `http://127.0.0.1:30000`. Create the world whose id is
-   `FOUNDRY_TEST_WORLD` using Simple Worldbuilding, set the Gamemaster access
-   key to `FOUNDRY_TEST_PASSWORD`, and activate a scene. Install and enable
-   libWrapper 1.12.15.0, socketlib 1.1.0, and Mind Flayer - Token Controller.
-   The Mind Flayer build is mounted directly from this checkout's `dist/`, so
-   `npm run test:foundry:up` always rebuilds the exact code under test.
-4. Run `npm run test:foundry:local` for subsequent smoke runs. It builds the
-   module, starts and waits for the Foundry container, runs Playwright, and
-   stops the container even when the smoke test fails. Use
-   `npm run test:foundry:up` and `npm run test:foundry:down` when debugging and
-   you want to control the server lifetime yourself.
+3. Run `npm run test:foundry:setup`. It builds the exact checkout, starts
+   Foundry, applies the explicit EULA opt-in, installs Simple Worldbuilding
+   0.8.2, libWrapper 1.12.15.0 and socketlib 1.1.0, creates and launches the
+   configured disposable world, sets the Gamemaster access key, enables all
+   three modules, and creates an active scene. The command is idempotent.
+4. Run `npm run test:foundry:local` to perform setup, execute the smoke test,
+   and stop the container even when the test fails. Use `test:foundry:up`,
+   `test:foundry:prepare`, `test:foundry`, and `test:foundry:down` separately
+   when debugging and you want to control each stage yourself.
 
 A successful run executes one test (it does not skip) and prints a sanitized
 runtime record containing Foundry, world, module and dependency versions plus
@@ -66,8 +62,9 @@ Mind Flayer's `enabled` client setting defaults to `false`, so its WebSocket
 submodule stays off and a Mindflayer server is not required for this API-boundary
 smoke test.
 
-To discard the instance completely, run
-`npm run test:foundry:down` and remove `.foundry-test-data/`. The directory is
+To use another disposable location, set `FOUNDRY_TEST_DATA` in `.env`. To
+discard the default instance completely, run `npm run test:foundry:down` and
+remove `.foundry-test-data/`. The directory is
 deliberately not removed by the npm script because it contains the activated
 Foundry license. Do not run multiple instances using the same license.
 
