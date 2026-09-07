@@ -95,15 +95,16 @@ export default class DoorHandler extends AbstractSubModule {
   #enqueueDoors(keypad) {
     const player = keypad.player;
     const token = TokenUtil.getTokenFor(player);
+    const tokenBounds = token.bounds;
 
     const interactionBounds = new Rectangle(
       new Vector(
-        token.x - canvas.grid.size,
-        token.y + token.h + canvas.grid.size,
+        tokenBounds.left - canvas.grid.size,
+        tokenBounds.bottom + canvas.grid.size,
       ),
       new Vector(
-        token.x + token.w + canvas.grid.size,
-        token.y - canvas.grid.size,
+        tokenBounds.right + canvas.grid.size,
+        tokenBounds.top - canvas.grid.size,
       ),
     );
 

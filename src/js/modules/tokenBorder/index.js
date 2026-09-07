@@ -15,7 +15,6 @@
 "use strict";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import { hexToRgb } from "../../utils/color";
-import { isFoundryNewerThan } from "../../utils/module";
 import * as TokenUtil from "../../utils/tokenUtil";
 import AbstractSubModule from "../AbstractSubModule";
 import Fullscreen from "../fullscreen";
@@ -64,6 +63,7 @@ export default class TokenBorder extends AbstractSubModule {
 
   unhook() {
     libWrapper.unregister(VTT_MODULE_NAME, REF_Token_getBorderColor, false);
+    libWrapper.unregister(VTT_MODULE_NAME, REF_Token_refreshState, false);
     Hooks.off("updateScene", this.#onUpdateSceneFun);
     super.unhook();
   }

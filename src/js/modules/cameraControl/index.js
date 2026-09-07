@@ -104,21 +104,21 @@ export default class CameraControl extends AbstractSubModule {
 
     const pad = gridSize * (30 / 5);
     const lowestXCoordinate = Math.max(
-      Math.min(...activeCharacterTokens.map((token) => token.x)) - pad,
+      Math.min(...activeCharacterTokens.map((token) => token.bounds.left)) - pad,
       sceneSize.x,
     );
     const highestXCoordinate = Math.min(
-      Math.max(...activeCharacterTokens.map((token) => token.x + token.w)) +
+      Math.max(...activeCharacterTokens.map((token) => token.bounds.right)) +
         pad,
       sceneSize.x + sceneSize.width,
     );
 
     const lowestYCoordinate = Math.max(
-      Math.min(...activeCharacterTokens.map((token) => token.y)) - pad,
+      Math.min(...activeCharacterTokens.map((token) => token.bounds.top)) - pad,
       sceneSize.y,
     );
     const highestYCoordinate = Math.min(
-      Math.max(...activeCharacterTokens.map((token) => token.y + token.h)) +
+      Math.max(...activeCharacterTokens.map((token) => token.bounds.bottom)) +
         pad,
       sceneSize.y + sceneSize.height,
     );

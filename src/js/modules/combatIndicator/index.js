@@ -33,6 +33,7 @@ export default class CombatIndicator extends AbstractSubModule {
     }
     Hooks.off("updateCombat", this.#boundHandleCombatUpdate);
     Hooks.off("startCombat", this.#boundHandleCombatUpdate);
+    libWrapper.unregister(VTT_MODULE_NAME, WRAP_Combat_endCombat, false);
     this.#running = false;
     super.unhook();
   }

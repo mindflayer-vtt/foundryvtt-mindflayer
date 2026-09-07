@@ -13,12 +13,20 @@ test.describe("real Foundry compatibility", () => {
   test("Mindflayer and its critical Foundry 14 boundaries are available", async ({ page }) => {
     const startupErrors = [];
     await page.addInitScript(() => {
+      globalThis.__mindflayerWindowErrors = [];
+      globalThis.addEventListener("error", (event) => {
+        globalThis.__mindflayerWindowErrors.push(event.error?.stack ?? event.message);
+      });
+      globalThis.addEventListener("unhandledrejection", (event) => {
+        globalThis.__mindflayerWindowErrors.push(event.reason?.stack ?? String(event.reason));
+      });
       const NativeWebSocket = globalThis.WebSocket;
       class MindflayerSocket {
         OPEN = 1;
         readyState = 1;
         listeners = new Map();
         constructor() {
+          (globalThis.__mindflayerSockets ??= []).push(this);
           queueMicrotask(() => this.listeners.get("open")?.forEach((fn) => fn(new Event("open"))));
         }
         addEventListener(type, listener) {
@@ -36,7 +44,7 @@ test.describe("real Foundry compatibility", () => {
         static CLOSING = 2;
         static CLOSED = 3;
         constructor(url, protocols) {
-          if (String(url) === "wss://localhost:443/ws/vtt") return new MindflayerSocket();
+          if (String(url).startsWith("wss://localhost:443/")) return new MindflayerSocket();
           return new NativeWebSocket(url, protocols);
         }
       };
@@ -69,6 +77,18 @@ test.describe("real Foundry compatibility", () => {
         timeout: 30_000,
       })
       .toBe(true);
+    if (await page.evaluate(() => game.settings.get("mindflayer-token-controller", "enabled"))) {
+      await page
+        .evaluate(() => game.settings.set("mindflayer-token-controller", "enabled", false))
+        .catch(() => {});
+      await page.waitForLoadState("domcontentloaded");
+      await expect
+        .poll(
+          () => page.evaluate(() => globalThis.game?.ready === true).catch(() => false),
+          { timeout: 30_000 },
+        )
+        .toBe(true);
+    }
 
     await page.evaluate(() => {
       const menu = game.settings.menus.get(
@@ -157,6 +177,217 @@ test.describe("real Foundry compatibility", () => {
     expect(loadedSubmodules).toEqual(
       expect.arrayContaining(["Socket", "ControllerManager", "CameraControl", "DoorHandler", "TokenTorch"]),
     );
+
+    const behavior = await page.evaluate(async () => {
+      const moduleId = "mindflayer-token-controller";
+      const controllerId = "smoke-controller";
+      const scene = canvas.scene;
+      const priorMappings = structuredClone(game.settings.get(moduleId, "settings"));
+      const selectedTokenFlag = `selectedToken_${game.user.id}`;
+      const priorSelectedToken = game.user.getFlag(moduleId, selectedTokenFlag);
+      let tokenDocument;
+      let wallDocument;
+
+      const waitFor = async (predicate, message, timeout = 5000) => {
+        const started = Date.now();
+        while (!predicate()) {
+          if (Date.now() - started > timeout) throw new Error(message);
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+      };
+
+      try {
+        [tokenDocument] = await scene.createEmbeddedDocuments("Token", [
+          { name: "Mindflayer Smoke Token", x: 500, y: 500, width: 1, height: 1 },
+        ]);
+        [wallDocument] = await scene.createEmbeddedDocuments("Wall", [
+          {
+            c: [550, 500, 550, 600],
+            door: CONST.WALL_DOOR_TYPES.DOOR,
+            ds: CONST.WALL_DOOR_STATES.CLOSED,
+          },
+        ]);
+        await game.settings.set(moduleId, "settings", {
+          ...priorMappings,
+          mappings: { ...priorMappings.mappings, [game.user.id]: controllerId },
+        });
+        await game.user.setFlag(moduleId, selectedTokenFlag, tokenDocument.id);
+
+        const instance = game.modules.get(moduleId).instance;
+        const socket = instance.modules.Socket;
+        socket._dispatch({
+          type: "registration",
+          receiver: false,
+          status: "connected",
+          "controller-id": controllerId,
+        });
+        await waitFor(
+          () => instance.modules.ControllerManager.keypads.length === 1,
+          "ControllerManager did not register the disposable keypad",
+        );
+
+        const originalAnimatePan = canvas.animatePan;
+        let cameraAction;
+        canvas.animatePan = (options) => {
+          cameraAction = structuredClone(options);
+          return Promise.resolve();
+        };
+        try {
+          instance.modules.CameraControl.panCamera();
+        } finally {
+          canvas.animatePan = originalAnimatePan;
+        }
+
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "E",
+          state: "down",
+        });
+        await waitFor(
+          () => wallDocument.ds === CONST.WALL_DOOR_STATES.OPEN,
+          "DoorHandler did not open the disposable door",
+        );
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "E",
+          state: "up",
+        });
+
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "X",
+          state: "down",
+        });
+        await waitFor(
+          () => tokenDocument.light.bright === 20 && tokenDocument.light.dim === 40,
+          "TokenTorch did not enable the disposable token light",
+        );
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "X",
+          state: "up",
+        });
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "X",
+          state: "down",
+        });
+        await waitFor(
+          () => tokenDocument.light.bright === 0 && tokenDocument.light.dim === 0,
+          "TokenTorch did not disable the disposable token light",
+        );
+        socket._dispatch({
+          type: "key-event",
+          "controller-id": controllerId,
+          key: "X",
+          state: "up",
+        });
+
+        return {
+          cameraAction,
+          doorOpened: wallDocument.ds === CONST.WALL_DOOR_STATES.OPEN,
+          torchDisabled:
+            tokenDocument.light.bright === 0 && tokenDocument.light.dim === 0,
+          keypadCount: instance.modules.ControllerManager.keypads.length,
+        };
+      } finally {
+        if (wallDocument) await wallDocument.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
+        if (tokenDocument) await scene.deleteEmbeddedDocuments("Token", [tokenDocument.id]);
+        if (wallDocument) await scene.deleteEmbeddedDocuments("Wall", [wallDocument.id]);
+        await game.settings.set(moduleId, "settings", priorMappings);
+        if (priorSelectedToken === undefined) {
+          await game.user.unsetFlag(moduleId, selectedTokenFlag);
+        } else {
+          await game.user.setFlag(moduleId, selectedTokenFlag, priorSelectedToken);
+        }
+      }
+    });
+    expect(behavior).toMatchObject({
+      cameraAction: { duration: 1000 },
+      doorOpened: true,
+      torchDisabled: true,
+      keypadCount: 1,
+    });
+    expect(behavior.cameraAction.x).toEqual(expect.any(Number));
+    expect(behavior.cameraAction.y).toEqual(expect.any(Number));
+    expect(behavior.cameraAction.scale).toBeGreaterThan(0);
+
+    const reload = await page.evaluate(async () => {
+      const moduleId = "mindflayer-token-controller";
+      const originalPath = game.settings.get(moduleId, "websocketPath");
+      const snapshots = [];
+      const affectedNames = [
+        "Socket",
+        "TableLEDRing",
+        "Ambilight",
+        "ControllerManager",
+        "CameraControl",
+        "CombatEndTurn",
+        "CombatIndicator",
+        "DoorHandler",
+        "PlayerLogin",
+        "TokenBorder",
+        "TokenMovement",
+        "TokenSelect",
+        "TokenTorch",
+        "Timer",
+      ];
+      const unaffectedNames = ["SocketlibWrapper", "WakeLock", "Fullscreen"];
+      const waitFor = async (predicate, message, timeout = 5000) => {
+        const started = Date.now();
+        while (!predicate()) {
+          if (Date.now() - started > timeout) {
+            const modules = game.modules.get(moduleId).instance.modules;
+            throw new Error(
+              `${message}: ${JSON.stringify({
+                enabled: game.settings.get(moduleId, "enabled"),
+                moduleNames: Object.keys(modules),
+                errors: globalThis.__mindflayerWindowErrors,
+              })}`,
+            );
+          }
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+      };
+      for (const path of [`${originalPath}?smoke=1`, `${originalPath}?smoke=2`, originalPath]) {
+        const before = { ...game.modules.get(moduleId).instance.modules };
+        await game.settings.set(moduleId, "websocketPath", path);
+        await waitFor(() => {
+          const modules = game.modules.get(moduleId).instance.modules;
+          return (
+            affectedNames.every((name) => modules[name] !== before[name]) &&
+            modules.Socket.isConnected
+          );
+        }, "The websocket setting did not selectively reload Socket and its dependants");
+        const after = game.modules.get(moduleId).instance.modules;
+        snapshots.push({
+          replaced: affectedNames.every((name) => after[name] !== before[name]),
+          unloaded: affectedNames.every((name) => before[name].loaded === false),
+          unaffected: unaffectedNames.every((name) => after[name] === before[name]),
+          ready: after.Socket.isConnected,
+        });
+      }
+      return {
+        snapshots,
+        socketCount: globalThis.__mindflayerSockets.length,
+        closedSocketCount: globalThis.__mindflayerSockets.filter(
+          (socket) => socket.readyState === 3,
+        ).length,
+      };
+    });
+    expect(reload.snapshots).toEqual([
+      { replaced: true, unloaded: true, unaffected: true, ready: true },
+      { replaced: true, unloaded: true, unaffected: true, ready: true },
+      { replaced: true, unloaded: true, unaffected: true, ready: true },
+    ]);
+    expect(reload.closedSocketCount).toBe(reload.socketCount - 1);
+
     await page
       .evaluate(() => game.settings.set("mindflayer-token-controller", "enabled", false))
       .catch(() => {});

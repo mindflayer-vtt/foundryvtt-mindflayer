@@ -2,9 +2,21 @@ import { describe, expect, test, vi } from "vitest";
 import CameraControl from "../../src/js/modules/cameraControl";
 import ControllerManager from "../../src/js/modules/ControllerManager";
 import DoorHandler from "../../src/js/modules/doorHandler";
+import Fullscreen from "../../src/js/modules/fullscreen";
 import TokenTorch from "../../src/js/modules/tokenTorch";
 
 function managerWith(keypads) {
+  for (const keypad of keypads) {
+    const token = keypad.token;
+    if (token && !token.bounds && [token.x, token.y, token.w, token.h].every(Number.isFinite)) {
+      token.bounds = {
+        left: token.x,
+        right: token.x + token.w,
+        top: token.y,
+        bottom: token.y + token.h,
+      };
+    }
+  }
   let listener;
   return {
     keypads,
@@ -53,6 +65,7 @@ describe("camera control characterization", () => {
       { x: 1700, y: 800, w: 100, h: 100 },
     ];
     const manager = managerWith([{ token: tokens[0] }]);
+    managerWith([{ token: tokens[1] }]);
     canvas.scene = { dimensions: { sceneRect: { x: 0, y: 0, width: 2000, height: 1000 }, size: 100 } };
     canvas.tokens.controlled = [tokens[1]];
     const control = new CameraControl(instanceWith(manager));
@@ -61,8 +74,8 @@ describe("camera control characterization", () => {
   });
 
   test("includes visible combat and keypad tokens but excludes hidden/defeated combatants", () => {
-    const visible = { x: 200, y: 200, w: 100, h: 100, combatant: { hidden: false, defeated: false } };
-    const hidden = { x: 1800, y: 800, w: 100, h: 100, combatant: { hidden: true, defeated: false } };
+    const visible = { x: 200, y: 200, w: 100, h: 100, bounds: { left: 200, right: 300, top: 200, bottom: 300 }, combatant: { hidden: false, defeated: false } };
+    const hidden = { x: 1800, y: 800, w: 100, h: 100, bounds: { left: 1800, right: 1900, top: 800, bottom: 900 }, combatant: { hidden: true, defeated: false } };
     game.combat = { turns: [{ token: { object: visible } }, { token: { object: hidden } }] };
     canvas.scene = { dimensions: { sceneRect: { x: 0, y: 0, width: 2000, height: 1000 }, size: 100 } };
     const control = new CameraControl(instanceWith(managerWith([])));
@@ -73,6 +86,7 @@ describe("camera control characterization", () => {
 
   test("duplicate references do not change the computed frame", () => {
     const token = { x: 500, y: 300, w: 100, h: 100 };
+    token.bounds = { left: 500, right: 600, top: 300, bottom: 400 };
     game.combat = { turns: [{ token: { object: token } }] };
     canvas.tokens.controlled = [token];
     canvas.scene = { dimensions: { sceneRect: { x: 0, y: 0, width: 2000, height: 1000 }, size: 100 } };
@@ -103,12 +117,36 @@ describe("camera control characterization", () => {
 });
 
 describe("keypad feature integrations", () => {
+  test("fullscreen releases its v14 wrappers, listener, and interval", () => {
+    const fullscreen = new Fullscreen({ modules: {} });
+    const shareImageListener = game.socket.on.mock.calls[0][1];
+
+    fullscreen.unhook();
+
+    expect(libWrapper.unregister).toHaveBeenCalledWith(
+      "mindflayer-token-controller",
+      "PlaceableObject.prototype.can",
+      false,
+    );
+    expect(libWrapper.unregister).toHaveBeenCalledWith(
+      "mindflayer-token-controller",
+      "Notifications.prototype.notify",
+      false,
+    );
+    expect(game.socket.off).toHaveBeenCalledWith("shareImage", shareImageListener);
+    expect(fullscreen.loaded).toBe(false);
+  });
+
   test("door input targets only an intersecting door and cleans up", () => {
     const player = { name: "One" };
     const token = { name: "Hero", x: 100, y: 100, w: 100, h: 100 };
     const keypad = { player, isJustDown: vi.fn(() => true) };
     game.user.getFlag.mockReturnValue("hero");
-    canvas.tokens.placeables = [{ ...token, id: "hero" }];
+    canvas.tokens.placeables = [{
+      ...token,
+      id: "hero",
+      bounds: { left: 100, right: 200, top: 100, bottom: 200 },
+    }];
     const nearby = { bounds: { x: 50, y: 50, width: 20, height: 20 }, doorControl: { _onMouseDown: vi.fn() } };
     const distant = { bounds: { x: 1000, y: 1000, width: 20, height: 20 }, doorControl: { _onMouseDown: vi.fn() } };
     canvas.walls.doors = [nearby, distant];

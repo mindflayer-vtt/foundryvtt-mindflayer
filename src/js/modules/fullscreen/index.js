@@ -16,17 +16,15 @@
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import AbstractSubModule from "../AbstractSubModule";
 import { default as WakeLock } from "../wakeLock";
-import { isFoundryNewerThan } from "../../utils/module";
 const SUB_LOG_PREFIX = LOG_PREFIX + "Fullscreen: ";
 
-const WRAP_KeyboardManager_handleKeys = "KeyboardManager.prototype._handleKeys";
 const WRAP_PlaceableObject_can = "PlaceableObject.prototype.can";
 const WRAP_Notifications_notify = "Notifications.prototype.notify";
 
 const FULLSCREEN_SHARED_IMAGE_KEEP_MS = 20 * 1000;
 export default class Fullscreen extends AbstractSubModule {
-  #keyboardManagerHandleKeysWrapperFun = null;
   #cursorInterval = null;
+  #onShareImageFun = null;
 
   constructor(instance) {
     super(instance);
@@ -40,59 +38,48 @@ export default class Fullscreen extends AbstractSubModule {
       libWrapper.MIXED,
     );
     /* prevent permanent notifications in fullscreen */
-    if (isFoundryNewerThan("10")) {
-      libWrapper.register(
-        VTT_MODULE_NAME,
-        WRAP_Notifications_notify,
-        this.#notificationsNotifyWrapper.bind(this),
-        libWrapper.WRAPPER,
-      );
-    }
-    this.#keyboardManagerHandleKeysWrapperFun =
-      this.#keyboardManagerHandleKeysWrapper.bind(this);
-    if (isFoundryNewerThan("9.0")) {
-      game.keybindings.register(VTT_MODULE_NAME, "hideUI", {
-        name: "Hide UI",
-        hint: "When the key is released, the game UI is toggled invisible.",
-        uneditable: [
-          {
-            key: "hideUI",
-            modifiers: [],
-          },
-        ],
-        editable: [
-          {
-            key: "F10",
-          },
-        ],
-        onDown: () => {},
-        onUp: () => {
-          this.enabled = !this.enabled;
-          // clear all notifications as some of them may be permanent
-          ui.notifications.clear();
+    libWrapper.register(
+      VTT_MODULE_NAME,
+      WRAP_Notifications_notify,
+      this.#notificationsNotifyWrapper.bind(this),
+      libWrapper.WRAPPER,
+    );
+    game.keybindings.register(VTT_MODULE_NAME, "hideUI", {
+      name: "Hide UI",
+      hint: "When the key is released, the game UI is toggled invisible.",
+      uneditable: [
+        {
+          key: "hideUI",
+          modifiers: [],
         },
-        restricted: false, // Restrict this Keybinding to gamemaster only?
-        reservedModifiers: [], // If the ALT modifier is pressed, the notification is permanent instead of temporary
-        precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
-      });
-    } else {
-      libWrapper.register(
-        VTT_MODULE_NAME,
-        WRAP_KeyboardManager_handleKeys,
-        this.#keyboardManagerHandleKeysWrapperFun,
-        libWrapper.MIXED,
-      );
-    }
+      ],
+      editable: [
+        {
+          key: "F10",
+        },
+      ],
+      onDown: () => {},
+      onUp: () => {
+        this.enabled = !this.enabled;
+        // clear all notifications as some of them may be permanent
+        ui.notifications.clear();
+      },
+      restricted: false, // Restrict this Keybinding to gamemaster only?
+      reservedModifiers: [], // If the ALT modifier is pressed, the notification is permanent instead of temporary
+      precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
+    });
     this.#cursorInterval = setInterval(
       this.#setCursorVisibility.bind(this),
       1000,
     );
-    game.socket.on("shareImage", this.#onShareImage.bind(this));
+    this.#onShareImageFun = this.#onShareImage.bind(this);
+    game.socket.on("shareImage", this.#onShareImageFun);
   }
 
   unhook() {
-    libWrapper.unregister(VTT_MODULE_NAME, WRAP_KeyboardManager_handleKeys);
-    libWrapper.unregister(VTT_MODULE_NAME, WRAP_PlaceableObject_can);
+    libWrapper.unregister(VTT_MODULE_NAME, WRAP_PlaceableObject_can, false);
+    libWrapper.unregister(VTT_MODULE_NAME, WRAP_Notifications_notify, false);
+    game.socket.off("shareImage", this.#onShareImageFun);
     clearInterval(this.#cursorInterval);
     this.#cursorInterval = null;
     super.unhook();
@@ -176,12 +163,4 @@ export default class Fullscreen extends AbstractSubModule {
     wrapped(message, type, options);
   }
 
-  #keyboardManagerHandleKeysWrapper(wrapped, event, key, state) {
-    const result = wrapped(event, key, state);
-    if (key == "F10" && state == false) {
-      event.preventDefault();
-      this.enabled = !this.enabled;
-    }
-    return result;
-  }
 }

@@ -42,13 +42,17 @@ export function resetFoundryFakes() {
       register: vi.fn((scope, key, options) => registrations.set(`${scope}.${key}`, options)),
       registerMenu: vi.fn(), registrations,
     },
-    socket: { on: vi.fn(), emit: vi.fn() }, keybindings: { register: vi.fn() },
+    socket: { on: vi.fn(), off: vi.fn(), emit: vi.fn() }, keybindings: { register: vi.fn() },
   };
   globalThis.canvas = {
     initialized: true,
     tokens: { placeables: [], controlled: [], moveMany: vi.fn() },
     walls: { doors: [] }, grid: { size: 100 },
     activeLayer: { releaseAll: vi.fn() }, animatePan: vi.fn(),
+  };
+  globalThis.CONST = {
+    KEYBINDING_PRECEDENCE: { NORMAL: 0 },
+    USER_ROLES: { TRUSTED: 2 },
   };
   globalThis.ui = { notifications: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), clear: vi.fn() } };
   const wrappers = new Map();
