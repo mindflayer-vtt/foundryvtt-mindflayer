@@ -43,5 +43,19 @@ were not exercised by the baseline smoke and therefore remain unvalidated.
 
 ## Migration log
 
-This section will be expanded as each production boundary is migrated and
-validated.
+### Manifest, dependencies, and macro pack
+
+- Removed the unsupported legacy `name` and `author` manifest keys; the existing
+  structured `authors` metadata remains authoritative.
+- Declared the currently tested compatibility range as minimum and verified
+  Foundry 14.367. No claim is made for 14.359 until that build is tested.
+- Updated libWrapper to 1.13.5.1, the release declaring Foundry 14 compatibility.
+- Updated socketlib to 1.1.4 and its maintained `farling42` manifest lineage.
+- Removed obsolete `entity` and `module` pack declaration fields.
+- Replaced the generated NeDB `packs/macro.db` file with a LevelDB
+  `packs/macros` directory built by `@foundryvtt/foundryvtt-cli` 3.0.4.
+- Updated the macro source's legacy `permission` field to `ownership`.
+- Real Foundry 14.367 indexed the pack with one entry and loaded the `Start
+  Timer` Macro document and its command successfully.
+
+Production API boundaries and behavioral smoke coverage remain in progress.

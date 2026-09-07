@@ -4,7 +4,6 @@ const fs = require("fs");
 const ModuleJsonWebpackPlugin = require("./webpack/module-json-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
-const FVTTMacroPackWebpackPlugin = require("./webpack/macro-pack-plugin");
 const sharp = require("sharp");
 
 let devDomain = "localhost";
@@ -17,6 +16,7 @@ module.exports = {
   entry: "./src/js/index.js",
   output: {
     filename: "MindFlayer.js",
+    clean: true,
     path: path.resolve(
       __dirname,
       process.env.NODE_ENV == "production"
@@ -46,7 +46,6 @@ module.exports = {
       ],
     }),
     new ModuleJsonWebpackPlugin(),
-    new FVTTMacroPackWebpackPlugin(),
   ],
   optimization: {
     minimize: process.env.NODE_ENV == "production",

@@ -7,7 +7,7 @@
   "command": "<<filled from ./timer.command.macrovar.js>>",
   "folder": null,
   "sort": 0,
-  "permission": {
+  "ownership": {
     "default": 0
   }
 }

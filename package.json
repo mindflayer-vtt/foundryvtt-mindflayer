@@ -4,8 +4,8 @@
   "description": "<div align=\"center\"> <img width=\"460\" src=\"https://raw.githubusercontent.com/mindflayer-vtt/foundryvtt-mindflayer/main/.github/foundryvtt-mindflayer-logo.png\"> </div>",
   "private": true,
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "prod": "NODE_ENV=production webpack --config webpack.config.js",
+    "build": "webpack --config webpack.config.js && node scripts/build-packs.mjs",
+    "prod": "NODE_ENV=production webpack --config webpack.config.js && NODE_ENV=production node scripts/build-packs.mjs",
     "style": "prettier --write src/ webpack/ *.json *.md webpack.config.js",
     "test": "vitest run",
     "test:unit": "vitest run test/unit test/utils.test.js",
@@ -14,7 +14,7 @@
     "test:foundry": "node --env-file-if-exists=.env node_modules/@playwright/test/cli.js test --config playwright.foundry.config.mjs",
     "test:foundry:eula": "node --env-file-if-exists=.env test/foundry/accept-eula.mjs",
     "test:foundry:prepare": "node --env-file-if-exists=.env test/foundry/setup-runtime.mjs",
-    "test:foundry:up": "node --env-file-if-exists=.env test/foundry/prepare-data.mjs && npm run prod && docker compose --env-file .env -f compose.foundry-test.yml up -d --wait && npm run test:foundry:eula",
+    "test:foundry:up": "npm run prod && node --env-file-if-exists=.env test/foundry/prepare-data.mjs && docker compose --env-file .env -f compose.foundry-test.yml up -d --wait && npm run test:foundry:eula",
     "test:foundry:setup": "npm run test:foundry:up && npm run test:foundry:prepare",
     "test:foundry:down": "docker compose --env-file .env -f compose.foundry-test.yml down",
     "test:foundry:local": "sh -c 'npm run test:foundry:setup && trap \"npm run test:foundry:down\" EXIT INT TERM && npm run test:foundry'",
@@ -34,6 +34,7 @@
   "homepage": "https://github.com/mindflayer-vtt/foundryvtt-mindflayer#readme",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@foundryvtt/foundryvtt-cli": "^3.0.4",
     "@playwright/test": "^1.63.0",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/exec": "^7.1.0",

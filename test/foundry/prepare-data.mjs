@@ -7,4 +7,16 @@ for (const directory of ["Data/modules", "Data/systems", "Data/worlds"]) {
   fs.mkdirSync(path.join(dataPath, directory), { recursive: true });
 }
 
-console.log(`Prepared disposable Foundry data directories under ${dataPath}`);
+for (const [source, destination] of [
+  ["dist", "Data/modules/mindflayer-token-controller"],
+  ["test/foundry/system", "Data/systems/mindflayer-smoke-system"],
+]) {
+  const destinationPath = path.join(dataPath, destination);
+  fs.rmSync(destinationPath, { recursive: true, force: true });
+  fs.cpSync(path.resolve(source), destinationPath, {
+    recursive: true,
+    force: true,
+  });
+}
+
+console.log(`Installed the current checkout into disposable Foundry data at ${dataPath}`);

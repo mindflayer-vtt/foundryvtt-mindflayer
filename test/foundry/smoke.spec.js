@@ -40,13 +40,20 @@ test.describe("real Foundry compatibility", () => {
         timeout: 30_000,
       })
       .toBe(true);
-    const state = await page.evaluate((boundaries) => {
+    const state = await page.evaluate(async (boundaries) => {
       const resolve = (path) => {
         const [root, ...parts] = path.split(".");
         // Foundry 12 exposes core classes as global lexical bindings rather
         // than properties of window/globalThis.
         return parts.reduce((value, part) => value?.[part], globalThis.eval(root));
       };
+      const macroPack = game.packs.get(
+        "mindflayer-token-controller.mindflayer-token-controller-macros",
+      );
+      const macroIndex = await macroPack?.getIndex();
+      const timerMacro = macroPack
+        ? await macroPack.getDocument("g6tqix26wcRSjOBR")
+        : null;
       return {
         foundryVersion: game.version,
         world: { id: game.world.id, title: game.world.title, system: game.system.id },
@@ -62,6 +69,12 @@ test.describe("real Foundry compatibility", () => {
         ),
         canvasReady: game.canvas?.initialized === true,
         settingsReadable: game.settings.get("mindflayer-token-controller", "enabled") !== undefined,
+        macroPack: {
+          available: Boolean(macroPack),
+          size: macroIndex?.size,
+          timerName: timerMacro?.name,
+          timerCommand: timerMacro?.command,
+        },
         globals: ["game", "canvas", "Hooks", "foundry"].every((name) => globalThis[name]),
         targets: boundaries.map(({ target, maximumFoundry }) => ({
           target,
@@ -76,10 +89,16 @@ test.describe("real Foundry compatibility", () => {
       instanceLoaded: true,
       canvasReady: true,
       settingsReadable: true,
+      macroPack: {
+        available: true,
+        size: 1,
+        timerName: "Start Timer",
+      },
       globals: true,
     });
     expect(state.targets).toHaveLength(wrapperBoundaries.length);
     expect(state.targets.filter(({ applicable, exists }) => applicable && !exists)).toEqual([]);
+    expect(state.macroPack.timerCommand).toContain(".instance.modules.Timer.dialog()");
     expect(startupErrors).toEqual([]);
     console.log(JSON.stringify(state, null, 2));
   });

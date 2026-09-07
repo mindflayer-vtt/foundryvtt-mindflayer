@@ -24,8 +24,8 @@ and browser binaries are never downloaded by the ordinary test or CI path.
 
 The local Compose setup defaults to `ghcr.io/felddy/foundryvtt:14.367`, the
 exact migration target. `FOUNDRY_VERSION` is the single exact-build override;
-the harness never falls back to `latest`. It bind-mounts
-the production build into Foundry's module directory and keeps all disposable
+the harness never falls back to `latest`. It copies the production build into
+the disposable Foundry module directory and keeps all disposable
 Foundry state under the ignored `.foundry-test-data/` directory.
 
 1. Copy `.env.example` to `.env` and fill in either `FOUNDRY_RELEASE_URL` or

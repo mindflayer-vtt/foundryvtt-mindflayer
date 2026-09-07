@@ -1,14 +1,12 @@
 {
   "id": "mindflayer-token-controller",
-  "name": "mindflayer-token-controller",
   "version": "{{version}}",
   "title": "Mind Flayer - Token Controller",
   "description": "Adds functionality to control tokens through external applications or devices. Mind Flayer server (https://github.com/mindflayer-vtt/mindflayer-server) is required for the module to communicate with external services.",
   "compatibility": {
-    "minimum": "12.0",
-    "verified": "12.331"
+    "minimum": "14.367",
+    "verified": "14.367"
   },
-  "author": "749, shawly",
   "authors": [
     {
       "name": "shawly",
@@ -46,17 +44,19 @@
       {
         "id": "lib-wrapper",
         "type": "module",
-        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/download/v1.12.15.0/module.json",
+        "manifest": "https://github.com/ruipin/fvtt-lib-wrapper/releases/latest/download/module.json",
         "compatibility": {
-          "verified": "1.12.15.0"
+          "minimum": "1.13.5.1",
+          "verified": "1.13.5.1"
         }
       },
       {
         "id": "socketlib",
         "type": "module",
-        "manifest": "https://github.com/manuelVo/foundryvtt-socketlib/raw/develop/module.json",
+        "manifest": "https://github.com/farling42/foundryvtt-socketlib/releases/latest/download/module.json",
         "compatibility": {
-          "verified": "1.1.0"
+          "minimum": "1.1.4",
+          "verified": "1.1.4"
         }
       }
     ]
@@ -65,10 +65,8 @@
     {
       "name": "mindflayer-token-controller-macros",
       "label": "Mind Flayer: Macros",
-      "path": "./packs/macros.db",
-      "type": "Macro",
-      "entity": "Macro",
-      "module": "mindflayer-token-controller"
+      "path": "./packs/macros",
+      "type": "Macro"
     }
   ],
   "media": [
