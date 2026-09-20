@@ -27,7 +27,9 @@ describe("settings reconfiguration boundaries", () => {
   });
 
   test("camera mode selectively reloads CameraControl", () => {
-    game.settings.registrations.get("mindflayer-token-controller.cameraControl").onChange();
+    const camera = game.settings.registrations.get("mindflayer-token-controller.cameraControl");
+    expect(camera.scope).toBe("client");
+    camera.onChange();
     expect(reload).toHaveBeenCalledWith({ id: "instance" }, "CameraControl");
   });
 });

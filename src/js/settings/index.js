@@ -257,6 +257,7 @@ export const settings = {
     game.settings.register(VTT_MODULE_NAME, SETT_CAMERA_CONTROL, {
       name: "MindFlayer.cameraControl",
       hint: "MindFlayer.cameraControlHint",
+      scope: "client",
       default: "default",
       type: String,
       isSelect: true,
