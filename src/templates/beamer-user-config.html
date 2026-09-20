@@ -1,0 +1,32 @@
+<form autocomplete="off">
+  {{#if unavailable}}
+  <p>A running GM session and the Mindflayer Beamer submodule are required.</p>
+  {{else}}
+  <p>This world uses one dedicated Player account for the table display. Appliance pairing is a separate step.</p>
+  {{#if selected}}
+  <p>Selected user: <strong>{{status.user.name}}</strong> ({{status.state}})</p>
+  <div class="form-group"><label for="beamer-world-id">World ID for appliance pairing</label><input id="beamer-world-id" value="{{status.worldId}}" readonly data-pairing-id></div>
+  <div class="form-group"><label for="beamer-user-id">User ID for appliance pairing</label><input id="beamer-user-id" value="{{status.user.id}}" readonly data-pairing-id></div>
+  <p>Click an ID to select it, then copy it into the appliance's Foundry page with the existing password.</p>
+  <p>The GM must configure the scene's visibility and lighting for this Player. Pairing does not grant ownership or bypass fog of war.</p>
+  {{#each status.issues}}<p>{{this}}</p>{{/each}}
+  <p>Existing user credentials are unchanged. This screen does not reset passwords.</p>
+  {{else}}
+  <div class="form-group"><label for="beamer-mode">Action</label><select id="beamer-mode" name="mode"><option value="create">Create a dedicated user</option><option value="adopt">Adopt an existing user</option></select></div>
+  <fieldset data-mode="create">
+    <legend>New Beamer user</legend>
+    <div class="form-group"><label for="beamer-name">User name</label><input id="beamer-name" name="name" value="Beamer" maxlength="64" required></div>
+    <div class="form-group"><label for="beamer-password">Password</label><input id="beamer-password" name="password" type="password" minlength="12" maxlength="256" autocomplete="new-password" required><button type="button" data-reveal aria-controls="beamer-password" aria-pressed="false">Show password</button></div>
+    <p>Use 12–256 characters. Keep this password for the display login; it will not be shown again. Creation never reuses an existing name.</p>
+  </fieldset>
+  <fieldset data-mode="adopt" hidden disabled>
+    <legend>Existing user</legend>
+    <div class="form-group"><label for="beamer-user">User</label><select id="beamer-user" name="userId" required><option value="">Choose a reviewed Player</option>{{#each candidates}}<option value="{{id}}" {{#unless eligible}}disabled{{/unless}}>{{name}}{{#unless eligible}} — {{review}}{{/unless}}</option>{{/each}}</select></div>
+    <label><input type="checkbox" name="confirm" required> I explicitly approve using this dedicated account for the player display.</label>
+    <p>Adoption never changes credentials, role, character assignment or document ownership. Ineligible users must be reviewed manually first.</p>
+  </fieldset>
+  <p data-error role="alert" tabindex="-1"></p>
+  <button type="submit">Configure Beamer user</button>
+  {{/if}}
+  {{/if}}
+</form>

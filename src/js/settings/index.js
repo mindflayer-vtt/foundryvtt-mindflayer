@@ -19,6 +19,8 @@ import Socket from "../modules/socket";
 import { getModuleInstance } from "../utils/module";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "./constants";
 import { TokenControllerConfig } from "./TokenControllerConfig";
+import { BeamerUserConfig } from "./BeamerUserConfig";
+import { beamerCameraMode } from "../utils/beamer";
 
 const SETT_MODULE_ENABLED = "enabled";
 
@@ -112,7 +114,7 @@ export const settings = {
       }}
      */
     get control() {
-      return game.settings.get(VTT_MODULE_NAME, SETT_CAMERA_CONTROL);
+      return beamerCameraMode(game.settings.get(VTT_MODULE_NAME, SETT_CAMERA_CONTROL));
     },
   },
 
@@ -195,6 +197,14 @@ export const settings = {
   },
 
   init() {
+    game.settings.registerMenu(VTT_MODULE_NAME, "beamerUser", {
+      name: "Beamer display user", label: "Configure Beamer user",
+      hint: "Create or explicitly adopt a dedicated Player for this world's display.",
+      icon: "fas fa-display", type: BeamerUserConfig, restricted: true,
+    });
+    game.settings.register(VTT_MODULE_NAME, "beamerUserId", {
+      scope: "world", type: String, default: "", config: false, restricted: true,
+    });
     game.settings.register(VTT_MODULE_NAME, SETT_MODULE_ENABLED, {
       name: "MindFlayer.moduleEnabled",
       hint: "MindFlayer.moduleEnabledHint",

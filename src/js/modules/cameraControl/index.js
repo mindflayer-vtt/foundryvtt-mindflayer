@@ -17,12 +17,17 @@ import AbstractSubModule from "../AbstractSubModule";
 import * as TokenUtil from "../../utils/tokenUtil";
 import { default as ControllerManager } from "../ControllerManager";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
+import { isBeamerUser } from "../../utils/beamer";
 
 const SUB_LOG_PREFIX = `${LOG_PREFIX}CameraControl: `;
 
 const WRAP_Token__onUpdate =
   "foundry.canvas.placeables.Token.prototype._onUpdate";
 export default class CameraControl extends AbstractSubModule {
+  static shouldStart(instance) {
+    return super.shouldStart(instance) || isBeamerUser();
+  }
+
   constructor(instance) {
     super(instance);
   }
