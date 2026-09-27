@@ -1,9 +1,43 @@
 import { expect, test } from "@playwright/test";
 import fs from "node:fs";
 
+interface SmokeSocket {
+  readyState: number;
+  sent: string[];
+}
+
+interface SmokeTokenDocument {
+  id: string;
+  x: number;
+  y: number;
+  light: { bright: number; dim: number };
+  update(position: { x: number; y: number }): Promise<unknown>;
+}
+
+interface SmokeWallDocument {
+  id: string;
+  ds: number;
+  update(change: { ds: number }): Promise<unknown>;
+}
+
+interface SmokeControllerDialog {
+  selected: string;
+  optionLabel: string | undefined;
+  optionStyle: string | null | undefined;
+  swatchColor: string | undefined;
+  rightLED: string;
+  restoredRightLED?: string;
+}
+
+declare global {
+  var __mindflayerWindowErrors: string[];
+  var __mindflayerSockets: SmokeSocket[];
+  var __mindflayerSmokeConfig: { render(force: boolean): void; close(): Promise<unknown> };
+}
+
 const wrapperBoundaries = JSON.parse(
   fs.readFileSync("test/fixtures/libwrapper-boundaries.json", "utf8"),
-);
+) as Array<{ target: string; maximumFoundry?: number }>;
 
 const configured = Boolean(process.env.FOUNDRY_URL);
 
@@ -25,17 +59,17 @@ test.describe("real Foundry compatibility", () => {
       class MindflayerSocket {
         OPEN = 1;
         readyState = 1;
-        listeners = new Map();
-        sent = [];
+        listeners = new Map<string, Array<(event: Event) => void>>();
+        sent: string[] = [];
         constructor() {
           (globalThis.__mindflayerSockets ??= []).push(this);
           queueMicrotask(() => this.listeners.get("open")?.forEach((fn) => fn(new Event("open"))));
         }
-        addEventListener(type, listener) {
+        addEventListener(type: string, listener: (event: Event) => void) {
           if (!this.listeners.has(type)) this.listeners.set(type, []);
-          this.listeners.get(type).push(listener);
+          this.listeners.get(type)!.push(listener);
         }
-        send(data) {
+        send(data: string) {
           this.sent.push(data);
         }
         close() {
@@ -47,7 +81,7 @@ test.describe("real Foundry compatibility", () => {
         static OPEN = 1;
         static CLOSING = 2;
         static CLOSED = 3;
-        constructor(url, protocols) {
+        constructor(url: string | URL, protocols?: string | string[]) {
           if (String(url).startsWith("wss://localhost:443/")) return new MindflayerSocket();
           return new NativeWebSocket(url, protocols);
         }
@@ -60,7 +94,7 @@ test.describe("real Foundry compatibility", () => {
         consoleWarnings.push({ text: message.text(), url: message.location().url });
       }
     });
-    const target = new URL(process.env.FOUNDRY_URL);
+    const target = new URL(process.env.FOUNDRY_URL!);
     if (process.env.FOUNDRY_TEST_WORLD) {
       target.pathname = "/join";
       target.searchParams.set("world", process.env.FOUNDRY_TEST_WORLD);
@@ -164,11 +198,12 @@ test.describe("real Foundry compatibility", () => {
     await page.evaluate(() => globalThis.__mindflayerSmokeConfig.close());
 
     const state = await page.evaluate(async (boundaries) => {
-      const resolve = (path) => {
+      const resolve = (path: string): unknown => {
         const [root, ...parts] = path.split(".");
         // Foundry 12 exposes core classes as global lexical bindings rather
         // than properties of window/globalThis.
-        return parts.reduce((value, part) => value?.[part], globalThis.eval(root));
+        return parts.reduce<unknown>((value, part) =>
+          value == null ? undefined : Reflect.get(Object(value), part), globalThis.eval(root));
       };
       const macroPack = game.packs.get(
         "mindflayer-token-controller.mindflayer-token-controller-macros",
@@ -198,7 +233,7 @@ test.describe("real Foundry compatibility", () => {
           timerName: timerMacro?.name,
           timerCommand: timerMacro?.command,
         },
-        globals: ["game", "canvas", "Hooks", "foundry"].every((name) => globalThis[name]),
+        globals: ["game", "canvas", "Hooks", "foundry"].every((name) => Reflect.get(globalThis, name)),
         pixiGlobals: ["Container", "Graphics", "LegacyGraphics", "Text", "Point"].every(
           (name) => typeof PIXI[name] === "function",
         ),
@@ -270,10 +305,10 @@ test.describe("real Foundry compatibility", () => {
       const priorMappings = structuredClone(game.settings.get(moduleId, "settings"));
       const selectedTokenFlag = `selectedToken_${game.user.id}`;
       const priorSelectedToken = game.user.getFlag(moduleId, selectedTokenFlag);
-      let tokenDocument;
-      let wallDocument;
+      let tokenDocument: SmokeTokenDocument | undefined;
+      let wallDocument: SmokeWallDocument | undefined;
 
-      const waitFor = async (predicate, message, timeout = 5000) => {
+      const waitFor = async (predicate: () => unknown, message: string, timeout = 5000) => {
         const started = Date.now();
         while (!predicate()) {
           if (Date.now() - started > timeout) throw new Error(message);
@@ -292,11 +327,16 @@ test.describe("real Foundry compatibility", () => {
             ds: CONST.WALL_DOOR_STATES.CLOSED,
           },
         ]);
+        if (!tokenDocument || !wallDocument) {
+          throw new Error("Failed to create disposable smoke documents");
+        }
+        const token = tokenDocument;
+        const wall = wallDocument;
         await game.settings.set(moduleId, "settings", {
           ...priorMappings,
           mappings: { ...priorMappings.mappings, [game.user.id]: controllerId },
         });
-        await game.user.setFlag(moduleId, selectedTokenFlag, tokenDocument.id);
+        await game.user.setFlag(moduleId, selectedTokenFlag, token.id);
 
         const instance = game.modules.get(moduleId).instance;
         const socket = instance.modules.Socket;
@@ -313,7 +353,7 @@ test.describe("real Foundry compatibility", () => {
         const keypad = instance.modules.ControllerManager.keypads[0];
         const menu = game.settings.menus.get(`${moduleId}.${moduleId}`);
         const dialog = new menu.type();
-        let controllerDialog;
+        let controllerDialog: SmokeControllerDialog | undefined;
         try {
           dialog.render(true);
           await waitFor(
@@ -322,7 +362,7 @@ test.describe("real Foundry compatibility", () => {
           );
           const select = document.querySelector(`#mindflayer-token-controller-config select[name="mappings[${game.user.id}]"]`) as HTMLSelectElement;
           const option = select.querySelector(`option[value="${controllerId}"]`);
-          const swatch = select.closest(".form-group").querySelector("[data-controller-color]") as HTMLElement;
+          const swatch = select.closest(".form-group")?.querySelector("[data-controller-color]") as HTMLElement | null | undefined;
           controllerDialog = {
             selected: select.value,
             optionLabel: option?.textContent.trim(),
@@ -343,9 +383,10 @@ test.describe("real Foundry compatibility", () => {
         } finally {
           await dialog.close();
         }
+        if (!controllerDialog) throw new Error("Controller assignment dialog did not render");
         controllerDialog.restoredRightLED = keypad.peekLEDs()[1];
 
-        const originalPosition = { x: tokenDocument.x, y: tokenDocument.y };
+        const originalPosition = { x: token.x, y: token.y };
         socket._dispatch({
           type: "key-event",
           "controller-id": controllerId,
@@ -353,7 +394,7 @@ test.describe("real Foundry compatibility", () => {
           state: "down",
         });
         await waitFor(
-          () => tokenDocument.x !== originalPosition.x || tokenDocument.y !== originalPosition.y,
+          () => token.x !== originalPosition.x || token.y !== originalPosition.y,
           "TokenMovement did not move the disposable token",
         );
         socket._dispatch({
@@ -362,12 +403,12 @@ test.describe("real Foundry compatibility", () => {
           key: "W",
           state: "up",
         });
-        const movedPosition = { x: tokenDocument.x, y: tokenDocument.y };
-        await tokenDocument.update(originalPosition);
+        const movedPosition = { x: token.x, y: token.y };
+        await token.update(originalPosition);
 
         const originalAnimatePan = canvas.animatePan;
-        let cameraAction;
-        canvas.animatePan = (options) => {
+        let cameraAction: { x: number; y: number; scale: number; duration: number } | undefined;
+        canvas.animatePan = (options: { x: number; y: number; scale: number; duration: number }) => {
           cameraAction = structuredClone(options);
           return Promise.resolve();
         };
@@ -384,7 +425,7 @@ test.describe("real Foundry compatibility", () => {
           state: "down",
         });
         await waitFor(
-          () => wallDocument.ds === CONST.WALL_DOOR_STATES.OPEN,
+          () => wall.ds === CONST.WALL_DOOR_STATES.OPEN,
           "DoorHandler did not open the disposable door",
         );
         socket._dispatch({
@@ -401,7 +442,7 @@ test.describe("real Foundry compatibility", () => {
           state: "down",
         });
         await waitFor(
-          () => tokenDocument.light.bright === 20 && tokenDocument.light.dim === 40,
+          () => token.light.bright === 20 && token.light.dim === 40,
           "TokenTorch did not enable the disposable token light",
         );
         socket._dispatch({
@@ -418,7 +459,7 @@ test.describe("real Foundry compatibility", () => {
           state: "down",
         });
         await waitFor(
-          () => tokenDocument.light.bright === 0 && tokenDocument.light.dim === 0,
+          () => token.light.bright === 0 && token.light.dim === 0,
           "TokenTorch did not disable the disposable token light",
         );
         socket._dispatch({
@@ -430,9 +471,9 @@ test.describe("real Foundry compatibility", () => {
 
         return {
           cameraAction,
-          doorOpened: wallDocument.ds === CONST.WALL_DOOR_STATES.OPEN,
+          doorOpened: wall.ds === CONST.WALL_DOOR_STATES.OPEN,
           torchDisabled:
-            tokenDocument.light.bright === 0 && tokenDocument.light.dim === 0,
+            token.light.bright === 0 && token.light.dim === 0,
           tokenMoved:
             movedPosition.x !== originalPosition.x || movedPosition.y !== originalPosition.y,
           keypadCount: instance.modules.ControllerManager.keypads.length,
@@ -469,9 +510,9 @@ test.describe("real Foundry compatibility", () => {
     expect(behavior.controllerDialog.swatchColor).toBe("rgb(255, 0, 0)");
     expect(behavior.controllerDialog.restoredRightLED).toMatch(/^#[0-9a-f]{6}$/i);
     expect(behavior.controllerDialog.restoredRightLED).not.toBe(behavior.controllerDialog.rightLED);
-    expect(behavior.cameraAction.x).toEqual(expect.any(Number));
-    expect(behavior.cameraAction.y).toEqual(expect.any(Number));
-    expect(behavior.cameraAction.scale).toBeGreaterThan(0);
+    expect(behavior.cameraAction?.x).toEqual(expect.any(Number));
+    expect(behavior.cameraAction?.y).toEqual(expect.any(Number));
+    expect(behavior.cameraAction?.scale).toBeGreaterThan(0);
     expect(behavior.outboundMessages).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -504,8 +545,8 @@ test.describe("real Foundry compatibility", () => {
         "Timer",
       ];
       const unaffectedNames = ["SocketlibWrapper", "WakeLock", "Fullscreen"];
-      const hookCount = (name) => Hooks.events[name]?.length ?? 0;
-      const waitFor = async (predicate, message, timeout = 5000) => {
+      const hookCount = (name: string) => Hooks.events[name]?.length ?? 0;
+      const waitFor = async (predicate: () => unknown, message: string, timeout = 5000) => {
         const started = Date.now();
         while (!predicate()) {
           if (Date.now() - started > timeout) {

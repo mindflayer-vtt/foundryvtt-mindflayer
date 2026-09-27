@@ -1,11 +1,11 @@
 import { vi } from "vitest";
 
 class HookBus {
-  handlers = new Map();
-  once(type, callback) { const wrapper = (...args) => { this.off(type, wrapper); return callback(...args); }; return this.on(type, wrapper); }
-  on(type, callback) { if (!this.handlers.has(type)) this.handlers.set(type, new Set()); this.handlers.get(type).add(callback); return callback; }
-  off(type, callback) { this.handlers.get(type)?.delete(callback); }
-  call(type, ...args) { for (const callback of this.handlers.get(type) || []) callback(...args); }
+  handlers = new Map<string, Set<(...args: unknown[]) => unknown>>();
+  once(type: string, callback: (...args: unknown[]) => unknown) { const wrapper = (...args: unknown[]) => { this.off(type, wrapper); return callback(...args); }; return this.on(type, wrapper); }
+  on(type: string, callback: (...args: unknown[]) => unknown) { if (!this.handlers.has(type)) this.handlers.set(type, new Set()); this.handlers.get(type)!.add(callback); return callback; }
+  off(type: string, callback: (...args: unknown[]) => unknown) { this.handlers.get(type)?.delete(callback); }
+  call(type: string, ...args: unknown[]) { for (const callback of this.handlers.get(type) || []) callback(...args); }
   clear() { this.handlers.clear(); }
 }
 
@@ -35,12 +35,12 @@ export function installFoundryFakes() {
 
 export function resetFoundryFakes() {
   hooks.clear();
-  const flags = new Map();
-  const registrations = new Map();
+  const flags = new Map<string, unknown>();
+  const registrations = new Map<string, unknown>();
   runtime.foundry = { utils: {
-    debounce: (callback) => callback,
-    isNewerVersion: (current, target) => Number(current) > Number(target),
-    mergeObject: (left, right) => ({ ...left, ...right }),
+    debounce: <T>(callback: T): T => callback,
+    isNewerVersion: (current: string | number, target: string | number) => Number(current) > Number(target),
+    mergeObject: (left: Record<string, unknown>, right: Record<string, unknown>) => ({ ...left, ...right }),
   } };
   runtime.mergeObject = runtime.foundry.utils.mergeObject;
   runtime.game = {
@@ -49,13 +49,13 @@ export function resetFoundryFakes() {
     modules: new Map([["mindflayer", { active: true, instance: null }]]),
     user: {
       id: "gm", isGM: true, role: 4,
-      getFlag: vi.fn((scope, key) => flags.get(`${scope}.${key}`)),
-      setFlag: vi.fn((scope, key, value) => { flags.set(`${scope}.${key}`, value); return Promise.resolve(value); }),
+      getFlag: vi.fn((scope: string, key: string) => flags.get(`${scope}.${key}`)),
+      setFlag: vi.fn((scope: string, key: string, value: unknown) => { flags.set(`${scope}.${key}`, value); return Promise.resolve(value); }),
     },
-    i18n: { format: vi.fn((key) => key), localize: vi.fn((key) => key) },
+    i18n: { format: vi.fn((key: string) => key), localize: vi.fn((key: string) => key) },
     settings: {
       get: vi.fn(), set: vi.fn(),
-      register: vi.fn((scope, key, options) => registrations.set(`${scope}.${key}`, options)),
+      register: vi.fn((scope: string, key: string, options: unknown) => registrations.set(`${scope}.${key}`, options)),
       registerMenu: vi.fn(), registrations,
     },
     socket: { on: vi.fn(), off: vi.fn(), emit: vi.fn() }, keybindings: { register: vi.fn() },
@@ -71,17 +71,17 @@ export function resetFoundryFakes() {
     USER_ROLES: { TRUSTED: 2 },
   };
   runtime.ui = { notifications: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), clear: vi.fn() } };
-  const wrappers = new Map();
+  const wrappers = new Map<string, { callback: unknown; mode: string }>();
   runtime.libWrapper = {
     MIXED: "MIXED", WRAPPER: "WRAPPER",
-    register: vi.fn((owner, target, callback, mode) => wrappers.set(`${owner}:${target}`, { callback, mode })),
-    unregister: vi.fn((owner, target) => wrappers.delete(`${owner}:${target}`)), wrappers,
+    register: vi.fn((owner: string, target: string, callback: unknown, mode: string) => wrappers.set(`${owner}:${target}`, { callback, mode })),
+    unregister: vi.fn((owner: string, target: string) => wrappers.delete(`${owner}:${target}`)), wrappers,
   };
   class Container {
     children: any[] = [];
     parent: any = null;
     position = { x: 0, y: 0 };
-    scale = { x: 1, y: 1, set: vi.fn((x, y) => { this.scale.x = x; this.scale.y = y; }) };
+    scale = { x: 1, y: 1, set: vi.fn((x: number, y: number) => { this.scale.x = x; this.scale.y = y; }) };
     addChild(child: any) { child.parent = this; this.children.push(child); return child; }
     removeChild(child: any) { this.children = this.children.filter((item) => item !== child); child.parent = null; return child; }
     destroy = vi.fn();

@@ -7,28 +7,28 @@ import type MindFlayer from "../src/js/MindFlayer";
 import protocol from "./fixtures/protocol.json";
 
 function createSocket(instance: object) {
-  return new Socket(instance as MindFlayer);
+  return new Socket(instance as unknown as MindFlayer);
 }
 
 class FakeWebSocket {
-  static instances = [];
+  static instances: FakeWebSocket[] = [];
   OPEN = 1;
   readyState = 0;
-  listeners = {};
+  listeners: Record<string, (data: unknown) => void> = {};
   send = vi.fn();
   close = vi.fn();
   url: string;
 
-  constructor(url) {
+  constructor(url: string) {
     this.url = url;
     FakeWebSocket.instances.push(this);
   }
 
-  addEventListener(type, callback) {
+  addEventListener(type: string, callback: (data: unknown) => void) {
     this.listeners[type] = callback;
   }
 
-  emit(type, data = {}) {
+  emit(type: string, data: unknown = {}) {
     if (type === "open") this.readyState = this.OPEN;
     this.listeners[type](data);
   }
