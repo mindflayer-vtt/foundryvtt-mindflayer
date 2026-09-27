@@ -16,8 +16,8 @@
 
 export default class Key {
   #state = false;
-  #lastUp = null;
-  lastTrigger = null;
+  #lastUp: number | null = null;
+  lastTrigger: number | null = null;
   /**
    * @returns {boolean}
    */
@@ -35,7 +35,7 @@ export default class Key {
     this.#state = isDown;
   }
 
-  isJustDown(time) {
+  isJustDown(time: number): boolean {
     if (!this.#state) {
       return false;
     }
@@ -46,7 +46,7 @@ export default class Key {
     return false;
   }
 
-  isRepeatedDown(time) {
+  isRepeatedDown(time: number): boolean {
     if (!this.#state) {
       return false;
     }

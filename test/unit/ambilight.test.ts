@@ -76,7 +76,8 @@ describe("Ambilight table-ring handler", () => {
     const samples = [0, 4];
     const directions: Array<{ x: number; y: number }> = [];
     vi.spyOn(ambilight as any, "_findColorAlongVector").mockImplementation(
-      (_image: Uint8Array, _bounds: any, direction: any) => {
+      (...args: unknown[]) => {
+        const direction = args[2] as { x: number; y: number };
         directions.push({ x: direction.x, y: direction.y });
         return samples.shift();
       },

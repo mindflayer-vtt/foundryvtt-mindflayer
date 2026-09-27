@@ -16,17 +16,26 @@
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import Key from "./Key";
 import * as TokenUtil from "../../utils/tokenUtil";
+import type { LEDStateReport, RGBColor } from "../../utils/protocol";
+
+interface KeypadPlayer {
+  id: string;
+  name: string;
+  color?: string;
+  data?: { color: string };
+}
+
+interface KeypadInstance {
+  settings: { settings: { mappings: Record<string, string> } };
+}
 
 /**
  * Keypad class representing a keypad
  */
 export default class Keypad {
-  /**
-   * @type {import("../../MindFlayer").default}
-   */
-  #instance;
-  #controllerId;
-  #rawState = {
+  #instance: KeypadInstance;
+  #controllerId: string;
+  #rawState: Record<string, Key> = {
     Q: new Key(),
     W: new Key(),
     E: new Key(),
@@ -46,11 +55,11 @@ export default class Keypad {
   /**
    * @returns {[string, string]}
    */
-  #ledState = ["#000000", "#000000"];
+  #ledState: [string, string] = ["#000000", "#000000"];
   /** Confirmed by the server after device acknowledgement; null means unknown. */
   #currentLEDState: [string, string] | null = null;
 
-  constructor(instance: any, controllerId: string) {
+  constructor(instance: KeypadInstance, controllerId: string) {
     this.#instance = instance;
     this.#controllerId = controllerId;
     this.setDefaultLEDColor();
@@ -104,12 +113,12 @@ export default class Keypad {
    *
    * @returns {User | null} the assigned player
    */
-  get player() {
+  get player(): KeypadPlayer | null {
     const settings = this.#instance.settings.settings;
     const playerId = Object.keys(settings.mappings).find(
       (key) => settings.mappings[key] == this.#controllerId,
     );
-    const selectedPlayer = game.users.contents.find(
+    const selectedPlayer = (game.users.contents as KeypadPlayer[]).find(
       (player) => player.id == playerId,
     );
     if (!selectedPlayer) {
@@ -136,7 +145,7 @@ export default class Keypad {
     return Object.getOwnPropertyNames(this.#rawState);
   }
 
-  registerKeyEvent(data) {
+  registerKeyEvent(data: { key: string; state: string }): void {
     if (!Object.hasOwn(this.#rawState, data.key)) {
       console.warn(
         LOG_PREFIX +
@@ -150,7 +159,7 @@ export default class Keypad {
     this.#rawState[data.key].down = `${data.state}`.toLowerCase() === "down";
   }
 
-  isDown(wantedKey) {
+  isDown(wantedKey: string): boolean {
     if (!Object.hasOwn(this.#rawState, wantedKey)) {
       console.warn(
         LOG_PREFIX +
@@ -163,7 +172,7 @@ export default class Keypad {
     return this.#rawState[wantedKey].down;
   }
 
-  isJustDown(wantedKey, currentTime) {
+  isJustDown(wantedKey: string, currentTime: number): boolean {
     if (!Object.hasOwn(this.#rawState, wantedKey)) {
       console.warn(
         LOG_PREFIX +
@@ -176,7 +185,7 @@ export default class Keypad {
     return this.#rawState[wantedKey].isJustDown(currentTime);
   }
 
-  isRepeatedDown(wantedKey, currentTime) {
+  isRepeatedDown(wantedKey: string, currentTime: number): boolean {
     if (!Object.hasOwn(this.#rawState, wantedKey)) {
       console.warn(
         LOG_PREFIX +
@@ -189,18 +198,20 @@ export default class Keypad {
     return this.#rawState[wantedKey].isRepeatedDown(currentTime);
   }
 
-  syncRepetitions(keys = [], currentTime) {
+  syncRepetitions(keys: string[] = [], currentTime: number): void {
     if (!Array.isArray(keys) || keys.length < 2) {
       return;
     }
-    keys = keys.map((name) => this.#rawState[name]).filter((key) => key.down);
-    if (keys.length < 2) {
+    const activeKeys = keys
+      .map((name) => this.#rawState[name])
+      .filter((key): key is Key => key !== undefined && key.down);
+    if (activeKeys.length < 2) {
       return;
     }
-    const latestTrigger = keys
+    const latestTrigger = activeKeys
       .map((key) => key.lastTrigger || currentTime)
       .reduce((lastMax, currentValue) => Math.max(lastMax, currentValue), 0);
-    for (const key of keys) {
+    for (const key of activeKeys) {
       key.lastTrigger = latestTrigger;
     }
   }
@@ -209,7 +220,8 @@ export default class Keypad {
     try {
       const player = this.player;
       if (player) {
-        const playerColor = player.color || player.data.color;
+        const playerColor = player.color || player.data?.color;
+        if (!playerColor) throw new Error("Assigned player has no color");
         this.setLED(0, playerColor);
         this.setLED(1, playerColor);
       } else {
@@ -228,7 +240,7 @@ export default class Keypad {
     }
   }
 
-  setLED(index, color) {
+  setLED(index: number, color: string): void {
     if (!this.#ledState[index]) {
       console.error(
         LOG_PREFIX +
@@ -270,30 +282,32 @@ export default class Keypad {
    * Record the server's latest device-confirmed LED state. A null report
    * means the command is pending or the device cannot confirm it.
    */
-  registerLEDState({ appliedLeds }) {
+  registerLEDState({ appliedLeds }: LEDStateReport): void {
     if (appliedLeds === null) {
       this.#currentLEDState = null;
       return;
     }
-    const colors = [appliedLeds?.led1, appliedLeds?.led2];
-    if (!colors.every((color) =>
-      color && [color.r, color.g, color.b].every((channel) =>
+    const led1 = appliedLeds?.led1;
+    const led2 = appliedLeds?.led2;
+    const valid = (color: RGBColor | undefined): color is RGBColor =>
+      color !== undefined && [color.r, color.g, color.b].every((channel) =>
         Number.isInteger(channel) && channel >= 0 && channel <= 255,
-      ))) return;
-    this.#currentLEDState = colors.map((color) =>
+      );
+    if (!valid(led1) || !valid(led2)) return;
+    const toHex = (color: RGBColor) =>
       `#${[color.r, color.g, color.b]
         .map((channel) => channel.toString(16).padStart(2, "0"))
-        .join("")}`.toUpperCase(),
-    ) as [string, string];
+        .join("")}`.toUpperCase();
+    this.#currentLEDState = [toHex(led1), toHex(led2)];
   }
 
   /**
    * Snapshot wanted colours and confirmed colours. `matches` is null while
    * the current physical state has not been confirmed by the server.
    */
-  getLEDState() {
-    const wanted = [...this.#ledState];
-    const current = this.#currentLEDState === null ? null : [...this.#currentLEDState];
+  getLEDState(): { wanted: [string, string]; current: [string, string] | null; matches: boolean | null } {
+    const wanted: [string, string] = [...this.#ledState];
+    const current: [string, string] | null = this.#currentLEDState === null ? null : [...this.#currentLEDState];
     return {
       wanted,
       current,

@@ -57,8 +57,9 @@ export default class WakeLock extends AbstractSubModule {
         });
         console.debug(SUB_LOG_PREFIX + "locked the screen awake");
       } catch (err) {
+        const detail = err instanceof Error ? `${err.name}, ${err.message}` : String(err);
         console.error(
-          SUB_LOG_PREFIX + `Error locking ${err.name}, ${err.message}`,
+          SUB_LOG_PREFIX + `Error locking ${detail}`,
         );
       }
     } else if (this.#wakeLock != null) {

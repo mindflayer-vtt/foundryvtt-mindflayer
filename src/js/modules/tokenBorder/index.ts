@@ -42,7 +42,7 @@ export default class TokenBorder extends AbstractSubModule {
     libWrapper.register(
       VTT_MODULE_NAME,
       REF_Token_getBorderColor,
-      function (wrapped, ...args) {
+      function (this: { actor?: { hasPlayerOwner: boolean } }, wrapped, ...args) {
         return $this.#getBorderColorWrapper(wrapped, this, ...args);
       },
       libWrapper.MIXED,
@@ -50,7 +50,10 @@ export default class TokenBorder extends AbstractSubModule {
     libWrapper.register(
       VTT_MODULE_NAME,
       REF_Token_refreshState,
-      function _refreshState(wrapped) {
+      function _refreshState(
+        this: { border: { visible: boolean }; document: { isSecret: boolean } },
+        wrapped,
+      ) {
         const result = wrapped();
         // always show the border on non-hidden tokens
         this.border.visible = !this.document.isSecret;
