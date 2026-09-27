@@ -18,6 +18,10 @@ export default class BeamerPresentation extends AbstractSubModule {
     return [...super.moduleDependencies, CameraControl.name, Fullscreen.name];
   }
 
+  constructor(instance) {
+    super(instance);
+  }
+
   get fullscreen() {
     return this.instance.modules[Fullscreen.name];
   }

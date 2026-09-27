@@ -7,6 +7,11 @@ export const BEAMER_USER_SETTING = "beamerUserId";
 export default class BeamerUsers extends AbstractSubModule {
   #busy = false;
   static shouldStart() { return true; }
+
+  constructor(instance) {
+    super(instance);
+  }
+
   get selectedId() { return game.settings.get(VTT_MODULE_NAME, BEAMER_USER_SETTING); }
 
   review(user) {

@@ -42,8 +42,10 @@ async function authenticateSetup(page) {
 }
 
 async function dismissTour(page) {
-  const exit = page.locator('.tour a[data-action="exit"]');
-  if (await exit.count()) await exit.click({ force: true });
+  const exit = page.locator('.step-button[data-action="exit"]');
+  // Setup tours can mount after the underlying world controls become visible.
+  await exit.waitFor({ state: "visible", timeout: 3000 }).catch(() => {});
+  if (await exit.isVisible()) await exit.click({ force: true });
 }
 
 async function preparePackagesAndWorld(page) {
@@ -84,10 +86,11 @@ async function preparePackagesAndWorld(page) {
     const form = page.locator('form:has(input[name="world-id"])');
     await form.locator('input[name="title"]').fill("Mindflayer Smoke Test");
     await form.locator('input[name="world-id"]').fill(worldId);
-    await form.locator('select[name="system"]').selectOption("mindflayer-smoke-system");
+    // Foundry 14 renders a searchable control over the backing select.
+    await form.locator('select[name="system"]').selectOption("mindflayer-smoke-system", { force: true });
     await form.getByRole("button", { name: "Continue" }).click();
-    await page.waitForURL((url) => url.pathname === "/join", { timeout: 60_000 });
-    return true;
+    await page.waitForFunction((id) => location.pathname === "/join" || game.worlds?.has(id), worldId, { timeout: 60_000 });
+    if (new URL(page.url()).pathname === "/join") return true;
   }
 
   await dismissTour(page);
