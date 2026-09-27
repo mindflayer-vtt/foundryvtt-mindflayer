@@ -17,6 +17,20 @@ import { LOG_PREFIX, VTT_MODULE_NAME } from "../settings/constants";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenUtil: ";
 
+interface UserRef {
+  id: string;
+  name: string;
+  character?: { id: string } | null;
+}
+
+interface TokenRef {
+  id: string;
+  actor?: {
+    id: string;
+    testUserPermission(user: UserRef, permission: string): boolean;
+  } | null;
+}
+
 /**
  * Returns all controllable tokens of a player.
  *
@@ -25,12 +39,12 @@ const SUB_LOG_PREFIX = LOG_PREFIX + "TokenUtil: ";
  * @returns {Token[]} all controllable tokens of a player
  * @throws an Error object if no tokens could be found and ignoreEmpty is false
  */
-export function findAllTokensFor(player, ignoreEmpty = false) {
+export function findAllTokensFor(player: UserRef, ignoreEmpty = false) {
   const tokens = canvas.tokens.placeables
     .filter(
-      (token) => token.actor?.testUserPermission(player, "OWNER") === true,
+      (token: TokenRef) => token.actor?.testUserPermission(player, "OWNER") === true,
     )
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .sort((a: TokenRef, b: TokenRef) => a.id.localeCompare(b.id));
   if (!ignoreEmpty && tokens.length <= 0) {
     console.warn(
       SUB_LOG_PREFIX + `Player '${player.name}' does not have any Tokens: `,
@@ -48,14 +62,14 @@ export function findAllTokensFor(player, ignoreEmpty = false) {
  * @throws {Error} if no selected token could be found and ignoreNone is false
  * @returns {Token}
  */
-export function getTokenFor(player, ignoreNone = false) {
+export function getTokenFor(player: UserRef, ignoreNone = false) {
   const selectedToken = game.user.getFlag(
     VTT_MODULE_NAME,
     "selectedToken_" + player.id,
   );
   /** @var {Token} token */
   let token = canvas.tokens.placeables.find(
-    (token) => token.id == selectedToken,
+    (token: TokenRef) => token.id == selectedToken,
   );
   if (!token) {
     const tokens = findAllTokensFor(player, true);
@@ -82,12 +96,13 @@ export function setDefaultTokens() {
   }
 }
 
-export function setDefaultToken(user) {
+export function setDefaultToken(user: UserRef) {
   let selectedToken = null;
   const allTokens = findAllTokensFor(user, true);
-  if (user.character) {
+  const character = user.character;
+  if (character) {
     selectedToken = allTokens.find(
-      (token) => token.actor.id == user.character.id,
+      (token: TokenRef) => token.actor?.id == character.id,
     );
     if (selectedToken) {
       selectedToken = selectedToken.id;
@@ -108,7 +123,7 @@ export function setDefaultToken(user) {
  * @param {Token} token the token to check
  * @returns {Player|null} the player who is currently controlling the token or null if noone is controlling it
  */
-export function getUserIfSelectedTokenIs(token) {
+export function getUserIfSelectedTokenIs(token: Pick<TokenRef, "id">) {
   let result = null;
   for (const player of game.users.contents) {
     if (
@@ -130,7 +145,7 @@ export function getAllCombatTokens() {
   if (game.combat == null) {
     return [];
   }
-  return game.combat.turns.map((combatant) => combatant.token.object);
+  return game.combat.turns.map((combatant: { token: { object: TokenRef } }) => combatant.token.object);
 }
 
 function _refreshTokens() {
