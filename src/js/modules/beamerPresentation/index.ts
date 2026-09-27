@@ -23,7 +23,7 @@ export default class BeamerPresentation extends AbstractSubModule {
   }
 
   get fullscreen() {
-    return this.instance.modules[Fullscreen.name];
+    return Reflect.get(this.instance!.modules, Fullscreen.name) as Fullscreen;
   }
 
   ready() {

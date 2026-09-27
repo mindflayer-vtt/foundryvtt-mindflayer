@@ -58,11 +58,13 @@ export default class MindFlayer {
     libWrapper.register(
       VTT_MODULE_NAME,
       WRAP_Application__activateCoreListeners,
-      function _activateCoreListeners(wrapped, html) {
-        /** @type {Element} */
-        let node = html[0];
+      function _activateCoreListeners(
+        wrapped: (html: unknown) => unknown,
+        html: { 0: Element },
+      ): unknown {
+        let node: Element = html[0];
         if (node.nodeType !== Node.ELEMENT_NODE) {
-          node = node.nextElementSibling;
+          node = node.nextElementSibling!;
         }
         return wrapped(jQuery(node));
       },
