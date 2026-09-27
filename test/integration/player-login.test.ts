@@ -43,6 +43,8 @@ describe("legacy player self-login flow", () => {
     expect(socketlib.executeAsGM).toHaveBeenCalledWith(
       "PlayerLogin_register", "controller-a", "player-a",
     );
+    listeners.get("keyboard-login")?.({ type: "keyboard-login", "controller-id": "controller-b" });
+    expect(socketlib.executeAsGM).toHaveBeenCalledOnce();
   });
 
   test("persists mappings only on the GM client", async () => {

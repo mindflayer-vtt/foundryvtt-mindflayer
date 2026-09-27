@@ -14,7 +14,7 @@
  */
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
-import { default as Socket } from "../socket";
+import Socket, { type SocketMessage } from "../socket";
 import SocketlibWrapper from "../socketlib";
 import { SOCKETLIB_TIMER_ADD } from "../timer";
 import { VTT_MODULE_NAME } from "../../settings/constants";
@@ -45,31 +45,30 @@ export default class PlayerLogin extends AbstractSubModule {
     return [...super.moduleDependencies, Socket.name, SocketlibWrapper.name];
   }
 
-  /** @returns {SocketlibWrapper} */
-  get socketlib() {
-    return this.instance.modules[SocketlibWrapper.name];
+  get socketlib(): SocketlibWrapper {
+    return Reflect.get(this.instance!.modules, SocketlibWrapper.name) as SocketlibWrapper;
   }
 
-  /**
-   * @returns {Socket}
-   */
-  get socket() {
-    return this.instance.modules[Socket.name];
+  get socket(): Socket {
+    return Reflect.get(this.instance!.modules, Socket.name) as Socket;
   }
 
-  #messageHandler(message) {
+  #messageHandler(message: SocketMessage): void {
+    const controllerId = message["controller-id"];
+    const playerId = message["player-id"];
+    if (typeof controllerId !== "string" || typeof playerId !== "string") return;
     this.socketlib.executeAsGM(
       SOCKETLIB_PLAYER_LOGIN_REGISTER,
-      message["controller-id"],
-      message["player-id"],
+      controllerId,
+      playerId,
     );
   }
 
-  async #register(controllerId, playerId) {
+  async #register(controllerId: string, playerId: string): Promise<void> {
     if (!game.user.isGM) {
       return;
     }
-    const settings = this.instance.settings.settings;
+    const settings = this.instance!.settings.settings;
     await game.settings.set(VTT_MODULE_NAME, "settings", {
       ...settings,
       mappings: { ...settings.mappings, [playerId]: controllerId },
