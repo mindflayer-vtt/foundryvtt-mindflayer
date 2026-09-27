@@ -205,7 +205,7 @@ describe("selected-token border integration", () => {
   });
 
   test("uses the selected player's color and preserves fallback behavior", () => {
-    const feature = new TokenBorder(featureInstance(managerHarness()));
+    const feature = new TokenBorder(featureInstance(managerHarness()) as unknown as MindFlayer);
     feature.ready();
     const borderRegistration = libWrapper.register.mock.calls.find(
       (call) => call[1].endsWith("._getBorderColor"),
@@ -224,7 +224,7 @@ describe("selected-token border integration", () => {
   });
 
   test("forces borders visible only for non-secret token documents", () => {
-    const feature = new TokenBorder(featureInstance(managerHarness()));
+    const feature = new TokenBorder(featureInstance(managerHarness()) as unknown as MindFlayer);
     feature.ready();
     const refreshRegistration = libWrapper.register.mock.calls.find(
       (call) => call[1].endsWith("._refreshState"),

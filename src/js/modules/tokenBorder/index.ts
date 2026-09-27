@@ -19,6 +19,7 @@ import * as TokenUtil from "../../utils/tokenUtil";
 import AbstractSubModule from "../AbstractSubModule";
 import Fullscreen from "../fullscreen";
 import { default as Socket } from "../socket";
+import type MindFlayer from "../../MindFlayer";
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenBorder: ";
 
 const REF_Token_getBorderColor =
@@ -26,8 +27,8 @@ const REF_Token_getBorderColor =
 const REF_Token_refreshState =
   "foundry.canvas.placeables.Token.prototype._refreshState";
 export default class TokenBorder extends AbstractSubModule {
-  #onUpdateSceneFun = null;
-  constructor(instance) {
+  #onUpdateSceneFun: () => boolean;
+  constructor(instance: MindFlayer) {
     super(instance);
 
     this.#onUpdateSceneFun = this.#onUpdateScene.bind(this);
@@ -42,7 +43,7 @@ export default class TokenBorder extends AbstractSubModule {
     libWrapper.register(
       VTT_MODULE_NAME,
       REF_Token_getBorderColor,
-      function (this: { actor?: { hasPlayerOwner: boolean } }, wrapped, ...args) {
+      function (this: { id: string; actor?: { hasPlayerOwner: boolean } | null }, wrapped: (...args: unknown[]) => unknown, ...args: unknown[]) {
         return $this.#getBorderColorWrapper(wrapped, this, ...args);
       },
       libWrapper.MIXED,
@@ -52,7 +53,7 @@ export default class TokenBorder extends AbstractSubModule {
       REF_Token_refreshState,
       function _refreshState(
         this: { border: { visible: boolean }; document: { isSecret: boolean } },
-        wrapped,
+        wrapped: () => unknown,
       ) {
         const result = wrapped();
         // always show the border on non-hidden tokens
@@ -77,21 +78,19 @@ export default class TokenBorder extends AbstractSubModule {
     return [...super.moduleDependencies, Socket.name, Fullscreen.name];
   }
 
-  /**
-   * @returns {Socket}
-   */
-  get socket() {
-    return this.instance.modules[Socket.name];
+  get socket(): Socket {
+    return Reflect.get(this.instance!.modules, Socket.name) as Socket;
   }
 
-  /**
-   * @returns {Fullscreen}
-   */
-  get fullscreen() {
-    return this.instance.modules[Fullscreen.name];
+  get fullscreen(): Fullscreen {
+    return Reflect.get(this.instance!.modules, Fullscreen.name) as Fullscreen;
   }
 
-  #getBorderColorWrapper(wrapped, token, ...args) {
+  #getBorderColorWrapper(
+    wrapped: (...args: unknown[]) => unknown,
+    token: { id: string; actor?: { hasPlayerOwner: boolean } | null },
+    ...args: unknown[]
+  ): unknown {
     if (
       this.socket &&
       this.socket.isConnected &&
@@ -111,7 +110,7 @@ export default class TokenBorder extends AbstractSubModule {
     return wrapped(...args);
   }
 
-  #onUpdateScene() {
+  #onUpdateScene(): boolean {
     TokenUtil.deselectAllTokens();
 
     return true;
