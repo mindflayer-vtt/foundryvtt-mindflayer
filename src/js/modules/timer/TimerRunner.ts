@@ -23,6 +23,28 @@ const LOG_SUB_PREFIX = `${LOG_PREFIX}TimerRunner: `;
 export const TIMER_RADIUS = 50;
 export const TIMER_ANGLE_START = -Math.PI / 2;
 
+interface TimerGraphics {
+  alpha: number;
+  beginFill(color: number): void;
+  drawCircle(x: number, y: number, radius: number): void;
+  clear(): void;
+  lineStyle(width: number, color: number): void;
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  arc(x: number, y: number, radius: number, start: number, end: number, anticlockwise: boolean): void;
+}
+
+interface TimerText {
+  text: string;
+  anchor: { set(value: number): void };
+  updateText(): void;
+}
+
+interface TimerOptions {
+  neededRole?: number;
+  onDone?: (() => void) | null;
+}
+
 /**
  * @property {object} options
  * @property {number} options.neededRole the CONST.USER_ROLES needed to see the timer, TRUSTED or lower will utilise the ambilight LEDs
@@ -30,16 +52,14 @@ export const TIMER_ANGLE_START = -Math.PI / 2;
  */
 export default class TimerRunner extends PIXI.Container {
   #start = new Date().valueOf();
-  #end;
-  /** @type {PIXI.Graphics} */
-  #background;
-  /** @type {PIXI.Graphics} */
-  #indicator;
-  /** @type {PIXI.Text} */
-  #text;
-  #timeout;
+  #end: number;
+  #background!: TimerGraphics;
+  #indicator!: TimerGraphics;
+  #text!: TimerText;
+  #timeout: number | null;
+  options: TimerOptions;
 
-  constructor(start, end, options = {}) {
+  constructor(start: number, end: number, options: TimerOptions = {}) {
     super();
     this.options = mergeObject(this.defaultOptions, options);
     if (start != null) {
@@ -70,7 +90,7 @@ export default class TimerRunner extends PIXI.Container {
    * @type {Timer}
    */
   get timer() {
-    return getModuleInstance().modules[Timer.name];
+    return Reflect.get(getModuleInstance().modules, Timer.name) as Timer;
   }
 
   get start() {
