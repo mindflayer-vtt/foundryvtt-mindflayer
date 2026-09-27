@@ -14,7 +14,13 @@ const runtime = globalThis as any;
 
 export function installFoundryFakes() {
   runtime.window = runtime;
-  runtime.FormApplication = class {};
+  runtime.FormApplication = class {
+    static defaultOptions = {};
+    form: any;
+    activateListeners(_html: any) {}
+    render() {}
+    setPosition(_position: any) {}
+  };
   runtime.Hooks = hooks;
   resetFoundryFakes();
 }
