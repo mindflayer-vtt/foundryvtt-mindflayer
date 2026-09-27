@@ -76,12 +76,12 @@ export default class TableLEDRing extends AbstractSubModule {
   /**
    * @param {Uint32Array} ledState
    */
-  #sendTableLEDData(ledState: Uint32Array | null): void {
+  #sendTableLEDData(ledState: Uint32Array | null | undefined): void {
     this.ensureLoaded();
     // Chill, we don't have a connection.
     if (!this.socket.isConnected) return;
     // enabled and we have data?
-    if (ledState === null || !this.instance!.settings.ambilight.enabled) {
+    if (ledState == null || !this.instance!.settings.ambilight.enabled) {
       return;
     }
     const data = JSON.stringify(

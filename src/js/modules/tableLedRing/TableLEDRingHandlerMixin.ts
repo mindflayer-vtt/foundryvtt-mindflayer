@@ -35,7 +35,7 @@ export const TableLEDRingHandlerMixin = <TBase extends Constructor>(S: TBase) =>
      * @param {number} count the number of leds in the table
      * @returns {Promise<Uint32Array>} with 3 entries per LED (red, green, blue)
      */
-    async updateLEDs(count: number) {
+    async updateLEDs(count: number): Promise<Uint32Array | null | undefined> {
       return new Uint32Array(count * 3);
     }
   };

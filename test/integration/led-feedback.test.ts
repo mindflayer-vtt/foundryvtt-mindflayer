@@ -174,6 +174,17 @@ describe("table LED ring arbitration", () => {
     ring.unhook();
   });
 
+  test("does not send when a handler has no LED frame", async () => {
+    const { ring, socket } = createRing();
+    const handler = { priority: 1, updateLEDs: vi.fn(async () => undefined) };
+    ring.registerHandler(handler);
+    ring.ready();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(handler.updateLEDs).toHaveBeenCalledWith(2);
+    expect(socket.send).not.toHaveBeenCalled();
+    ring.unhook();
+  });
+
   test("selects the highest-priority handler and sends only changed states", async () => {
     const { ring, socket } = createRing();
     const low = { priority: 1, updateLEDs: vi.fn(async () => new Uint32Array([1, 2, 3, 4, 5, 6])) };

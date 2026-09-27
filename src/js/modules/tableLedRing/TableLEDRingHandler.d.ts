@@ -22,7 +22,7 @@ export interface TableLEDRingHandler {
   /**
    *
    * @param count the number of leds in the table
-   * @returns with 3 entries per LED (red, green, blue)
+   * @returns with 3 entries per LED (red, green, blue), or no frame to send
    */
-  updateLEDs(count: number): Promise<Uint32Array>;
+  updateLEDs(count: number): Promise<Uint32Array | null | undefined>;
 }

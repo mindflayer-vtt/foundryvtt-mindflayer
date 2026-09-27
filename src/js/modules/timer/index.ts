@@ -117,7 +117,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
   }
 
   async updateLEDs(count: number) {
-    const leds = await super.updateLEDs(count);
+    const leds = (await super.updateLEDs(count)) ?? new Uint32Array(count * 3);
     if (this.#timers.length > 0) {
       const now = new Date().valueOf();
       for (const t1 of this.#timers) {
