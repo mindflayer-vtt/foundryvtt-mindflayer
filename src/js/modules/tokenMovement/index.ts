@@ -18,13 +18,14 @@ import { default as ControllerManager } from "../ControllerManager";
 import { deg2rad, Vector } from "../../utils/2d-geometry";
 import Keypad from "../ControllerManager/Keypad";
 import { LOG_PREFIX } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenMovement: ";
 
 export default class TokenMovement extends AbstractSubModule {
   #tickHandlerFun;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
 
     this.#tickHandlerFun = this.#tickHandler.bind(this);
@@ -37,7 +38,7 @@ export default class TokenMovement extends AbstractSubModule {
       );
       return;
     }
-    this.instance.modules[ControllerManager.name].registerTickListener(
+    this.controllerManager.registerTickListener(
       this.#tickHandlerFun,
     );
   }
@@ -51,11 +52,8 @@ export default class TokenMovement extends AbstractSubModule {
     return [...super.moduleDependencies, ControllerManager.name];
   }
 
-  /**
-   * @returns {ControllerManager}
-   */
-  get controllerManager() {
-    return this.instance.modules[ControllerManager.name];
+  get controllerManager(): ControllerManager {
+    return Reflect.get(this.instance!.modules, ControllerManager.name) as ControllerManager;
   }
 
   /**
@@ -77,7 +75,7 @@ export default class TokenMovement extends AbstractSubModule {
    * Rotates the keypad so that the movements are rotated clockwise by 90 deg
    * @param {Keypad} keypad a keypad client that has been mapped from the websocket message data
    */
-  #rotateKeypad(keypad) {
+  #rotateKeypad(keypad: Keypad): void {
     const newRotation = keypad.rotation + 90;
     const token = keypad.token;
     if (token) {
@@ -107,7 +105,7 @@ export default class TokenMovement extends AbstractSubModule {
    * @param {Keypad} keypad a keypad client that has been mapped from the websocket message data
    * @private
    */
-  async #handleMovement(now, keypad) {
+  async #handleMovement(now: number, keypad: Keypad): Promise<void> {
     const token = keypad.token;
     if (!token) {
       return;
@@ -137,7 +135,7 @@ export default class TokenMovement extends AbstractSubModule {
       // Logging movement action
       console.debug(
         SUB_LOG_PREFIX +
-          `${keypad.player.name}: ${rotateOnly ? "Rotating" : "Moving"} ${
+          `${keypad.player?.name ?? "unassigned"}: ${rotateOnly ? "Rotating" : "Moving"} ${
             token.name
           } to direction`,
         direction,

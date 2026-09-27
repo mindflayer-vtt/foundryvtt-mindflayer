@@ -31,7 +31,7 @@ function featureInstance(manager: ReturnType<typeof managerHarness>) {
 describe("controller-driven token movement", () => {
   test("moves and then faces a token using the keypad orientation", async () => {
     const manager = managerHarness();
-    const movement = new TokenMovement(featureInstance(manager));
+    const movement = new TokenMovement(featureInstance(manager) as unknown as MindFlayer);
     const keypad = {
       token: { id: "hero", name: "Hero" },
       player: { name: "Player" },
@@ -59,7 +59,7 @@ describe("controller-driven token movement", () => {
 
   test("shift rotates in place and shift-C rotates the keypad orientation", async () => {
     const manager = managerHarness();
-    const movement = new TokenMovement(featureInstance(manager));
+    const movement = new TokenMovement(featureInstance(manager) as unknown as MindFlayer);
     const keypad = {
       token: { id: "hero", name: "Hero" },
       player: { name: "Player" },
@@ -87,13 +87,13 @@ describe("controller-driven token movement", () => {
   test("does not subscribe when the canvas is disabled", () => {
     game.canvas.initialized = false;
     const manager = managerHarness();
-    new TokenMovement(featureInstance(manager)).ready();
+    new TokenMovement(featureInstance(manager) as unknown as MindFlayer).ready();
     expect(manager.registerTickListener).not.toHaveBeenCalled();
   });
 
   test("ignores movement input without a selected token or direction", async () => {
     const manager = managerHarness();
-    const movement = new TokenMovement(featureInstance(manager));
+    const movement = new TokenMovement(featureInstance(manager) as unknown as MindFlayer);
     movement.ready();
     const withoutToken = {
       token: null, isDown: vi.fn(() => false), isJustDown: vi.fn(() => false),
