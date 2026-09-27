@@ -8,8 +8,8 @@
     "prod": "NODE_ENV=production webpack --config webpack.config.js && NODE_ENV=production node scripts/build-packs.mjs",
     "style": "prettier --write src/ webpack/ *.json *.md webpack.config.js",
     "test": "vitest run",
-    "test:unit": "vitest run test/unit test/utils.test.js",
-    "test:integration": "vitest run test/integration test/socket.test.js",
+    "test:unit": "vitest run test/unit test/utils.test.ts",
+    "test:integration": "vitest run test/integration test/socket.test.ts",
     "test:coverage": "vitest run --coverage",
     "test:foundry": "node --env-file-if-exists=.env node_modules/@playwright/test/cli.js test --config playwright.foundry.config.mjs",
     "test:foundry:eula": "node --env-file-if-exists=.env test/foundry/accept-eula.mjs",
@@ -20,7 +20,8 @@
     "test:foundry:local": "sh -c 'npm run test:foundry:setup && trap \"npm run test:foundry:down\" EXIT INT TERM && npm run test:foundry'",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "check": "npm run lint && npm test && npm run build",
+    "typecheck:test": "tsc --project tsconfig.test.json",
+    "check": "npm run lint && npm run typecheck:test && npm test && npm run build",
     "semantic-release": "semantic-release"
   },
   "repository": {
@@ -42,6 +43,7 @@
     "@semantic-release/github": "^12.0.9",
     "@semantic-release/npm": "^13.1.5",
     "@semantic-release/release-notes-generator": "^14.1.1",
+    "@types/node": "^26.6.3",
     "@types/pixi.js": "^5.0.0",
     "@vitest/coverage-v8": "^4.1.11",
     "copy-webpack-plugin": "^14.0.0",
@@ -54,6 +56,8 @@
     "semantic-release": "^25.0.9",
     "sharp": "^0.35.4",
     "terser-webpack-plugin": "^5.6.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
     "vitest": "^4.1.11",
     "webpack": "^5.110.1",
     "webpack-cli": "^7.2.3"

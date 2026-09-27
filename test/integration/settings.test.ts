@@ -8,7 +8,7 @@ import { settings } from "../../src/js/settings";
 
 describe("settings reconfiguration boundaries", () => {
   beforeEach(() => {
-    globalThis.location = { reload: vi.fn() };
+    (globalThis as any).location = { reload: vi.fn() };
     settings.init();
   });
 

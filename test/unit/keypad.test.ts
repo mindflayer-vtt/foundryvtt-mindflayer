@@ -31,7 +31,10 @@ describe("Keypad state", () => {
       "controllerRotation_controller",
       270,
     );
-    expect(() => { pad.rotation = "bad"; }).toThrow(TypeError);
+    expect(() => {
+      // @ts-expect-error Deliberately exercises runtime validation of an invalid value.
+      pad.rotation = "bad";
+    }).toThrow(TypeError);
   });
 
   test("associates player/token and reports changed LEDs only once", () => {

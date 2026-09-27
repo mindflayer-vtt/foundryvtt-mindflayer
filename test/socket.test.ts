@@ -12,6 +12,7 @@ class FakeWebSocket {
   listeners = {};
   send = vi.fn();
   close = vi.fn();
+  url: string;
 
   constructor(url) {
     this.url = url;
@@ -31,9 +32,9 @@ class FakeWebSocket {
 describe("Foundry WebSocket boundary", () => {
   beforeEach(() => {
     FakeWebSocket.instances = [];
-    globalThis.WebSocket = FakeWebSocket;
-    globalThis.ui = { notifications: { info: vi.fn(), error: vi.fn() } };
-    globalThis.game = {
+    (globalThis as any).WebSocket = FakeWebSocket;
+    (globalThis as any).ui = { notifications: { info: vi.fn(), error: vi.fn() } };
+    (globalThis as any).game = {
       users: { players: protocol.receiverRegistration.players },
       i18n: { format: vi.fn(() => "connected"), localize: vi.fn(() => "closed") },
     };
@@ -63,11 +64,11 @@ describe("Foundry WebSocket boundary", () => {
     socket.registerListener("key-event", second);
     expect(() => socket._onmessage({
       data: JSON.stringify(protocol.keyEvent),
-    })).not.toThrow();
+    } as any)).not.toThrow();
     expect(first).toHaveBeenCalledOnce();
     expect(second).toHaveBeenCalledOnce();
-    expect(() => socket._onmessage({ data: "{}" })).not.toThrow();
-    expect(() => socket._onmessage({ data: JSON.stringify({ type: "unknown" }) })).not.toThrow();
+    expect(() => socket._onmessage({ data: "{}" } as any)).not.toThrow();
+    expect(() => socket._onmessage({ data: JSON.stringify({ type: "unknown" }) } as any)).not.toThrow();
   });
 
   test("preserves canonical payloads for every message crossing the Foundry socket", () => {
@@ -81,7 +82,7 @@ describe("Foundry WebSocket boundary", () => {
     ]) {
       const handler = vi.fn();
       socket.registerListener(message.type, handler);
-      socket._onmessage({ data: JSON.stringify(message) });
+      socket._onmessage({ data: JSON.stringify(message) } as any);
       expect(handler).toHaveBeenCalledWith(message);
       expect(Object.isFrozen(handler.mock.calls[0][0])).toBe(true);
     }
@@ -89,7 +90,7 @@ describe("Foundry WebSocket boundary", () => {
 
   test("propagates malformed JSON as the existing implementation does", () => {
     const socket = new Socket({ settings: { enabled: false } });
-    expect(() => socket._onmessage({ data: "{" })).toThrow(SyntaxError);
+    expect(() => socket._onmessage({ data: "{" } as any)).toThrow(SyntaxError);
   });
 
   test("registers, unregisters, and isolates multiple listeners", () => {

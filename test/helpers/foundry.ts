@@ -10,11 +10,12 @@ class HookBus {
 }
 
 export const hooks = new HookBus();
+const runtime = globalThis as any;
 
 export function installFoundryFakes() {
-  globalThis.window = globalThis;
-  globalThis.FormApplication = class {};
-  globalThis.Hooks = hooks;
+  runtime.window = runtime;
+  runtime.FormApplication = class {};
+  runtime.Hooks = hooks;
   resetFoundryFakes();
 }
 
@@ -22,12 +23,12 @@ export function resetFoundryFakes() {
   hooks.clear();
   const flags = new Map();
   const registrations = new Map();
-  globalThis.foundry = { utils: {
+  runtime.foundry = { utils: {
     debounce: (callback) => callback,
     isNewerVersion: (current, target) => Number(current) > Number(target),
     mergeObject: (left, right) => ({ ...left, ...right }),
   } };
-  globalThis.game = {
+  runtime.game = {
     version: "14.367", canvas: { initialized: true }, combat: null,
     users: { contents: [], players: [] }, scenes: { active: null },
     modules: new Map([["mindflayer", { active: true, instance: null }]]),
@@ -44,24 +45,24 @@ export function resetFoundryFakes() {
     },
     socket: { on: vi.fn(), off: vi.fn(), emit: vi.fn() }, keybindings: { register: vi.fn() },
   };
-  globalThis.canvas = {
+  runtime.canvas = {
     initialized: true,
     tokens: { placeables: [], controlled: [], moveMany: vi.fn() },
     walls: { doors: [] }, grid: { size: 100 },
     activeLayer: { releaseAll: vi.fn() }, animatePan: vi.fn(),
   };
-  globalThis.CONST = {
+  runtime.CONST = {
     KEYBINDING_PRECEDENCE: { NORMAL: 0 },
     USER_ROLES: { TRUSTED: 2 },
   };
-  globalThis.ui = { notifications: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), clear: vi.fn() } };
+  runtime.ui = { notifications: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), clear: vi.fn() } };
   const wrappers = new Map();
-  globalThis.libWrapper = {
+  runtime.libWrapper = {
     MIXED: "MIXED", WRAPPER: "WRAPPER",
     register: vi.fn((owner, target, callback, mode) => wrappers.set(`${owner}:${target}`, { callback, mode })),
     unregister: vi.fn((owner, target) => wrappers.delete(`${owner}:${target}`)), wrappers,
   };
-  globalThis.PIXI = { FederatedMouseEvent: class {}, Container: class {} };
+  runtime.PIXI = { FederatedMouseEvent: class {}, Container: class {} };
   Object.defineProperty(globalThis.window, "innerWidth", { configurable: true, value: 1920 });
   Object.defineProperty(globalThis.window, "innerHeight", { configurable: true, value: 1080 });
 }

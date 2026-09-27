@@ -85,7 +85,7 @@ describe("camera control characterization", () => {
   });
 
   test("duplicate references do not change the computed frame", () => {
-    const token = { x: 500, y: 300, w: 100, h: 100 };
+    const token: any = { x: 500, y: 300, w: 100, h: 100 };
     token.bounds = { left: 500, right: 600, top: 300, bottom: 400 };
     game.combat = { turns: [{ token: { object: token } }] };
     canvas.tokens.controlled = [token];

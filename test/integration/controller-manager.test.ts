@@ -46,7 +46,7 @@ describe("Socket to ControllerManager flow", () => {
     vi.advanceTimersByTime(17);
     expect(throwing).toHaveBeenCalledOnce();
     expect(healthy).toHaveBeenCalledOnce();
-    expect(JSON.parse(socket.send.mock.calls[0][0])).toEqual({
+    expect(JSON.parse((socket.send as any).mock.calls[0][0])).toEqual({
       type: "configuration", "controller-id": "one",
       led1: { r: 17, g: 34, b: 51 }, led2: { r: 17, g: 34, b: 51 },
     });

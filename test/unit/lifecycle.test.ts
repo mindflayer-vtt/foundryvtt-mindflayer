@@ -35,7 +35,7 @@ describe("submodule lifecycle planning", () => {
     const Middle = module("Middle", ["Base"], false, events);
     const Feature = module("Feature", ["Middle"], true, events);
     const Disabled = module("Disabled", [], false, events);
-    const instance = { modules: {} };
+    const instance: { modules: Record<string, any> } = { modules: {} };
     const plan = createModulePlan([Feature, Disabled, Base, Middle], instance);
     const instances = loadModules(instance, plan.descriptors);
     readyModules(instances);
@@ -62,7 +62,7 @@ describe("submodule lifecycle planning", () => {
     const Feature = module("Feature", ["Base"], true, events);
     const Child = module("Child", ["Feature"], true, events);
     const Unrelated = module("Unrelated", [], true, events);
-    const instance = { modules: {} };
+    const instance: { modules: Record<string, any> } = { modules: {} };
     const plan = createModulePlan([Child, Unrelated, Feature, Base], instance);
     readyModules(loadModules(instance, plan.descriptors));
     const old = { ...instance.modules };
