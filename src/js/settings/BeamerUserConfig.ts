@@ -34,29 +34,31 @@ export class BeamerUserConfig extends FormApplication {
       }) };
   }
 
-  activateListeners(html: any) {
+  activateListeners(html: { 0: HTMLFormElement }): void {
     super.activateListeners(html);
     const form = html[0];
-    for (const field of form.querySelectorAll('[data-pairing-id]')) {
+    for (const field of form.querySelectorAll<HTMLInputElement>('[data-pairing-id]')) {
       field.addEventListener("click", () => field.select());
       field.addEventListener("focus", () => field.select());
     }
-    const mode = form.querySelector('[name="mode"]');
+    const mode = form.querySelector<HTMLSelectElement>('[name="mode"]');
     if (!mode) return;
     const updateMode = () => {
-      for (const group of form.querySelectorAll('[data-mode]')) {
+      for (const group of form.querySelectorAll<HTMLFieldSetElement>('[data-mode]')) {
         group.hidden = group.dataset.mode !== mode.value;
         group.disabled = group.hidden;
       }
-      form.querySelector('[data-error]').textContent = "";
+      const error = form.querySelector<HTMLElement>('[data-error]');
+      if (error) error.textContent = "";
     };
     mode.addEventListener("change", () => {
       updateMode();
-      form.querySelector('fieldset:not([hidden]) input, fieldset:not([hidden]) select')?.focus();
+      form.querySelector<HTMLElement>('fieldset:not([hidden]) input, fieldset:not([hidden]) select')?.focus();
       this.setPosition({ height: "auto" });
     });
-    const secret = form.querySelector('[name="password"]');
-    const reveal = form.querySelector('[data-reveal]');
+    const secret = form.querySelector<HTMLInputElement>('[name="password"]');
+    const reveal = form.querySelector<HTMLElement>('[data-reveal]');
+    if (!secret || !reveal) return;
     reveal.addEventListener("click", () => {
       const visible = secret.type === "password";
       secret.type = visible ? "text" : "password";
@@ -64,7 +66,7 @@ export class BeamerUserConfig extends FormApplication {
       reveal.setAttribute("aria-pressed", String(visible));
     });
     updateMode();
-    form.querySelector('[name="name"]')?.focus();
+    form.querySelector<HTMLInputElement>('[name="name"]')?.focus();
   }
 
   async _updateObject(_event: Event, data: BeamerUserFormData): Promise<void> {
