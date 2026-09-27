@@ -156,7 +156,7 @@ describe("wake lock lifecycle", () => {
     const request = vi.fn(async () => sentinel);
     vi.stubGlobal("document", documentFake);
     vi.stubGlobal("navigator", { wakeLock: { request } });
-    const wake = new WakeLock({});
+    const wake = new WakeLock({} as MindFlayer);
     wake.ready();
     expect(documentFake.addEventListener).toHaveBeenCalledWith(
       "visibilitychange", expect.any(Function),
@@ -190,7 +190,7 @@ describe("wake lock lifecycle", () => {
       });
     vi.stubGlobal("document", documentFake);
     vi.stubGlobal("navigator", { wakeLock: { request } });
-    const wake = new WakeLock({});
+    const wake = new WakeLock({} as MindFlayer);
     wake.enabled = true;
     await expect(wake.ensureWakeLock()).resolves.toBeUndefined();
     await wake.ensureWakeLock();

@@ -14,6 +14,7 @@
  */
 "use strict";
 import { LOG_PREFIX } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 import AbstractSubModule from "../AbstractSubModule";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "WakeLock: ";
@@ -24,10 +25,10 @@ const SUB_LOG_PREFIX = LOG_PREFIX + "WakeLock: ";
  */
 export default class WakeLock extends AbstractSubModule {
   enabled = false;
-  #wakeLock = null;
-  #wakeLockFun = null;
+  #wakeLock: WakeLockSentinel | null = null;
+  #wakeLockFun: () => Promise<void>;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
 
     this.#wakeLockFun = this.ensureWakeLock.bind(this);
@@ -43,15 +44,16 @@ export default class WakeLock extends AbstractSubModule {
     super.unhook();
   }
 
-  async ensureWakeLock() {
+  async ensureWakeLock(): Promise<void> {
     if (this.enabled && document.visibilityState === "visible") {
       if (this.#wakeLock !== null && !this.#wakeLock.released) {
         return;
       }
       try {
-        this.#wakeLock = await navigator.wakeLock.request();
+        const wakeLock = await navigator.wakeLock.request();
+        this.#wakeLock = wakeLock;
         const $this = this;
-        this.#wakeLock.addEventListener("release", () => {
+        wakeLock.addEventListener("release", () => {
           $this.#wakeLock = null;
           console.debug(SUB_LOG_PREFIX + "screen lock released");
         });
