@@ -16,6 +16,7 @@
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import AbstractSubModule from "../AbstractSubModule";
 import { default as WakeLock } from "../wakeLock";
+import type MindFlayer from "../../MindFlayer";
 const SUB_LOG_PREFIX = LOG_PREFIX + "Fullscreen: ";
 
 const WRAP_PlaceableObject_can =
@@ -25,10 +26,10 @@ const WRAP_Notifications_notify =
 
 const FULLSCREEN_SHARED_IMAGE_KEEP_MS = 20 * 1000;
 export default class Fullscreen extends AbstractSubModule {
-  #cursorInterval = null;
-  #onShareImageFun = null;
+  #cursorInterval: ReturnType<typeof setInterval> | null = null;
+  #onShareImageFun: () => void;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
     console.debug(
       SUB_LOG_PREFIX + "overriding Key handling to add F10 to hide UI.",
@@ -82,7 +83,7 @@ export default class Fullscreen extends AbstractSubModule {
     libWrapper.unregister(VTT_MODULE_NAME, WRAP_PlaceableObject_can, false);
     libWrapper.unregister(VTT_MODULE_NAME, WRAP_Notifications_notify, false);
     game.socket.off("shareImage", this.#onShareImageFun);
-    clearInterval(this.#cursorInterval);
+    if (this.#cursorInterval !== null) clearInterval(this.#cursorInterval);
     this.#cursorInterval = null;
     super.unhook();
   }
@@ -91,11 +92,8 @@ export default class Fullscreen extends AbstractSubModule {
     return [...super.moduleDependencies, WakeLock.name];
   }
 
-  /**
-   * @returns {WakeLock}
-   */
-  get wakeLock() {
-    return this.instance.modules[WakeLock.name];
+  get wakeLock(): WakeLock {
+    return Reflect.get(this.instance!.modules, WakeLock.name) as WakeLock;
   }
 
   get enabled() {
@@ -120,7 +118,7 @@ export default class Fullscreen extends AbstractSubModule {
     for (const control of canvas.controls.children) {
       if (
         control.visible === this.enabled &&
-        control?.children.find((elem) => elem.constructor.name === "Cursor")
+        control?.children.find((elem: { constructor: { name: string } }) => elem.constructor.name === "Cursor")
       ) {
         console.debug(
           SUB_LOG_PREFIX + "updating visibility of cursor:",
@@ -147,14 +145,23 @@ export default class Fullscreen extends AbstractSubModule {
     }
   }
 
-  #placeableObjectCanWrapper(wrapped, user, action) {
+  #placeableObjectCanWrapper(
+    wrapped: (user: unknown, action: string) => unknown,
+    user: unknown,
+    action: string,
+  ): unknown {
     if (action == "control" && this.enabled) {
       return false;
     }
     return wrapped(user, action);
   }
 
-  #notificationsNotifyWrapper(wrapped, message, type, options) {
+  #notificationsNotifyWrapper(
+    wrapped: (message: unknown, type: unknown, options?: { permanent?: boolean; [key: string]: unknown }) => unknown,
+    message: unknown,
+    type: unknown,
+    options?: { permanent?: boolean; [key: string]: unknown },
+  ): void {
     if (this.enabled && options?.permanent) {
       console.debug(SUB_LOG_PREFIX + "disabled permanent notification");
       options = {

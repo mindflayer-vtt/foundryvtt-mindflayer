@@ -154,7 +154,7 @@ describe("camera control characterization", () => {
 
 describe("keypad feature integrations", () => {
   test("fullscreen releases its v14 wrappers, listener, and interval", () => {
-    const fullscreen = new Fullscreen({ modules: {} });
+    const fullscreen = new Fullscreen({ modules: {} } as unknown as MindFlayer);
     const shareImageListener = game.socket.on.mock.calls[0][1];
 
     fullscreen.unhook();

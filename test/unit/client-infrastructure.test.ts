@@ -69,7 +69,7 @@ describe("fullscreen client shell", () => {
   });
 
   function createFullscreen() {
-    return new Fullscreen({ modules: { [WakeLock.name]: wakeLock } });
+    return new Fullscreen({ modules: { [WakeLock.name]: wakeLock } } as unknown as MindFlayer);
   }
 
   test("toggles body state, wake lock, and notifications through its keybinding", () => {
