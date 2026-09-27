@@ -21,7 +21,7 @@ const moduleJson = require("../../module.tmpl.json");
  *
  * @returns true if all dependencies are available
  */
-export function warnIfAnyMissing(warn = true) {
+export function warnIfAnyMissing(warn = true): boolean {
   let result = true;
   for (let i in moduleJson.dependencies) {
     if (!Object.hasOwn(moduleJson.dependencies, i)) {

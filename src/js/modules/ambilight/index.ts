@@ -20,11 +20,17 @@ import AbstractSubModule from "../AbstractSubModule";
 import TableLEDRing from "../tableLedRing";
 import { TableLEDRingHandlerMixin } from "../tableLedRing/TableLEDRingHandlerMixin";
 
+interface PixelCapture {
+  image: Uint8Array;
+  drawingBufferWidth: number;
+  drawingBufferHeight: number;
+}
+
 export default class Ambilight extends TableLEDRingHandlerMixin(
   AbstractSubModule,
 ) {
   #enabled = true;
-  #updateLEDsTimer = null;
+  #updateLEDsTimer: number | null = null;
 
   ready() {
     this.#enabled = game.canvas.initialized;
@@ -34,7 +40,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
   unhook() {
     this.#enabled = false;
     this.tableLEDRing.unregisterHandler(this);
-    window.clearInterval(this.#updateLEDsTimer);
+    if (this.#updateLEDsTimer !== null) window.clearInterval(this.#updateLEDsTimer);
     super.unhook();
   }
 
@@ -42,16 +48,15 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
     return [...super.moduleDependencies, TableLEDRing.name];
   }
 
-  /** @returns {TableLEDRing} */
-  get tableLEDRing() {
-    return this.instance.modules[TableLEDRing.name];
+  get tableLEDRing(): TableLEDRing {
+    return Reflect.get(this.instance!.modules, TableLEDRing.name) as TableLEDRing;
   }
 
-  set enabled(value) {
+  set enabled(value: boolean) {
     this.#enabled = game.canvas.initialized && value;
   }
 
-  get priority() {
+  get priority(): number {
     if (this.#enabled) {
       return TABLE_LED_PRIORITY.AMBILIGHT;
     } else {
@@ -59,9 +64,9 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
     }
   }
 
-  async updateLEDs(count) {
+  async updateLEDs(count: number) {
     this.ensureLoaded();
-    if (!this.#enabled || !this.instance.settings.ambilight.enabled) {
+    if (!this.#enabled || !this.instance!.settings.ambilight.enabled) {
       return;
     }
     const pixelsRaw = await this.loadPixels();
@@ -70,8 +75,8 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
     }
   }
 
-  async loadPixels() {
-    return new Promise((resolve, reject) => {
+  async loadPixels(): Promise<PixelCapture> {
+    return new Promise<PixelCapture>((resolve, reject) => {
       requestAnimationFrame(this._loadPixels.bind(this, resolve, reject));
     });
   }
@@ -80,7 +85,7 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
    * Will only function correctly if called from within requestAnimationFrame()
    * @protected
    */
-  _loadPixels(resolve, reject) {
+  _loadPixels(resolve: (value: PixelCapture) => void, reject: (reason?: unknown) => void): void {
     try {
       const gl = game.canvas.app.renderer.gl;
       const pixelsRaw = {
@@ -110,17 +115,17 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
   /**
    * @protected
    */
-  _compileLEDData(pixelsRaw, ledCount) {
-    const brightMin = this.instance.settings.ambilight.brightness.min;
+  _compileLEDData(pixelsRaw: PixelCapture, ledCount: number): Uint32Array | null {
+    const brightMin = this.instance!.settings.ambilight.brightness.min;
     const brightRange =
-      (this.instance.settings.ambilight.brightness.max - brightMin) / 255;
+      (this.instance!.settings.ambilight.brightness.max - brightMin) / 255;
     const ledState = new Uint32Array(ledCount * 3);
     const bounds = new Rectangle(
       new Vector(0, 0),
       new Vector(pixelsRaw.drawingBufferWidth, pixelsRaw.drawingBufferHeight),
     );
     const direction = new Vector(0, 1);
-    let ledOffset = this.instance.settings.ambilight.led.offset % ledCount;
+    let ledOffset = this.instance!.settings.ambilight.led.offset % ledCount;
     if (ledOffset < 0) {
       ledOffset = ledOffset + ledCount;
     }
@@ -155,9 +160,10 @@ export default class Ambilight extends TableLEDRingHandlerMixin(
   /**
    * @protected
    */
-  _findColorAlongVector(image, bounds, direction) {
+  _findColorAlongVector(image: Uint8Array, bounds: Rectangle, direction: Vector): number {
     // scale vector so longer direction is length 1
     const backgroundColor = hexToRgb(game.scenes.active.backgroundColor);
+    if (backgroundColor === null) throw new Error("Invalid scene background color");
     direction.scale(1 / Math.max(Math.abs(direction.x), Math.abs(direction.y)));
     const scale = Math.floor(bounds.intersectionFromCenter(direction));
     for (let i = scale; i >= 0; i--) {

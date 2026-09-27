@@ -25,7 +25,7 @@ import type MindFlayer from "../../MindFlayer";
 const SUB_LOG_PREFIX = `${LOG_PREFIX}CombatEndTurn: `;
 
 export default class CombatEndTurn extends AbstractSubModule {
-  #tickHandlerFun;
+  #tickHandlerFun: (now: number, keypads: Record<string, Keypad>) => void;
 
   constructor(instance: MindFlayer) {
     super(instance);
@@ -41,7 +41,7 @@ export default class CombatEndTurn extends AbstractSubModule {
     super.unhook();
   }
 
-  static get moduleDependencies() {
+  static get moduleDependencies(): string[] {
     return [...super.moduleDependencies, ControllerManager.name];
   }
 
@@ -71,9 +71,6 @@ export default class CombatEndTurn extends AbstractSubModule {
     }
   }
 
-  /**
-   * @param {Keypad} keypad
-   */
   #endTurnFor(keypad: Keypad): boolean {
     const currentActor = game.combat.turns[game.combat.turn].actor;
     const player = keypad.player;

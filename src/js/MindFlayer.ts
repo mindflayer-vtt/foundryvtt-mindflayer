@@ -16,7 +16,7 @@
 import { settings as settingsObj } from "./settings";
 import * as dependencies from "./dependencies";
 import * as loader from "./modules/loader";
-import AbstractSubModule from "./modules/AbstractSubModule";
+import type AbstractSubModule from "./modules/AbstractSubModule";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "./settings/constants";
 
 const WRAP_Application__activateCoreListeners =
@@ -24,8 +24,7 @@ const WRAP_Application__activateCoreListeners =
 
 export default class MindFlayer {
   #settings: typeof settingsObj;
-  /** @type {AbstractSubModule[]} */
-  #modules = [];
+  #modules: AbstractSubModule[] = [];
 
   constructor() {
     this.#settings = settingsObj.init();
@@ -35,7 +34,7 @@ export default class MindFlayer {
     return this.#settings;
   }
 
-  get modules() {
+  get modules(): AbstractSubModule[] {
     return this.#modules;
   }
 

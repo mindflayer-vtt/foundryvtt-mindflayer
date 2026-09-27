@@ -18,17 +18,24 @@ import * as TokenUtil from "../../utils/tokenUtil";
 import { default as ControllerManager } from "../ControllerManager";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import { isBeamerUser } from "../../utils/beamer";
+import type MindFlayer from "../../MindFlayer";
 
 const SUB_LOG_PREFIX = `${LOG_PREFIX}CameraControl: `;
 
 const WRAP_Token__onUpdate =
   "foundry.canvas.placeables.Token.prototype._onUpdate";
+
+interface CameraToken {
+  bounds: { left: number; right: number; top: number; bottom: number };
+  combatant?: { hidden: boolean; defeated: boolean } | null;
+}
+
 export default class CameraControl extends AbstractSubModule {
-  static shouldStart(instance) {
+  static shouldStart(instance: MindFlayer): boolean {
     return super.shouldStart(instance) || isBeamerUser();
   }
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
   }
 
@@ -43,12 +50,12 @@ export default class CameraControl extends AbstractSubModule {
         VTT_MODULE_NAME,
         WRAP_Token__onUpdate,
         async function wrapperToken_onUpdate(
-          wrapped,
-          changed,
-          options,
-          userId,
+          wrapped: Function,
+          changed: unknown,
+          options: { pan?: boolean },
+          userId: unknown,
         ) {
-          let cameraControl = $this.instance.settings.camera.control;
+          let cameraControl = $this.instance!.settings.camera.control;
           if (cameraControl == "off" || cameraControl == "focusPlayers") {
             if (cameraControl == "focusPlayers") {
               $this.panCamera();
@@ -69,62 +76,60 @@ export default class CameraControl extends AbstractSubModule {
     super.unhook();
   }
 
-  static get moduleDependencies() {
+  static get moduleDependencies(): string[] {
     return [...super.moduleDependencies, ControllerManager.name];
   }
 
-  /**
-   * @returns {ControllerManager}
-   */
-  get controllerManager() {
-    return this.instance.modules[ControllerManager.name];
+  get controllerManager(): ControllerManager {
+    return Reflect.get(this.instance!.modules, ControllerManager.name) as ControllerManager;
   }
 
   panCamera() {
     const sceneSize = canvas.scene.dimensions.sceneRect;
     const gridSize = canvas.scene.dimensions.size;
-    let activeCharacterTokens = TokenUtil.getAllCombatTokens();
+    const activeCharacterTokens: Array<CameraToken | null> =
+      TokenUtil.getAllCombatTokens() as CameraToken[];
     activeCharacterTokens.push(
       ...this.controllerManager.keypads.map((keypad) => keypad.token),
     );
     activeCharacterTokens.push(...canvas.tokens.controlled);
-    activeCharacterTokens = activeCharacterTokens.filter(
-      (token) => token !== null,
+    const nonNullTokens = activeCharacterTokens.filter(
+      (token): token is CameraToken => token !== null,
     );
-    if (activeCharacterTokens.length <= 0) {
+    if (nonNullTokens.length <= 0) {
       console.warn(
         LOG_PREFIX +
           "No active character tokens found. Automatic camera panning only works with active controllers that belong to a player with a character token in the same scene.",
       );
       return;
     }
-    activeCharacterTokens = activeCharacterTokens.filter(function (token) {
+    const includedTokens = nonNullTokens.filter(function (token) {
       if (!token) {
         return false;
       }
       if (!Object.hasOwn(token, "combatant")) {
         return true;
       }
-      return !token.combatant.hidden && !token.combatant.defeated;
+      return !token.combatant!.hidden && !token.combatant!.defeated;
     });
 
     const pad = gridSize * (30 / 5);
     const lowestXCoordinate = Math.max(
-      Math.min(...activeCharacterTokens.map((token) => token.bounds.left)) - pad,
+      Math.min(...includedTokens.map((token) => token.bounds.left)) - pad,
       sceneSize.x,
     );
     const highestXCoordinate = Math.min(
-      Math.max(...activeCharacterTokens.map((token) => token.bounds.right)) +
+      Math.max(...includedTokens.map((token) => token.bounds.right)) +
         pad,
       sceneSize.x + sceneSize.width,
     );
 
     const lowestYCoordinate = Math.max(
-      Math.min(...activeCharacterTokens.map((token) => token.bounds.top)) - pad,
+      Math.min(...includedTokens.map((token) => token.bounds.top)) - pad,
       sceneSize.y,
     );
     const highestYCoordinate = Math.min(
-      Math.max(...activeCharacterTokens.map((token) => token.bounds.bottom)) +
+      Math.max(...includedTokens.map((token) => token.bounds.bottom)) +
         pad,
       sceneSize.y + sceneSize.height,
     );

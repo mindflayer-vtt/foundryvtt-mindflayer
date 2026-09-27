@@ -9,7 +9,7 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "strictFunctionTypes": true,
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,

@@ -3,26 +3,27 @@ import CameraControl from "../cameraControl";
 import Fullscreen from "../fullscreen";
 import { isBeamerUser } from "../../utils/beamer";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 
 const SUB_LOG_PREFIX = `${LOG_PREFIX}BeamerPresentation: `;
 
 /** Apply presentation-only client settings after the selected Beamer user logs in. */
 export default class BeamerPresentation extends AbstractSubModule {
-  #canvasReady = null;
+  #canvasReady: null | (() => void) = null;
 
-  static shouldStart() {
+  static shouldStart(): boolean {
     return isBeamerUser();
   }
 
-  static get moduleDependencies() {
+  static get moduleDependencies(): string[] {
     return [...super.moduleDependencies, CameraControl.name, Fullscreen.name];
   }
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
   }
 
-  get fullscreen() {
+  get fullscreen(): Fullscreen {
     return Reflect.get(this.instance!.modules, Fullscreen.name) as Fullscreen;
   }
 

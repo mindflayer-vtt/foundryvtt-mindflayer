@@ -1,3 +1,3 @@
-export function isCombatActive() {
-  return game.combat?.started;
+export function isCombatActive(): boolean {
+  return game.combat?.started ?? false;
 }

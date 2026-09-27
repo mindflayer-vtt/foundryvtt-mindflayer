@@ -89,23 +89,23 @@ export default class TimerRunner extends PIXI.Container {
   /**
    * @type {Timer}
    */
-  get timer() {
+  get timer(): Timer {
     return Reflect.get(getModuleInstance().modules, Timer.name) as Timer;
   }
 
-  get start() {
+  get start(): number {
     return this.#start;
   }
 
-  get end() {
+  get end(): number {
     return this.#end;
   }
 
-  get durationMS() {
+  get durationMS(): number {
     return this.#end - this.#start;
   }
 
-  get defaultOptions() {
+  get defaultOptions(): TimerOptions {
     return {
       onDone: null,
       neededRole: CONST.USER_ROLES.PLAYER,
@@ -118,7 +118,7 @@ export default class TimerRunner extends PIXI.Container {
    * @param {number} now current timestamp in milliseconds
    * @returns the percentage (0 to 1) of completion or -1 if not started yet
    */
-  completion(now = new Date().valueOf()) {
+  completion(now: number = new Date().valueOf()): number {
     if (now < this.#start) {
       return -1;
     } else if (now >= this.#end) {

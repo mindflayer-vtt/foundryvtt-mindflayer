@@ -81,7 +81,7 @@ describe("runtime utility boundaries", () => {
 
   test("reports only a started combat as active", () => {
     game.combat = null;
-    expect(isCombatActive()).toBeUndefined();
+    expect(isCombatActive()).toBe(false);
     game.combat = { started: false };
     expect(isCombatActive()).toBe(false);
     game.combat.started = true;

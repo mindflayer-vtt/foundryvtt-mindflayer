@@ -3,16 +3,29 @@ import AbstractSubModule from "../AbstractSubModule";
 import ControllerManager from "../ControllerManager";
 import Timer from "../timer";
 import { VTT_MODULE_NAME } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
+import type Keypad from "../ControllerManager/Keypad";
 
 const WRAP_Combat_endCombat = "Combat.prototype.endCombat";
 
+interface CombatState {
+  current: { turn: number };
+  started: boolean;
+  turns: Array<{ isDefeated: boolean; players: Array<{ id: string }> }>;
+}
+
+interface CombatUpdate {
+  round?: number;
+  turn?: number | null;
+}
+
 export default class CombatIndicator extends AbstractSubModule {
-  #updateLEDsTimer = null;
+  #updateLEDsTimer: number | null = null;
   #running = false;
 
   #boundHandleCombatUpdate = this.#handleCombatUpdate.bind(this);
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
 
     Hooks.on("startCombat", this.#boundHandleCombatUpdate);
@@ -42,18 +55,15 @@ export default class CombatIndicator extends AbstractSubModule {
     return [...super.moduleDependencies, ControllerManager.name, Timer.name];
   }
 
-  /**
-   * @returns {ControllerManager}
-   */
-  get controllerManager() {
-    return this.instance.modules[ControllerManager.name];
+  get controllerManager(): ControllerManager {
+    return Reflect.get(this.instance!.modules, ControllerManager.name) as ControllerManager;
   }
 
   /**
    * @returns {Timer}
    */
-  get timer() {
-    return this.instance.modules[Timer.name];
+  get timer(): Timer {
+    return Reflect.get(this.instance!.modules, Timer.name) as Timer;
   }
 
   /**
@@ -61,14 +71,14 @@ export default class CombatIndicator extends AbstractSubModule {
    * @param {Combat} combat
    * @param {Combat} update
    */
-  async #handleCombatUpdate(combat, update) {
+  async #handleCombatUpdate(combat: CombatState, update: CombatUpdate): Promise<void> {
     const currentTurn = combat.current.turn;
     if (this.#running === false) {
       if (combat.started === true) {
         this.#running = true;
         this.#startTacticalTimer(
           this.#handleCombatUpdate.bind(this, combat, { turn: update.turn }),
-          this.instance.settings.combatIndicator.tacticalDiscussionDuration *
+          this.instance!.settings.combatIndicator.tacticalDiscussionDuration *
             1000,
         );
       }
@@ -77,14 +87,13 @@ export default class CombatIndicator extends AbstractSubModule {
     if (Object.hasOwn(update, "round") && currentTurn === 0) {
       this.#startTacticalTimer(
         this.#handleCombatUpdate.bind(this, combat, { turn: update.turn }),
-        this.instance.settings.combatIndicator.tacticalDiscussionDuration *
+        this.instance!.settings.combatIndicator.tacticalDiscussionDuration *
           1000,
       );
       return;
     } else if (Object.hasOwn(update, "turn") && update.turn !== null) {
       const turns = combat.turns;
-      /** @type {Map<string, Keypad>} */
-      const keypads = new Map();
+      const keypads = new Map<string, Keypad>();
       for (const keypad of this.controllerManager.keypads) {
         const player = keypad.player;
         if (player) {
@@ -92,18 +101,16 @@ export default class CombatIndicator extends AbstractSubModule {
         }
       }
       let hasNext = false;
-      /** @type {Keypad} */
-      let firstKeypad = null;
+      let firstKeypad: Keypad | null = null;
       for (let i = 0; i < turns.length; i++) {
-        if (this.instance.settings.skipDefeated && turns[i].isDefeated) {
+        if (this.instance!.settings.skipDefeated && turns[i].isDefeated) {
           continue;
         }
         for (const player of turns[i].players) {
           if (!keypads.has(player.id)) {
             return;
           }
-          /** @type {Keypad} */
-          const keypad = keypads.get(player.id);
+          const keypad = keypads.get(player.id)!;
           if (!firstKeypad) {
             firstKeypad = keypad;
           }
@@ -112,7 +119,7 @@ export default class CombatIndicator extends AbstractSubModule {
             keypad.setLED(1, COLORS.RED);
             this.#startTacticalTimer(
               () => {},
-              this.instance.settings.combatIndicator.playerReactionTime * 1000,
+              this.instance!.settings.combatIndicator.playerReactionTime * 1000,
             );
           } else if (i > currentTurn) {
             if (!hasNext) {
@@ -143,7 +150,7 @@ export default class CombatIndicator extends AbstractSubModule {
    * @returns {Promise<string>}
    * @see: Combat.endCombat
    */
-  async #endCombatWrapper(wrapped) {
+  async #endCombatWrapper(wrapped: () => Promise<unknown>): Promise<unknown> {
     const result = await wrapped();
     if (result !== false) {
       for (const keypad of this.controllerManager.keypads) {
@@ -153,7 +160,10 @@ export default class CombatIndicator extends AbstractSubModule {
     return result;
   }
 
-  async #startTacticalTimer(updateCombatCallback, timeInMS) {
+  async #startTacticalTimer(
+    updateCombatCallback: () => void,
+    timeInMS: number,
+  ): Promise<void> {
     if (timeInMS <= 0) {
       return updateCombatCallback();
     }
@@ -162,6 +172,7 @@ export default class CombatIndicator extends AbstractSubModule {
       start: start,
       end: start + timeInMS,
       options: {
+        neededRole: 0,
         onDone: updateCombatCallback,
       },
     });

@@ -19,8 +19,8 @@ interface OwnedDocument {
 
 /** World user ownership only; camera and transport keep their existing owners. */
 export default class BeamerUsers extends AbstractSubModule {
-  #busy = false;
-  static shouldStart() { return true; }
+  #busy: boolean = false;
+  static shouldStart(): boolean { return true; }
 
   constructor(instance: MindFlayer) {
     super(instance);

@@ -16,7 +16,7 @@
 import type MindFlayer from "../MindFlayer";
 
 export default class AbstractSubModule {
-  #loaded = false;
+  #loaded: boolean = false;
   #instance: MindFlayer | null = null;
 
   /**
@@ -51,7 +51,7 @@ export default class AbstractSubModule {
   /**
    * @returns {boolean}
    */
-  get loaded() {
+  get loaded(): boolean {
     return this.#loaded;
   }
 
