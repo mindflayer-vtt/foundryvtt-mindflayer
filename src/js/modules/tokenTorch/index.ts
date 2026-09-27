@@ -15,12 +15,13 @@
 "use strict";
 import AbstractSubModule from "../AbstractSubModule";
 import { default as ControllerManager } from "../ControllerManager";
-import * as TokenUtil from "../../utils/tokenUtil";
 import Keypad from "../ControllerManager/Keypad";
-import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
+import { LOG_PREFIX } from "../../settings/constants";
 
-export default class TokenSelect extends AbstractSubModule {
-  #tickHandlerFun;
+const SUB_LOG_PREFIX = LOG_PREFIX + "TokenMovement: ";
+
+export default class TokenTorch extends AbstractSubModule {
+  #tickHandlerFun = null;
 
   constructor(instance) {
     super(instance);
@@ -56,49 +57,54 @@ export default class TokenSelect extends AbstractSubModule {
    * @param {number} now the timestamp of the current Keypad "frame"
    * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
-  #tickHandler(now, keypads) {
+  #tickHandler(now: number, keypads: Record<string, Keypad>) {
     for (const keypad of Object.values(keypads)) {
-      if (keypad.isJustDown("Q", now)) {
-        this.#selectNextToken(keypad);
+      if (keypad.isJustDown("X", now)) {
+        this.#toggleTorch(keypad);
       }
     }
   }
 
   /**
-   * Select the next Token associated with the player of the given keypad
-   * @param {Keypad} keypad
+   * Toggle the light arround the currently selected token of the given keypad
+   *
+   * @param {Keypad} keypad keypad which initiated the torch request
+   * @private
    */
-  #selectNextToken(keypad) {
-    const player = keypad.player;
-    if (player === null) {
+  async #toggleTorch(keypad) {
+    const token = keypad.token;
+    if (!token) {
       return;
     }
-    const currentTokenId = game.user.getFlag(
-      VTT_MODULE_NAME,
-      "selectedToken_" + player.id,
-    );
 
-    if (!currentTokenId) {
-      TokenUtil.setDefaultToken(player);
-    } else {
-      const tokens = TokenUtil.findAllTokensFor(player);
-      let i = 0;
-      for (; i < tokens.length; i++) {
-        if (currentTokenId == tokens[i].id) {
-          break;
-        }
-      }
-      i = (i + 1) % tokens.length;
-      game.user.setFlag(
-        VTT_MODULE_NAME,
-        "selectedToken_" + player.id,
-        tokens[i].id,
-      );
+    if (!token.emitsLight) {
       console.debug(
-        LOG_PREFIX +
-          `selected token '${tokens[i].name}' for player '${player.name}'`,
+        `${SUB_LOG_PREFIX}${keypad.player?.name}: Turn on torch for ${token.name}`,
       );
+      await token.document.update({
+        light: {
+          bright: 20,
+          dim: 40,
+          alpha: 0.4,
+          color: "#ffad58",
+          animation: {
+            type: "flame",
+            speed: 5,
+            intensity: 5,
+          },
+        },
+      });
+    } else {
+      console.debug(
+        LOG_PREFIX + keypad.player?.name + ": Turn off torch for " + token.name,
+      );
+
+      await token.document.update({
+        light: {
+          bright: 0,
+          dim: 0,
+        },
+      });
     }
-    TokenUtil.deselectAllTokens();
   }
 }

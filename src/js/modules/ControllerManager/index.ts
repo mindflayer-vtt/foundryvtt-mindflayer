@@ -27,7 +27,7 @@ export default class ControllerManager extends AbstractSubModule {
   /**
    * @var {Record<string, Keypad>} #keypads.*
    */
-  #keypads = {};
+  #keypads: Record<string, Keypad> = {};
 
   #tickThread = null;
   #tickListeners = [];

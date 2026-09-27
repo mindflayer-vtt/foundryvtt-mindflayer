@@ -6,19 +6,19 @@ export default defineConfig({
       name: "test-webpack-boundaries",
       enforce: "pre",
       transform(code, id) {
-        if (id.endsWith("/src/js/modules/loader.js")) {
+        if (id.endsWith("/src/js/modules/loader.ts")) {
           return code.replace(
-            'require.context("./", true, /\\/index\\.js$/)',
+            '(require as any).context("./", true, /\\/index\\.ts$/)',
             "globalThis.__webpackRequireContext",
           );
         }
-        if (id.endsWith("/src/js/dependencies/index.js")) {
+        if (id.endsWith("/src/js/dependencies/index.ts")) {
           return code.replace(
             'require("../../module.tmpl.json")',
             "globalThis.__moduleManifest",
           );
         }
-        if (id.endsWith("/src/js/index.js")) {
+        if (id.endsWith("/src/js/index.ts")) {
           return code
             .replace(
               'require("./MindFlayer")',
@@ -38,7 +38,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      include: ["src/js/**/*.js"],
+      include: ["src/js/**/*.ts"],
     },
   },
 });

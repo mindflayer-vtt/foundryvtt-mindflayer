@@ -48,7 +48,7 @@ export default class Keypad {
    */
   #ledState = ["#000000", "#000000"];
 
-  constructor(instance, controllerId) {
+  constructor(instance: any, controllerId: string) {
     this.#instance = instance;
     this.#controllerId = controllerId;
     this.setDefaultLEDColor();
@@ -82,7 +82,7 @@ export default class Keypad {
   /**
    * @param {number} amount the new rotation in degrees
    */
-  set rotation(amount) {
+  set rotation(amount: number) {
     if (typeof amount !== "number") {
       throw new TypeError("Rotation has to be numerical");
     }

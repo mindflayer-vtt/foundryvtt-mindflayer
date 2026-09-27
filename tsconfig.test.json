@@ -13,5 +13,11 @@
     "target": "ES2022",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["test/**/*.ts", "test/**/*.json", "src/js/**/*.js", "src/js/**/*.d.ts"]
+  "include": [
+    "test/**/*.ts",
+    "test/**/*.json",
+    "src/js/**/*.js",
+    "src/js/**/*.ts",
+    "src/js/**/*.d.ts"
+  ]
 }

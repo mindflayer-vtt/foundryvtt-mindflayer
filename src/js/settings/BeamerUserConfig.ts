@@ -22,7 +22,7 @@ export class BeamerUserConfig extends FormApplication {
       }) };
   }
 
-  activateListeners(html) {
+  activateListeners(html: any) {
     super.activateListeners(html);
     const form = html[0];
     for (const field of form.querySelectorAll('[data-pairing-id]')) {
@@ -58,18 +58,18 @@ export class BeamerUserConfig extends FormApplication {
   async _updateObject(_event, data) {
     if (!game.user?.isGM || !this.service?.loaded) return;
     const form = this.form;
-    const submit = form.querySelector('[type="submit"]');
+    const submit = form.querySelector('[type="submit"]') as HTMLButtonElement;
     submit.disabled = true;
     try {
       if (data.mode === "create") await this.service.create({ name: data.name, password: data.password });
       else if (data.mode === "adopt") await this.service.adopt({ userId: data.userId, confirm: data.confirm === true });
       else throw new Error("Invalid mode");
-      form.querySelector('[name="password"]').value = "";
+      (form.querySelector('[name="password"]') as HTMLInputElement).value = "";
       await this.render();
     } catch {
       // Foundry exceptions can contain submitted document data. Never display/log them.
       form.querySelector('[data-error]').textContent = "Could not configure Beamer. Check the user name, password length, adoption confirmation and permissions. If a user was created, review it for explicit adoption; no existing password was reset.";
-      form.querySelector('[data-error]').focus();
+      (form.querySelector('[data-error]') as HTMLElement).focus();
     } finally { submit.disabled = false; }
   }
 }

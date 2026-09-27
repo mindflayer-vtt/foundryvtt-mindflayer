@@ -45,7 +45,7 @@ export default class SocketlibWrapper extends AbstractSubModule {
    * Always start this module as it allows crosscommunication between all clients
    * @returns true
    */
-  static shouldStart(instance) {
+  static shouldStart(_instance?: any) {
     return true;
   }
 

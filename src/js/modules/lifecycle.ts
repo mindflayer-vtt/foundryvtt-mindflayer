@@ -1,19 +1,19 @@
 import { DepGraph } from "dependency-graph";
 
-function moduleClass(descriptor) {
+function moduleClass(descriptor: any): any {
   return descriptor.default || descriptor;
 }
 
-export function createModulePlan(descriptors, instance) {
+export function createModulePlan(descriptors: any[], instance: any) {
   const byName = new Map(
     descriptors.map((descriptor) => [moduleClass(descriptor).name, descriptor]),
   );
   const requested = descriptors
     .filter((descriptor) => moduleClass(descriptor).shouldStart(instance))
     .map((descriptor) => moduleClass(descriptor).name);
-  const selected = new Set();
+  const selected = new Set<string>();
 
-  function include(name, path = []) {
+  function include(name: string, path: string[] = []) {
     if (path.includes(name)) {
       throw new Error(`Submodule dependency cycle: ${[...path, name].join(" -> ")}`);
     }
@@ -46,7 +46,7 @@ export function createModulePlan(descriptors, instance) {
   };
 }
 
-export function loadModules(instance, descriptors) {
+export function loadModules(instance: any, descriptors: any[]) {
   return descriptors.map((descriptor) => {
     const Module = moduleClass(descriptor);
     const module = new Module(instance);
@@ -55,7 +55,10 @@ export function loadModules(instance, descriptors) {
   });
 }
 
-export function readyModules(modules, onError = () => {}) {
+export function readyModules(
+  modules: any[],
+  onError: (module: any, error: unknown) => void = () => {},
+) {
   for (const module of modules) {
     try {
       module.ready();
@@ -65,7 +68,12 @@ export function readyModules(modules, onError = () => {}) {
   }
 }
 
-export function reloadModules(instance, plan, moduleName, onReadyError = () => {}) {
+export function reloadModules(
+  instance: any,
+  plan: any,
+  moduleName: string,
+  onReadyError: (module: any, error: unknown) => void = () => {},
+) {
   if (!plan.byName.has(moduleName)) {
     throw new Error(`Cannot reload unknown submodule '${moduleName}'`);
   }

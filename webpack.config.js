@@ -13,7 +13,7 @@ if (fs.existsSync(".devDomain")) {
 
 module.exports = {
   mode: process.env.NODE_ENV == "production" ? "production" : "development",
-  entry: "./src/js/index.js",
+  entry: "./src/js/index.ts",
   output: {
     filename: "MindFlayer.js",
     clean: true,
@@ -47,6 +47,25 @@ module.exports = {
     }),
     new ModuleJsonWebpackPlugin(),
   ],
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            compilerOptions: { noEmit: false },
+            transpileOnly: true,
+          },
+        },
+      },
+    ],
+  },
+  resolve: {
+    extensions: [".ts", ".js"],
+    extensionAlias: { ".js": [".ts", ".js"] },
+  },
   optimization: {
     minimize: process.env.NODE_ENV == "production",
     minimizer: [

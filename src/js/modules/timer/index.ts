@@ -29,7 +29,7 @@ export const SOCKETLIB_TIMER_ADD = "Timer_addTimerInternal";
 
 export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
   /** @type {TimerRunner[]} */
-  #timers = [];
+  #timers: TimerRunner[] = [];
   /** @type {PIXI.Container} */
   #renderingContainer = null;
   #timerUpdateInterval = null;

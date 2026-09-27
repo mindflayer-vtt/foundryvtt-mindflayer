@@ -25,7 +25,7 @@ function importAll(contextRequire) {
   return contextRequire.keys().map((module) => contextRequire(module));
 }
 /** @type {({default: AbstractSubModule})[]} */
-let subModules = importAll(require.context("./", true, /\/index\.js$/));
+let subModules = importAll((require as any).context("./", true, /\/index\.ts$/));
 
 /**
  * @type {ReturnType<typeof createModulePlan> | null}

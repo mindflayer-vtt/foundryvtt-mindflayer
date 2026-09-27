@@ -34,7 +34,7 @@ export default [
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ["test/**/*.ts"],
+    files: ["src/**/*.ts", "test/**/*.ts"],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: { ecmaVersion: "latest", sourceType: "module" },

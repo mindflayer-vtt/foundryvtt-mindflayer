@@ -17,19 +17,19 @@ export default class BeamerUsers extends AbstractSubModule {
   review(user) {
     if (!user) return ["Selected user is missing"];
     const issues = [];
-    const roles = globalThis.CONST.USER_ROLES;
+    const roles = CONST.USER_ROLES;
     const trusted = user.role === roles.TRUSTED;
     if (![roles.PLAYER, roles.TRUSTED].includes(user.role) || user.isGM) {
       issues.push("A dedicated Player or Trusted Player role is required");
     }
     if (user.character) issues.push("Remove the assigned character before adoption");
-    if (!trusted && Object.keys(globalThis.CONST.USER_PERMISSIONS).some(key => user.can(key))) {
+    if (!trusted && Object.keys(CONST.USER_PERMISSIONS).some(key => user.can(key))) {
       issues.push("Disable individual user capabilities before adoption");
     }
     for (const collection of game.collections.values()) {
       if (collection.contents.some(document => {
         const ownership = document.ownership;
-        return ownership && (ownership[user.id] ?? ownership.default ?? 0) >= globalThis.CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+        return ownership && (ownership[user.id] ?? ownership.default ?? 0) >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
       })) { issues.push("Document ownership requires manual review"); break; }
     }
     return issues;
@@ -50,14 +50,14 @@ export default class BeamerUsers extends AbstractSubModule {
     try { return await operation(); } finally { this.#busy = false; }
   }
 
-  async create({ name = "Beamer", password } = {}) {
+  async create({ name = "Beamer", password }: { name?: string; password?: string } = {}) {
     return this.#change(async () => {
       if (typeof name !== "string" || !name.trim() || name.length > 64) throw new Error("Enter a Beamer user name");
       if (typeof password !== "string" || password.length < 12 || password.length > 256) throw new Error("Use a password between 12 and 256 characters");
       name = name.trim();
       if (game.users.contents.some(user => user.name.toLowerCase() === name.toLowerCase())) throw new Error("That user name exists; review explicit adoption instead");
-      const permissions = Object.fromEntries(Object.keys(globalThis.CONST.USER_PERMISSIONS).map(key => [key, false]));
-      const user = await foundry.documents.User.create({ name, password, role: globalThis.CONST.USER_ROLES.PLAYER,
+      const permissions = Object.fromEntries(Object.keys(CONST.USER_PERMISSIONS).map(key => [key, false]));
+      const user = await foundry.documents.User.create({ name, password, role: CONST.USER_ROLES.PLAYER,
         permissions, flags: { [VTT_MODULE_NAME]: { beamerManaged: true } } });
       if (this.review(user).length) throw new Error("Created user needs permission review before pairing; no existing users were changed");
       await game.settings.set(VTT_MODULE_NAME, BEAMER_USER_SETTING, user.id);
@@ -65,7 +65,7 @@ export default class BeamerUsers extends AbstractSubModule {
     });
   }
 
-  async adopt({ userId, confirm = false } = {}) {
+  async adopt({ userId, confirm = false }: { userId?: string; confirm?: boolean } = {}) {
     return this.#change(async () => {
       if (confirm !== true) throw new Error("Explicit adoption confirmation is required");
       const user = game.users.get(userId);

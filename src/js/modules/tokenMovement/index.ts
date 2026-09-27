@@ -64,7 +64,7 @@ export default class TokenMovement extends AbstractSubModule {
    * @param {number} now the timestamp of the current Keypad "frame"
    * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
-  #tickHandler(now, keypads) {
+  #tickHandler(now: number, keypads: Record<string, Keypad>) {
     for (const keypad of Object.values(keypads)) {
       this.#handleMovement(now, keypad);
       if (keypad.isDown("SHI") && keypad.isJustDown("C", now)) {

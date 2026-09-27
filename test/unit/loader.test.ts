@@ -22,9 +22,9 @@ let loader: typeof import("../../src/js/modules/loader.js");
 
 beforeAll(async () => {
   const context: any = (key: string) => ({
-    default: key === "./feature/index.js" ? Feature : Infrastructure,
+    default: key === "./feature/index.ts" ? Feature : Infrastructure,
   });
-  context.keys = () => ["./feature/index.js", "./infrastructure/index.js"];
+  context.keys = () => ["./feature/index.ts", "./infrastructure/index.ts"];
   (globalThis as any).__webpackRequireContext = context;
   loader = await import("../../src/js/modules/loader.js");
 });

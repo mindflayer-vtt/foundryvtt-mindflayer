@@ -13,8 +13,14 @@
  * see <https://www.gnu.org/licenses/>.
  */
 
+export interface TimerDialogResult {
+  start: number;
+  end: number;
+  options: { neededRole: number };
+}
+
 export default class StartTimerDialog extends FormApplication {
-  #result = null;
+  #result: TimerDialogResult | null = null;
 
   constructor(options = {}) {
     super(
@@ -109,8 +115,8 @@ export default class StartTimerDialog extends FormApplication {
     };
   }
 
-  static async getTimer() {
-    return new Promise((resolve, reject) => {
+  static async getTimer(): Promise<TimerDialogResult | null> {
+    return new Promise<TimerDialogResult | null>((resolve, reject) => {
       const dialog = new this({
         callbackResolve: resolve,
         callbackReject: reject,

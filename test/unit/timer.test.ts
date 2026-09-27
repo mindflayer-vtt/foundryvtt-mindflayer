@@ -120,7 +120,8 @@ describe("start timer dialog", () => {
         return this;
       });
     const result = await StartTimerDialog.getTimer();
-    expect(result.end - result.start).toBe(3_000);
+    expect(result).not.toBeNull();
+    expect(result!.end - result!.start).toBe(3_000);
     expect(render).toHaveBeenCalledWith(true);
   });
 });

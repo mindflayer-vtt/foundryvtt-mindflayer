@@ -20,8 +20,9 @@
     "test:foundry:local": "sh -c 'npm run test:foundry:setup && trap \"npm run test:foundry:down\" EXIT INT TERM && npm run test:foundry'",
     "test:watch": "vitest",
     "lint": "eslint .",
+    "typecheck": "tsc --project tsconfig.json",
     "typecheck:test": "tsc --project tsconfig.test.json",
-    "check": "npm run lint && npm run typecheck:test && npm test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run typecheck:test && npm test && npm run build",
     "semantic-release": "semantic-release"
   },
   "repository": {
@@ -56,6 +57,7 @@
     "semantic-release": "^25.0.9",
     "sharp": "^0.35.4",
     "terser-webpack-plugin": "^5.6.1",
+    "ts-loader": "^9.6.2",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.1",
     "vitest": "^4.1.11",

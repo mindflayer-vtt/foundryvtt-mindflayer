@@ -21,6 +21,7 @@ import { VTT_MODULE_NAME } from "./constants";
  * Form application to assign controllers to players.
  */
 export class TokenControllerConfig extends FormApplication {
+  reset = false;
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
       title: game.i18n.localize("MindFlayer.configTitle"),
@@ -93,7 +94,7 @@ export class TokenControllerConfig extends FormApplication {
           part = part.substring(0, part.length - 1);
         }
 
-        if (i == parts.length - 1) {
+        if (Number(i) === parts.length - 1) {
           last[part] = val;
           continue retloop;
         } else if (!Object.hasOwn(last, part)) {

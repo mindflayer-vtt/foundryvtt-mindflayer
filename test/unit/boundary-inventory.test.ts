@@ -6,7 +6,7 @@ import inventory from "../fixtures/libwrapper-boundaries.json";
 function sourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const item = path.join(directory, entry.name);
-    return entry.isDirectory() ? sourceFiles(item) : entry.name.endsWith(".js") ? [item] : [];
+    return entry.isDirectory() ? sourceFiles(item) : entry.name.endsWith(".ts") ? [item] : [];
   });
 }
 

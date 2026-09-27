@@ -19,12 +19,11 @@ import * as TokenUtil from "../../utils/tokenUtil";
 import Keypad from "../ControllerManager/Keypad";
 import { Rectangle, Vector } from "../../utils/2d-geometry";
 import { LOG_PREFIX } from "../../settings/constants";
+import { isCombatActive } from "../../utils/combat";
 
-const SUB_LOG_PREFIX = `${LOG_PREFIX}DoorHandler: `;
+const SUB_LOG_PREFIX = `${LOG_PREFIX}CombatEndTurn: `;
 
-export default class DoorHandler extends AbstractSubModule {
-  #nextDoorTimestamp;
-  #doorQueue = [];
+export default class CombatEndTurn extends AbstractSubModule {
   #tickHandlerFun;
 
   constructor(instance) {
@@ -33,18 +32,11 @@ export default class DoorHandler extends AbstractSubModule {
   }
 
   ready() {
-    if (this.instance.settings.core.noCanvas) {
-      console.info(SUB_LOG_PREFIX + "canvas is disabled, cannot control doors");
-      return;
-    }
-    this.#nextDoorTimestamp = new Date().getTime();
     this.controllerManager.registerTickListener(this.#tickHandlerFun);
   }
 
   unhook() {
-    if (!this.instance.settings.core.noCanvas) {
-      this.controllerManager.unregisterTickListener(this.#tickHandlerFun);
-    }
+    this.controllerManager.unregisterTickListener(this.#tickHandlerFun);
     super.unhook();
   }
 
@@ -65,61 +57,42 @@ export default class DoorHandler extends AbstractSubModule {
    * @param {number} now the timestamp of the current Keypad "frame"
    * @param {Record<string,Keypad>} keypads an array of all connected Keypads
    */
-  #tickHandler(now, keypads) {
-    for (const keypad of Object.values(keypads)) {
-      if (keypad.isJustDown("E", now)) {
-        this.#enqueueDoors(keypad);
-      }
+  #tickHandler(now: number, keypads: Record<string, Keypad>) {
+    if (!isCombatActive()) {
+      return;
     }
-    this.#processDoorQueue(now);
-  }
-
-  #processDoorQueue(now) {
-    if (this.#nextDoorTimestamp <= now && this.#doorQueue.length > 0) {
-      const doorCR = this.#doorQueue.shift();
-      console.debug(
-        SUB_LOG_PREFIX +
-          `${doorCR.player.name}[${doorCR.token.name}]: toggling the door `,
-        doorCR.door,
-      );
-      const evt = new PIXI.FederatedMouseEvent();
-      evt.button = 0;
-      doorCR.door.doorControl._onMouseDown(evt);
-      this.#nextDoorTimestamp = now + 150;
+    for (const keypad of Object.values(keypads)) {
+      if (keypad.isJustDown("SPC", now)) {
+        if (this.#endTurnFor(keypad)) {
+          // it does not make sense to advance more than one turn per frame
+          // (e.g. if there are multiple keypads connected)
+          // so we break out of the loop
+          break;
+        }
+      }
     }
   }
 
   /**
    * @param {Keypad} keypad
    */
-  #enqueueDoors(keypad) {
+  #endTurnFor(keypad) {
+    const currentActor = game.combat.turns[game.combat.turn].actor;
     const player = keypad.player;
-    const token = TokenUtil.getTokenFor(player);
-    const tokenBounds = token.bounds;
-
-    const interactionBounds = new Rectangle(
-      new Vector(
-        tokenBounds.left - canvas.grid.size,
-        tokenBounds.bottom + canvas.grid.size,
-      ),
-      new Vector(
-        tokenBounds.right + canvas.grid.size,
-        tokenBounds.top - canvas.grid.size,
-      ),
-    );
-
-    for (const door of canvas.walls.doors) {
-      if (
-        door.doorControl &&
-        interactionBounds.intersect(Rectangle.fromBounds(door.bounds)) &&
-        !this.#doorQueue.find((d) => d.door === door)
-      ) {
-        this.#doorQueue.push({
-          player,
-          token,
-          door,
-        });
-      }
+    if (!player) {
+      return false;
     }
+    if (
+      !currentActor?.hasPlayerOwner ||
+      (currentActor.ownership[player.id] ?? 0) < 3
+    ) {
+      ui.notifications.warn(
+        `Hey ${player.name}, You can only end your own turn!`,
+      );
+      return false;
+    }
+
+    game.combat.nextTurn();
+    return true;
   }
 }
