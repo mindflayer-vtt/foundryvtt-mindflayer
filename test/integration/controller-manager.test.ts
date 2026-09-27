@@ -6,9 +6,9 @@ import type MindFlayer from "../../src/js/MindFlayer";
 function createSystem() {
   const instance = {
     settings: { enabled: false, settings: { mappings: { p1: "one", p2: "two" } } },
-    modules: {},
+    modules: {} as Record<string, Socket | ControllerManager>,
   };
-  const owner = instance as MindFlayer;
+  const owner = instance as unknown as MindFlayer;
   const socket = new Socket(owner);
   vi.spyOn(socket, "send").mockImplementation(() => {});
   instance.modules[Socket.name] = socket;
@@ -29,7 +29,7 @@ describe("Socket to ControllerManager flow", () => {
     expect(ui.notifications.info).toHaveBeenCalledWith("Mind Flayer: MindFlayer.Notifications.NewClient");
     socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "two" });
     socket._dispatch({ type: "key-event", "controller-id": "one", key: "Q", state: "down" });
-    expect(manager.keypads[0].player.id).toBe("p1");
+    expect(manager.keypads[0].player?.id).toBe("p1");
     expect(manager.keypads[0].isDown("Q")).toBe(true);
     expect(manager.keypads[1].isDown("Q")).toBe(false);
     socket._dispatch({ type: "registration", receiver: false, status: "disconnected", "controller-id": "one" });

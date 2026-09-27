@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, test } from "vitest";
 import inventory from "../fixtures/libwrapper-boundaries.json";
 
-function sourceFiles(directory) {
+function sourceFiles(directory: string): string[] {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const item = path.join(directory, entry.name);
     return entry.isDirectory() ? sourceFiles(item) : entry.name.endsWith(".ts") ? [item] : [];

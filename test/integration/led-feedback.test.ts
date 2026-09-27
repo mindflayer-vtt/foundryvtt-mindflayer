@@ -55,7 +55,7 @@ describe("combat keypad LED feedback", () => {
     expect(keypads[0].setLED).toHaveBeenCalledWith(1, "#FF0000");
     expect(keypads[1].setLED).toHaveBeenCalledWith(1, "#FFFF00");
     expect(keypads[2].setLED).toHaveBeenCalledWith(1, "#00FF00");
-    expect(timer.addTimer.mock.calls.at(-1)[0].end - timer.addTimer.mock.calls.at(-1)[0].start)
+    expect(timer.addTimer.mock.calls.at(-1)![0].end - timer.addTimer.mock.calls.at(-1)![0].start)
       .toBe(6000);
   });
 
@@ -80,7 +80,7 @@ describe("combat keypad LED feedback", () => {
   test("restores defaults only after successful combat completion and cleans up hooks", async () => {
     const { indicator, keypads } = createIndicator();
     const endWrapper = libWrapper.register.mock.calls.find(
-      (call) => call[1] === "Combat.prototype.endCombat",
+      (call: [unknown, string, ...unknown[]]) => call[1] === "Combat.prototype.endCombat",
     )[2];
     await expect(endWrapper(vi.fn(async () => "ended"))).resolves.toBe("ended");
     for (const pad of keypads) expect(pad.setDefaultLEDColor).toHaveBeenCalledOnce();

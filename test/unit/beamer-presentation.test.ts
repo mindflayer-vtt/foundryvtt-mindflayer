@@ -2,9 +2,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import BeamerPresentation from "../../src/js/modules/beamerPresentation";
 import CameraControl from "../../src/js/modules/cameraControl";
 import Fullscreen from "../../src/js/modules/fullscreen";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 describe("managed Beamer presentation", () => {
-  let values, fullscreen, instance;
+  let values: Record<string, string | boolean>;
+  let fullscreen: { enabled: boolean };
+  let instance: MindFlayer;
 
   beforeEach(() => {
     values = { beamerUserId: "beamer", cameraControl: "default", enabled: false };
@@ -12,11 +15,11 @@ describe("managed Beamer presentation", () => {
     vi.stubGlobal("game", {
       user: { id: "beamer" }, canvas: { initialized: true },
       settings: {
-        get: vi.fn((_namespace, key) => values[key]),
-        set: vi.fn(async (_namespace, key, value) => { values[key] = value; }),
+        get: vi.fn((_namespace: string, key: string) => values[key]),
+        set: vi.fn(async (_namespace: string, key: string, value: string | boolean) => { values[key] = value; }),
       },
     });
-    instance = { modules: { [Fullscreen.name]: fullscreen } };
+    instance = { modules: { [Fullscreen.name]: fullscreen } } as unknown as MindFlayer;
   });
 
   test("starts only for the selected Beamer and requests its dependencies", () => {
@@ -30,7 +33,7 @@ describe("managed Beamer presentation", () => {
     const presentation = new BeamerPresentation(instance);
     presentation.ready();
     await vi.waitFor(() => expect(game.settings.set).toHaveBeenCalledTimes(2));
-    expect(game.settings.set.mock.calls.map(call => call.slice(1))).toEqual([
+    expect(game.settings.set.mock.calls.map((call: unknown[]) => call.slice(1))).toEqual([
       ["cameraControl", "focusPlayers"], ["enabled", true],
     ]);
     expect(fullscreen.enabled).toBe(false);

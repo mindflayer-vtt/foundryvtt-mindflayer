@@ -6,28 +6,36 @@ import Fullscreen from "../../src/js/modules/fullscreen";
 import TokenTorch from "../../src/js/modules/tokenTorch";
 import type MindFlayer from "../../src/js/MindFlayer";
 
-function managerWith(keypads) {
+interface TestToken {
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+  bounds?: { left: number; right: number; top: number; bottom: number };
+}
+
+function managerWith<T>(keypads: T[]) {
   for (const keypad of keypads) {
-    const token = keypad.token;
+    const token = (keypad as { token?: TestToken | null }).token;
     if (token && !token.bounds && [token.x, token.y, token.w, token.h].every(Number.isFinite)) {
       token.bounds = {
-        left: token.x,
-        right: token.x + token.w,
-        top: token.y,
-        bottom: token.y + token.h,
+        left: token.x!,
+        right: token.x! + token.w!,
+        top: token.y!,
+        bottom: token.y! + token.h!,
       };
     }
   }
-  let listener;
+  let listener: ((now: number, keypads: Record<string, T>) => void) | null = null;
   return {
     keypads,
-    registerTickListener: vi.fn((callback) => { listener = callback; }),
+    registerTickListener: vi.fn((callback: (now: number, keypads: Record<string, T>) => void) => { listener = callback; }),
     unregisterTickListener: vi.fn(),
-    tick: (now) => listener(now, Object.fromEntries(keypads.map((keypad, i) => [i, keypad]))),
+    tick: (now: number) => listener?.(now, Object.fromEntries(keypads.map((keypad, i) => [i, keypad]))),
   };
 }
 
-function instanceWith(manager, extraSettings = {}) {
+function instanceWith(manager: unknown, extraSettings: Record<string, unknown> = {}) {
   const instance = {
     settings: { core: { noCanvas: false }, camera: { control: "focusPlayers" }, ...extraSettings },
     modules: { [ControllerManager.name]: manager },

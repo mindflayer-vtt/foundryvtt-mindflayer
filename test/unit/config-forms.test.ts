@@ -12,7 +12,7 @@ describe("token/controller configuration form", () => {
       { id: "p1", name: "One" },
       { id: "p2", name: "Two" },
     ];
-    game.settings.get.mockImplementation((_scope, key) =>
+    game.settings.get.mockImplementation((_scope: string, key: string) =>
       key === "settings" ? { mappings: { p1: "controller-a" }, nested: { keep: true } } : undefined,
     );
   });
@@ -140,7 +140,7 @@ describe("token/controller configuration form", () => {
   });
 
   test("a newly changed selection wins over a later unchanged dropdown", async () => {
-    game.settings.get.mockImplementation((_scope, key) =>
+    game.settings.get.mockImplementation((_scope: string, key: string) =>
       key === "settings" ? { mappings: { p1: "controller-a", p2: "controller-b" } } : undefined,
     );
     const form = new TokenControllerConfig();

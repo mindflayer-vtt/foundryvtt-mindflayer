@@ -80,7 +80,7 @@ describe("Keypad state", () => {
     game.user.getFlag.mockReturnValue("hero");
     canvas.tokens.placeables = [{ id: "hero" }];
     expect(pad.controllerId).toBe("controller");
-    expect(pad.player.id).toBe("player");
+    expect(pad.player?.id).toBe("player");
     expect(pad.token.id).toBe("hero");
     expect(pad.getLEDsIfChanged()).toEqual(["#123456", "#123456"]);
     expect(pad.getLEDsIfChanged()).toBeNull();
@@ -105,6 +105,7 @@ describe("Keypad state", () => {
       current: ["#123456", "#123456"], matches: true,
     });
     const snapshot = pad.getLEDState();
+    if (snapshot.current === null) throw new Error("Expected confirmed LED state");
     snapshot.current[0] = "#000000";
     snapshot.wanted[0] = "#000000";
     expect(pad.getLEDState().matches).toBe(true);

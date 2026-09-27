@@ -8,6 +8,7 @@ import {
 import AbstractSubModule from "../../src/js/modules/AbstractSubModule";
 import ControllerManager from "../../src/js/modules/ControllerManager";
 import Socket from "../../src/js/modules/socket";
+import type { LifecycleHost, ModuleClass } from "../../src/js/modules/lifecycle";
 
 class KeypadFeature extends AbstractSubModule {
   static get moduleDependencies() {
@@ -15,7 +16,12 @@ class KeypadFeature extends AbstractSubModule {
   }
 }
 
-function module(name, dependencies = [], starts = true, events = []) {
+function module(
+  name: string,
+  dependencies: string[] = [],
+  starts = true,
+  events: string[] = [],
+): ModuleClass {
   return {
     [name]: class {
       static get moduleDependencies() {
@@ -51,12 +57,12 @@ describe("submodule lifecycle planning", () => {
   });
 
   test("loads required dependencies first across multiple levels", () => {
-    const events = [];
+    const events: string[] = [];
     const Base = module("Base", [], false, events);
     const Middle = module("Middle", ["Base"], false, events);
     const Feature = module("Feature", ["Middle"], true, events);
     const Disabled = module("Disabled", [], false, events);
-    const instance: { modules: Record<string, any> } = { modules: {} };
+    const instance: LifecycleHost = { modules: {} };
     const plan = createModulePlan([Feature, Disabled, Base, Middle], instance);
     const instances = loadModules(instance, plan.descriptors);
     readyModules(instances);
@@ -78,12 +84,12 @@ describe("submodule lifecycle planning", () => {
   });
 
   test("reloads a module and dependants in dependency-safe order only", () => {
-    const events = [];
+    const events: string[] = [];
     const Base = module("Base", [], true, events);
     const Feature = module("Feature", ["Base"], true, events);
     const Child = module("Child", ["Feature"], true, events);
     const Unrelated = module("Unrelated", [], true, events);
-    const instance: { modules: Record<string, any> } = { modules: {} };
+    const instance: LifecycleHost = { modules: {} };
     const plan = createModulePlan([Child, Unrelated, Feature, Base], instance);
     readyModules(loadModules(instance, plan.descriptors));
     const old = { ...instance.modules };

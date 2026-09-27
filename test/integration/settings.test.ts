@@ -71,8 +71,8 @@ describe("settings reconfiguration boundaries", () => {
       combatIndicatorTacticalDuration: 20,
       "combatIndicator.playerReactionTime": 8,
     };
-    game.settings.get.mockImplementation((scope, key) =>
-      scope === "core" && key === "noCanvas" ? true : values[key],
+    game.settings.get.mockImplementation((scope: string, key: string) =>
+      scope === "core" && key === "noCanvas" ? true : values[key as keyof typeof values],
     );
     expect(settings.enabled).toBe(true);
     expect(settings.settings).toEqual({ mappings: { player: "controller" } });

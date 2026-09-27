@@ -89,10 +89,10 @@ describe("fullscreen client shell", () => {
   test("blocks token control and downgrades permanent notifications only while hidden", () => {
     const fullscreen = createFullscreen();
     const controlWrapper = libWrapper.register.mock.calls.find(
-      (call) => call[1].endsWith("PlaceableObject.prototype.can"),
+      (call: [unknown, string, ...unknown[]]) => call[1].endsWith("PlaceableObject.prototype.can"),
     )[2];
     const notificationWrapper = libWrapper.register.mock.calls.find(
-      (call) => call[1].endsWith("Notifications.prototype.notify"),
+      (call: [unknown, string, ...unknown[]]) => call[1].endsWith("Notifications.prototype.notify"),
     )[2];
     const can = vi.fn(() => "allowed");
     const notify = vi.fn();
