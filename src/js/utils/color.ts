@@ -26,7 +26,7 @@ export const COLORS = {
  * @param {string} hex the color as hex string in the format '#ffffff'
  * @returns a javascript object representing the color
  */
-export function hexToRgb(hex) {
+export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result !== null
     ? {
