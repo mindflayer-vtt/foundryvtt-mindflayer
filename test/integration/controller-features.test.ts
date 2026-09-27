@@ -89,6 +89,27 @@ describe("controller-driven token movement", () => {
     new TokenMovement(featureInstance(manager)).ready();
     expect(manager.registerTickListener).not.toHaveBeenCalled();
   });
+
+  test("ignores movement input without a selected token or direction", async () => {
+    const manager = managerHarness();
+    const movement = new TokenMovement(featureInstance(manager));
+    movement.ready();
+    const withoutToken = {
+      token: null, isDown: vi.fn(() => false), isJustDown: vi.fn(() => false),
+      syncRepetitions: vi.fn(), isRepeatedDown: vi.fn(() => false),
+    };
+    manager.tick(1, { withoutToken });
+    expect(withoutToken.syncRepetitions).not.toHaveBeenCalled();
+    const stationary = {
+      ...withoutToken,
+      token: { id: "hero", name: "Hero" }, player: { name: "Player" }, rotation: 0,
+      syncRepetitions: vi.fn(),
+    };
+    manager.tick(2, { stationary });
+    await Promise.resolve();
+    expect(stationary.syncRepetitions).toHaveBeenCalled();
+    expect(canvas.tokens.moveMany).not.toHaveBeenCalled();
+  });
 });
 
 describe("token selection and combat turns", () => {

@@ -31,7 +31,7 @@ describe("combat keypad LED feedback", () => {
         [Timer.name]: timer,
       },
     };
-    return { indicator: new CombatIndicator(instance), keypads, timer };
+    return { indicator: new CombatIndicator(instance), keypads, timer, instance };
   }
 
   test("starts tactical discussion and then marks current, next, and later turns", async () => {
@@ -90,6 +90,44 @@ describe("combat keypad LED feedback", () => {
     expect(libWrapper.unregister).toHaveBeenCalledWith(
       "mindflayer-token-controller", "Combat.prototype.endCombat", false,
     );
+  });
+
+  test("restarts tactical discussion at the first turn of a new round", async () => {
+    const { timer } = createIndicator();
+    const combat: any = { started: true, current: { turn: 0 }, turns: [] };
+    Hooks.call("startCombat", combat, { turn: 0 });
+    Hooks.call("updateCombat", combat, { round: 2, turn: 0 });
+    await vi.waitFor(() => expect(timer.addTimer).toHaveBeenCalledTimes(2));
+    for (const [data] of timer.addTimer.mock.calls) {
+      expect(data.end - data.start).toBe(5_000);
+    }
+  });
+
+  test("stops updating the sequence when a combat player has no keypad", async () => {
+    const { keypads } = createIndicator();
+    const combat: any = {
+      started: true,
+      current: { turn: 0 },
+      turns: [{ players: [{ id: "missing" }], isDefeated: false }],
+    };
+    Hooks.call("startCombat", combat, { turn: 0 });
+    Hooks.call("updateCombat", combat, { turn: 0 });
+    await Promise.resolve();
+    for (const keypad of keypads) expect(keypad.setLED).not.toHaveBeenCalled();
+  });
+
+  test("executes zero-duration tactical and reaction callbacks immediately", async () => {
+    const { keypads, timer, instance } = createIndicator();
+    instance.settings.combatIndicator.tacticalDiscussionDuration = 0;
+    instance.settings.combatIndicator.playerReactionTime = 0;
+    const combat: any = {
+      started: true,
+      current: { turn: 0 },
+      turns: [{ players: [{ id: "one" }], isDefeated: false }],
+    };
+    Hooks.call("startCombat", combat, { turn: 0 });
+    await vi.waitFor(() => expect(keypads[0].setLED).toHaveBeenCalledWith(1, "#FF0000"));
+    expect(timer.addTimer).not.toHaveBeenCalled();
   });
 });
 

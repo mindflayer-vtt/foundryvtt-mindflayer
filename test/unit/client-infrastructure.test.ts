@@ -176,4 +176,25 @@ describe("wake lock lifecycle", () => {
       "visibilitychange", listeners.get("visibilitychange"),
     );
   });
+
+  test("contains browser request failures and clears already released sentinels", async () => {
+    const documentFake = {
+      visibilityState: "visible",
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    };
+    const request = vi.fn()
+      .mockRejectedValueOnce(Object.assign(new Error("denied"), { name: "NotAllowedError" }))
+      .mockResolvedValueOnce({
+        released: true, addEventListener: vi.fn(), release: vi.fn(),
+      });
+    vi.stubGlobal("document", documentFake);
+    vi.stubGlobal("navigator", { wakeLock: { request } });
+    const wake = new WakeLock({});
+    wake.enabled = true;
+    await expect(wake.ensureWakeLock()).resolves.toBeUndefined();
+    await wake.ensureWakeLock();
+    wake.enabled = false;
+    await expect(wake.ensureWakeLock()).resolves.toBeUndefined();
+    expect(request).toHaveBeenCalledTimes(2);
+  });
 });
