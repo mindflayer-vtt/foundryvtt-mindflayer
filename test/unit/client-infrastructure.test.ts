@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import Fullscreen from "../../src/js/modules/fullscreen";
 import SocketlibWrapper from "../../src/js/modules/socketlib";
 import WakeLock from "../../src/js/modules/wakeLock";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 describe("socketlib wrapper", () => {
   test("registers callbacks once, supports replacement/removal, and forwards executions", async () => {
@@ -15,7 +16,7 @@ describe("socketlib wrapper", () => {
       executeForOthers: vi.fn(async () => "others"),
     };
     (window as any).socketlib = { registerModule: vi.fn(() => socket) };
-    const wrapper = new SocketlibWrapper({});
+    const wrapper = new SocketlibWrapper({} as MindFlayer);
     wrapper.ready();
     expect((window as any).socketlib.registerModule).toHaveBeenCalledWith(
       "mindflayer-token-controller",
