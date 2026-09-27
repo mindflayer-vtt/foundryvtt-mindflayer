@@ -205,4 +205,46 @@ describe("timer module integration", () => {
     }
     timer.unhook();
   });
+
+  test("expires timers, runs callbacks, and returns to inactive priority", async () => {
+    const { timer } = createTimer();
+    timer.ready();
+    const onDone = vi.fn();
+    const runner = new TimerRunner(1_000, 2_000, { neededRole: 1, onDone });
+    await timer.addTimer(runner);
+    vi.setSystemTime(2_001);
+    expect(await timer.updateLEDs(2)).toEqual(new Uint32Array(6));
+    expect(onDone).toHaveBeenCalledOnce();
+    expect(timer.priority).toBe(-100);
+    await runner.abort();
+    timer.unhook();
+  });
+
+  test("honors no-canvas and disabled-Ambilight startup while retaining RPC support", () => {
+    const { timer, ring, socketlib } = createTimer({
+      core: { noCanvas: true },
+      ambilight: {
+        enabled: false, led: { offset: 0 }, brightness: { min: 0 },
+      },
+    });
+    timer.ready();
+    expect(canvas.stage.children).toEqual([]);
+    expect(ring.registerHandler).not.toHaveBeenCalled();
+    expect(socketlib.provide).toHaveBeenCalledWith(SOCKETLIB_TIMER_ADD, expect.any(Function));
+    timer.unhook();
+  });
+
+  test("removes active timers from the rendering container", async () => {
+    const { timer } = createTimer();
+    timer.ready();
+    const runner = new TimerRunner(1_000, 5_000, { neededRole: 1 });
+    await timer.addTimer(runner);
+    const renderingContainer: any = canvas.stage.children[0];
+    const internal = renderingContainer.children[0];
+    expect(internal).toBeDefined();
+    await timer.removeTimer(internal);
+    expect(renderingContainer.children).not.toContain(internal);
+    await runner.abort();
+    timer.unhook();
+  });
 });

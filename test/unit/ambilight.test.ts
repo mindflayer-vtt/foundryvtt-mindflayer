@@ -88,6 +88,25 @@ describe("Ambilight table-ring handler", () => {
     expect(directions[0].y).toBeCloseTo(-1);
   });
 
+  test("searches inward from the framebuffer edge for non-background pixels", () => {
+    const { ambilight } = createAmbilight();
+    game.scenes.active = { backgroundColor: "#000000" };
+    const image = new Uint8Array(10 * 10 * 4);
+    const coloredIndex = (5 + 8 * 10) * 4;
+    image.set([20, 40, 60, 255], coloredIndex);
+    const bounds = {
+      p0: { x: 0, y: 0 }, p1: { x: 10, y: 10 }, center: { x: 5, y: 5 },
+      intersectionFromCenter: () => 4,
+    };
+    expect((ambilight as any)._findColorAlongVector(
+      image, bounds, { x: 0, y: 1, scale(factor: number) { this.x *= factor; this.y *= factor; } },
+    )).toBe(coloredIndex);
+    image.fill(0);
+    expect((ambilight as any)._findColorAlongVector(
+      image, bounds, { x: 1, y: 0, scale(factor: number) { this.x *= factor; this.y *= factor; } },
+    )).toBe((5 + 5 * 10) * 4);
+  });
+
   test("suppresses all-black output and disabled updates", async () => {
     const { ambilight } = createAmbilight();
     vi.spyOn(ambilight as any, "_findColorAlongVector").mockReturnValue(0);
