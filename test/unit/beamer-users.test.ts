@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import BeamerUsers from "../../src/js/modules/beamerUsers";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 describe("world Beamer users", () => {
   let selected, users, service, create;
@@ -13,7 +14,7 @@ describe("world Beamer users", () => {
       settings: { get: () => selected, set: vi.fn(async (_namespace, _key, id) => { selected = id; }) } });
     create = vi.fn(async data => { const user = player("created", data.name); users.push(user); return user; });
     vi.stubGlobal("foundry", { documents: { User: { create } } });
-    service = new BeamerUsers({});
+    service = new BeamerUsers({} as MindFlayer);
   });
 
   test("creates a Player with denied capabilities and stores only its ID", async () => {

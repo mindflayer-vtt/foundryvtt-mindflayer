@@ -1,20 +1,34 @@
 import AbstractSubModule from "../AbstractSubModule";
 import { VTT_MODULE_NAME } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 
 export const BEAMER_USER_SETTING = "beamerUserId";
+
+interface ReviewableUser {
+  id: string;
+  name: string;
+  role: number;
+  isGM: boolean;
+  character: unknown;
+  can(permission: string): boolean;
+}
+
+interface OwnedDocument {
+  ownership?: Record<string, number> & { default?: number };
+}
 
 /** World user ownership only; camera and transport keep their existing owners. */
 export default class BeamerUsers extends AbstractSubModule {
   #busy = false;
   static shouldStart() { return true; }
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
   }
 
   get selectedId() { return game.settings.get(VTT_MODULE_NAME, BEAMER_USER_SETTING); }
 
-  review(user) {
+  review(user: ReviewableUser | null | undefined): string[] {
     if (!user) return ["Selected user is missing"];
     const issues = [];
     const roles = CONST.USER_ROLES;
@@ -27,7 +41,7 @@ export default class BeamerUsers extends AbstractSubModule {
       issues.push("Disable individual user capabilities before adoption");
     }
     for (const collection of game.collections.values()) {
-      if (collection.contents.some(document => {
+      if (collection.contents.some((document: OwnedDocument) => {
         const ownership = document.ownership;
         return ownership && (ownership[user.id] ?? ownership.default ?? 0) >= CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
       })) { issues.push("Document ownership requires manual review"); break; }
@@ -42,7 +56,7 @@ export default class BeamerUsers extends AbstractSubModule {
       user: user ? { id: user.id, name: user.name, role: user.role } : null, issues: this.selectedId ? issues : [] };
   }
 
-  async #change(operation) {
+  async #change<Result>(operation: () => Promise<Result>): Promise<Result> {
     if (!game.user?.isGM || !this.loaded) throw new Error("A running GM session is required");
     if (this.#busy) throw new Error("Beamer user configuration is already in progress");
     if (this.selectedId) throw new Error("A Beamer user is already selected for this world");
@@ -55,7 +69,7 @@ export default class BeamerUsers extends AbstractSubModule {
       if (typeof name !== "string" || !name.trim() || name.length > 64) throw new Error("Enter a Beamer user name");
       if (typeof password !== "string" || password.length < 12 || password.length > 256) throw new Error("Use a password between 12 and 256 characters");
       name = name.trim();
-      if (game.users.contents.some(user => user.name.toLowerCase() === name.toLowerCase())) throw new Error("That user name exists; review explicit adoption instead");
+      if (game.users.contents.some((user: ReviewableUser) => user.name.toLowerCase() === name.toLowerCase())) throw new Error("That user name exists; review explicit adoption instead");
       const permissions = Object.fromEntries(Object.keys(CONST.USER_PERMISSIONS).map(key => [key, false]));
       const user = await foundry.documents.User.create({ name, password, role: CONST.USER_ROLES.PLAYER,
         permissions, flags: { [VTT_MODULE_NAME]: { beamerManaged: true } } });
