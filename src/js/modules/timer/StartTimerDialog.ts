@@ -19,6 +19,13 @@ export interface TimerDialogResult {
   options: { neededRole: number };
 }
 
+interface TimerFormData {
+  durationHours: string;
+  durationMinutes: string;
+  durationSeconds: string;
+  neededRole: string;
+}
+
 export default class StartTimerDialog extends FormApplication {
   #result: TimerDialogResult | null = null;
 
@@ -65,8 +72,8 @@ export default class StartTimerDialog extends FormApplication {
           ),
         },
       },
-      callbackResolve: (result) => {},
-      callbackReject: (error) => {},
+      callbackResolve: (_result: TimerDialogResult | null) => {},
+      callbackReject: (_error: unknown) => {},
     });
   }
 
@@ -75,7 +82,7 @@ export default class StartTimerDialog extends FormApplication {
     return "Start Timer";
   }
 
-  async _onSubmit(evt, options) {
+  async _onSubmit(evt: Event, options: Record<string, unknown>) {
     const result = super._onSubmit(evt, options);
     this.startTimer();
     return result;
@@ -86,7 +93,7 @@ export default class StartTimerDialog extends FormApplication {
    * @override
    * @param {FormDataExtended} formData
    */
-  async _updateObject(_event, formData) {
+  async _updateObject(_event: Event, formData: TimerFormData) {
     this.object.durationHours = parseInt(formData.durationHours) || 0;
     this.object.durationMinutes = parseInt(formData.durationMinutes) || 0;
     this.object.durationSeconds = parseInt(formData.durationSeconds) || 0;

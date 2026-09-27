@@ -21,21 +21,20 @@ import TableLEDRing from "../tableLedRing";
 import { TableLEDRingHandlerMixin } from "../tableLedRing/TableLEDRingHandlerMixin";
 import StartTimerDialog from "./StartTimerDialog";
 import { TimerRenderContainer } from "./TimerRenderContainer";
-import TimerRunner from "./TimerRunner";
+import TimerRunner, { type TimerOptions } from "./TimerRunner";
+import type { TimerDialogResult } from "./StartTimerDialog";
 
 const LOG_SUB_PREFIX = LOG_PREFIX + "Timer: ";
 
 export const SOCKETLIB_TIMER_ADD = "Timer_addTimerInternal";
 
 export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
-  /** @type {TimerRunner[]} */
   #timers: TimerRunner[] = [];
-  /** @type {PIXI.Container} */
-  #renderingContainer = null;
-  #timerUpdateInterval = null;
+  #renderingContainer: TimerRenderContainer | null = null;
+  #timerUpdateInterval: number | null = null;
 
   ready() {
-    if (!this.instance.settings.core.noCanvas) {
+    if (!this.instance!.settings.core.noCanvas) {
       this.#renderingContainer = new TimerRenderContainer();
       canvas.stage.addChild(this.#renderingContainer);
       this.#timerUpdateInterval = window.setInterval(
@@ -43,7 +42,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
         200,
       );
     }
-    if (this.instance.settings.ambilight.enabled) {
+    if (this.instance!.settings.ambilight.enabled) {
       this.tableLEDRing.registerHandler(this);
     }
     this.socketlib.provide(
@@ -84,18 +83,16 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
    * @param {MindFlayer} instance
    * @returns {boolean}
    */
-  static shouldStart(instance) {
+  static shouldStart(_instance: MindFlayer): boolean {
     return true;
   }
 
-  /** @returns {TableLEDRing} */
-  get tableLEDRing() {
-    return this.instance.modules[TableLEDRing.name];
+  get tableLEDRing(): TableLEDRing {
+    return Reflect.get(this.instance!.modules, TableLEDRing.name) as TableLEDRing;
   }
 
-  /** @returns {SocketlibWrapper} */
-  get socketlib() {
-    return this.instance.modules[SocketlibWrapper.name];
+  get socketlib(): SocketlibWrapper {
+    return Reflect.get(this.instance!.modules, SocketlibWrapper.name) as SocketlibWrapper;
   }
 
   /**
@@ -119,7 +116,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
     }
   }
 
-  async updateLEDs(count) {
+  async updateLEDs(count: number) {
     const leds = await super.updateLEDs(count);
     if (this.#timers.length > 0) {
       const now = new Date().valueOf();
@@ -142,14 +139,14 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
     return leds;
   }
 
-  #displayTimer(timer, leds, now) {
+  #displayTimer(timer: TimerRunner | undefined, leds: Uint32Array, now: number): void {
     if (timer === undefined) return;
     const timerCompletion = timer.completion(now);
     const color = this.#getColor(timerCompletion);
     const totalLEDs = Math.floor(leds.length / 3);
     const totalValues = leds.length;
-    const offset = this.instance.settings.ambilight.led.offset;
-    const minBright = this.instance.settings.ambilight.brightness.min;
+    const offset = this.instance!.settings.ambilight.led.offset;
+    const minBright = this.instance!.settings.ambilight.brightness.min;
     const completion = Math.floor(totalLEDs * timerCompletion);
     for (let i = 0; i < totalLEDs; i++) {
       if (i > completion) {
@@ -164,13 +161,13 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
     }
   }
 
-  #getColor(completion) {
+  #getColor(completion: number): NonNullable<ReturnType<typeof hexToRgb>> {
     if (completion > 2 / 3) {
-      return hexToRgb("#FF0000");
+      return hexToRgb("#FF0000")!;
     } else if (completion > 1 / 3) {
-      return hexToRgb("#FFFF00");
+      return hexToRgb("#FFFF00")!;
     } else {
-      return hexToRgb("#00FF00");
+      return hexToRgb("#00FF00")!;
     }
   }
 
@@ -187,7 +184,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
     return null;
   }
 
-  #addTimerInternal(start, end, options) {
+  #addTimerInternal(start: number, end: number, options: TimerOptions): void {
     if (options.neededRole <= game.user.role) {
       const timer = new TimerRunner(start, end, options);
       if (this.#renderingContainer) {
@@ -202,8 +199,8 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
    *
    * @param {TimerRunner} timer
    */
-  async addTimer(timer) {
-    if (!this.#timers.includes(timer)) {
+  async addTimer(timer: TimerRunner | TimerDialogResult): Promise<void> {
+    if (!this.#timers.some((existing) => existing === timer)) {
       this.#addTimerInternal(timer.start, timer.end, timer.options);
       await this.socketlib.executeForOthers(
         SOCKETLIB_TIMER_ADD,
@@ -222,7 +219,7 @@ export default class Timer extends TableLEDRingHandlerMixin(AbstractSubModule) {
    *
    * @param {TimerRunner} timer
    */
-  async removeTimer(timer) {
+  async removeTimer(timer: TimerRunner): Promise<void> {
     timer.abort();
     this.#timers = this.#timers.filter((t) => t !== timer);
     if (this.#renderingContainer) {

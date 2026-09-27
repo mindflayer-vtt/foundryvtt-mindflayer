@@ -40,8 +40,8 @@ interface TimerText {
   updateText(): void;
 }
 
-interface TimerOptions {
-  neededRole?: number;
+export interface TimerOptions {
+  neededRole: number;
   onDone?: (() => void) | null;
 }
 
@@ -59,9 +59,9 @@ export default class TimerRunner extends PIXI.Container {
   #timeout: number | null;
   options: TimerOptions;
 
-  constructor(start: number, end: number, options: TimerOptions = {}) {
+  constructor(start: number, end: number, options: Partial<TimerOptions> = {}) {
     super();
-    this.options = mergeObject(this.defaultOptions, options);
+    this.options = mergeObject(this.defaultOptions, options) as TimerOptions;
     if (start != null) {
       this.#start = start;
     }

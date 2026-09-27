@@ -29,7 +29,7 @@ export class TimerRenderContainer extends PIXI.Container {
     Hooks.on("canvasPan", this.#onCanvasPanFun);
   }
 
-  destroy(options) {
+  destroy(options?: { children?: boolean }) {
     Hooks.off("canvasPan", this.#onCanvasPanFun);
     super.destroy(options);
   }
@@ -38,7 +38,7 @@ export class TimerRenderContainer extends PIXI.Container {
    * Reposition children
    * @override
    */
-  onChildrenChange(_count) {
+  onChildrenChange(_count: number) {
     /** @type {PIXI.Transform} */
     const wt = canvas.stage.worldTransform;
     const invertedScale = 1 / this.parent.scale.x;
