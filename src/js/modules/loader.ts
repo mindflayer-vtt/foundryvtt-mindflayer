@@ -25,7 +25,7 @@ function importAll(contextRequire) {
   return contextRequire.keys().map((module) => contextRequire(module));
 }
 /** @type {({default: AbstractSubModule})[]} */
-let subModules = importAll((require as any).context("./", true, /\/index\.ts$/));
+const subModules = importAll((require as any).context("./", true, /\/index\.ts$/));
 
 /**
  * @type {ReturnType<typeof createModulePlan> | null}
@@ -42,11 +42,10 @@ export function init(instance) {
 
   console.debug(LOG_PREFIX + "Filtering unnecessary modules");
   modulePlan = createModulePlan(subModules, instance);
-  subModules = modulePlan.descriptors;
 
   console.info(LOG_PREFIX + "Starting submodules");
 
-  loadModules(instance, subModules);
+  loadModules(instance, modulePlan.descriptors);
 
   console.info(LOG_PREFIX + "Submodules initialized");
 }
@@ -59,7 +58,14 @@ export function init(instance) {
  */
 export function ready(instance, modules = null) {
   if (!modules) {
-    modules = subModules
+    // Foundry may not expose game.user until ready. Add modules whose
+    // shouldStart policy becomes true once the current user's role is known.
+    modulePlan = createModulePlan(subModules, instance);
+    loadModules(
+      instance,
+      modulePlan.descriptors.filter((mod) => !instance.modules[mod.default.name]),
+    );
+    modules = modulePlan.descriptors
       .map((mod) => instance.modules[mod.default.name])
       .filter((mod) => mod !== undefined && mod !== null);
   }

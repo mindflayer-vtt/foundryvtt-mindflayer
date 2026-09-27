@@ -18,20 +18,45 @@ class Feature {
   unhook() { events.push("unhook:Feature"); }
 }
 
+let readyFeatureEnabled = false;
+class DeferredFeature {
+  static moduleDependencies = [Infrastructure.name];
+  static shouldStart() { return readyFeatureEnabled; }
+  constructor(_instance: any) { events.push("load:DeferredFeature"); }
+  ready() { events.push("ready:DeferredFeature"); }
+  unhook() { events.push("unhook:DeferredFeature"); }
+}
+
 let loader: typeof import("../../src/js/modules/loader.js");
 
 beforeAll(async () => {
   const context: any = (key: string) => ({
-    default: key === "./feature/index.ts" ? Feature : Infrastructure,
+    default: key === "./feature/index.ts" ? Feature :
+      key === "./deferred/index.ts" ? DeferredFeature : Infrastructure,
   });
-  context.keys = () => ["./feature/index.ts", "./infrastructure/index.ts"];
+  context.keys = () => ["./feature/index.ts", "./infrastructure/index.ts", "./deferred/index.ts"];
   (globalThis as any).__webpackRequireContext = context;
   loader = await import("../../src/js/modules/loader.js");
 });
 
-beforeEach(() => events.splice(0));
+beforeEach(() => {
+  events.splice(0);
+  readyFeatureEnabled = false;
+});
 
 describe("submodule loader facade", () => {
+  test("loads role-dependent modules when the role becomes available at ready", () => {
+    const instance: any = { modules: {} };
+    loader.init(instance);
+    expect(instance.modules.DeferredFeature).toBeUndefined();
+    readyFeatureEnabled = true;
+    loader.ready(instance);
+    expect(events).toEqual([
+      "load:Infrastructure", "load:Feature", "load:DeferredFeature",
+      "ready:Infrastructure", "ready:Feature", "ready:DeferredFeature",
+    ]);
+  });
+
   test("discovers modules, includes required infrastructure, and readies in order", () => {
     const instance: any = { modules: {} };
     loader.init(instance);

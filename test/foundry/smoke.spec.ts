@@ -97,6 +97,30 @@ test.describe("real Foundry compatibility", () => {
         .toBe(true);
     }
 
+    const disabledModules = await page.evaluate(() => {
+      const instance = game.modules.get("mindflayer-token-controller").instance;
+      return {
+        isGM: game.user.isGM,
+        names: Object.keys(instance.modules),
+        connected: instance.modules.Socket?.isConnected,
+      };
+    });
+    expect(disabledModules.isGM).toBe(true);
+    expect(disabledModules.names).toEqual(expect.arrayContaining(["Socket", "ControllerManager"]));
+    expect(disabledModules.names).not.toEqual(expect.arrayContaining([
+      "DoorHandler", "TokenMovement", "TokenTorch", "CameraControl",
+    ]));
+    expect(disabledModules.connected).toBe(true);
+
+    await page.evaluate(() => {
+      game.modules.get("mindflayer-token-controller").instance.modules.Socket._dispatch({
+        type: "registration",
+        receiver: false,
+        status: "connected",
+        "controller-id": "disabled-gm-controller",
+      });
+    });
+
     await page.evaluate(() => {
       const menu = game.settings.menus.get(
         "mindflayer-token-controller.mindflayer-token-controller",
@@ -108,6 +132,7 @@ test.describe("real Foundry compatibility", () => {
     await expect(config).toBeVisible();
     await expect(config.locator('select[name^="mappings"]')).toHaveCount(1);
     await expect(config.locator('input[name^="mappings"]')).toHaveCount(0);
+    await expect(config.locator('select[name^="mappings"] option[value="disabled-gm-controller"]')).toHaveCount(1);
     await page.evaluate(() => globalThis.__mindflayerSmokeConfig.close());
 
     const state = await page.evaluate(async (boundaries) => {

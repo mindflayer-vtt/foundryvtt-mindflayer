@@ -5,6 +5,15 @@ import {
   readyModules,
   reloadModules,
 } from "../../src/js/modules/lifecycle";
+import AbstractSubModule from "../../src/js/modules/AbstractSubModule";
+import ControllerManager from "../../src/js/modules/ControllerManager";
+import Socket from "../../src/js/modules/socket";
+
+class KeypadFeature extends AbstractSubModule {
+  static get moduleDependencies() {
+    return [ControllerManager.name];
+  }
+}
 
 function module(name, dependencies = [], starts = true, events = []) {
   return {
@@ -29,6 +38,18 @@ function module(name, dependencies = [], starts = true, events = []) {
 }
 
 describe("submodule lifecycle planning", () => {
+  test.each([
+    { isGM: true, enabled: false, expected: ["Socket", "ControllerManager"] },
+    { isGM: false, enabled: false, expected: [] },
+    { isGM: true, enabled: true, expected: ["Socket", "ControllerManager", "KeypadFeature"] },
+    { isGM: false, enabled: true, expected: ["Socket", "ControllerManager", "KeypadFeature"] },
+  ])("selects controller discovery without disabled keypad features for $isGM GM and enabled=$enabled", ({ isGM, enabled, expected }) => {
+    (globalThis as any).game = { user: { isGM } };
+    const instance = { settings: { enabled } };
+    const plan = createModulePlan([KeypadFeature, ControllerManager, Socket], instance);
+    expect(plan.descriptors.map((descriptor) => descriptor.name)).toEqual(expected);
+  });
+
   test("loads required dependencies first across multiple levels", () => {
     const events = [];
     const Base = module("Base", [], false, events);

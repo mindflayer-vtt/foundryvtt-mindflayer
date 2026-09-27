@@ -56,6 +56,18 @@ describe("Foundry WebSocket boundary", () => {
     );
   });
 
+  test.each([
+    { isGM: true, connections: 1 },
+    { isGM: false, connections: 0 },
+  ])("connects with Mindflayer disabled only for GM=$isGM", ({ isGM, connections }) => {
+    (globalThis as any).game.user = { isGM };
+    const socket = new Socket({
+      settings: { enabled: false, websocket: { url: "wss://server/ws" } },
+    });
+    socket.ready();
+    expect(FakeWebSocket.instances).toHaveLength(connections);
+  });
+
   test("dispatches parsed messages, isolates handler errors, and ignores unsupported messages", () => {
     const socket = new Socket({ settings: { enabled: false } });
     const first = vi.fn(() => { throw new Error("handler failure"); });

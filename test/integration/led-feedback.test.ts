@@ -152,6 +152,20 @@ describe("table LED ring arbitration", () => {
     return { ring: new TableLEDRing(instance), socket };
   }
 
+  test("does not start when a GM only connects for controller discovery", async () => {
+    const { ring } = createRing();
+    const priorUser = game.user;
+    game.user = { isGM: true } as any;
+    ring.instance.settings.enabled = false;
+    try {
+      ring.ready();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      ring.unhook();
+      game.user = priorUser;
+    }
+  });
+
   test("selects the highest-priority handler and sends only changed states", async () => {
     const { ring, socket } = createRing();
     const low = { priority: 1, updateLEDs: vi.fn(async () => new Uint32Array([1, 2, 3, 4, 5, 6])) };

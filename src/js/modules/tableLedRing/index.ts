@@ -27,9 +27,9 @@ export default class TableLEDRing extends AbstractSubModule {
   #tableLEDsLastSent = "";
 
   ready() {
-    // The module may be asked to load as dependency
-    // WebSocket to connect to elder brain will only start if enabled
-    if (!Socket.shouldStart(this.instance)) return;
+    // A GM can connect to Socket for controller discovery while table
+    // features remain disabled.
+    if (!this.instance.settings.enabled) return;
     this.#updateLEDsTimer = setInterval(
       this.#updateLEDs.bind(this),
       1000 / this.instance.settings.ambilight.fps,

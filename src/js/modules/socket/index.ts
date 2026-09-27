@@ -20,6 +20,10 @@ import { createReceiverRegistration } from "../../utils/protocol";
 const SUB_LOG_PREFIX = LOG_PREFIX + "Socket: ";
 
 export default class Socket extends AbstractSubModule {
+  static shouldStart(instance) {
+    return super.shouldStart(instance) || game.user?.isGM === true;
+  }
+
   /** @type {WebSocket|null} */
   #connection = null;
   #onmessageFun = null;
@@ -41,8 +45,7 @@ export default class Socket extends AbstractSubModule {
   }
 
   ready() {
-    // The module may be asked to load as dependency
-    // WebSocket to connect to elder brain will only start if enabled
+    // A dependency can load Socket even when controller discovery is inactive.
     if (!Socket.shouldStart(this.instance)) return;
     this._initializeWebsocket();
   }

@@ -24,6 +24,10 @@ const SUB_LOG_PREFIX = LOG_PREFIX + "ControllerManager: ";
 const CONTROLLER_FPS = 60;
 
 export default class ControllerManager extends AbstractSubModule {
+  static shouldStart(instance) {
+    return Socket.shouldStart(instance);
+  }
+
   /**
    * @var {Record<string, Keypad>} #keypads.*
    */
