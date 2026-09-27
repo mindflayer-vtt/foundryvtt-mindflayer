@@ -4,6 +4,7 @@ import ControllerManager from "../../src/js/modules/ControllerManager";
 import DoorHandler from "../../src/js/modules/doorHandler";
 import Fullscreen from "../../src/js/modules/fullscreen";
 import TokenTorch from "../../src/js/modules/tokenTorch";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 function managerWith(keypads) {
   for (const keypad of keypads) {
@@ -186,7 +187,7 @@ describe("keypad feature integrations", () => {
     const distant = { bounds: { x: 1000, y: 1000, width: 20, height: 20 }, doorControl: { _onMouseDown: vi.fn() } };
     canvas.walls.doors = [nearby, distant];
     const manager = managerWith([keypad]);
-    const handler = new DoorHandler(instanceWith(manager));
+    const handler = new DoorHandler(instanceWith(manager) as unknown as MindFlayer);
     handler.ready();
     manager.tick(Date.now());
     expect(nearby.doorControl._onMouseDown).toHaveBeenCalledOnce();
@@ -208,7 +209,7 @@ describe("keypad feature integrations", () => {
     }));
     canvas.walls.doors = doors;
     const manager = managerWith([keypad]);
-    const handler = new DoorHandler(instanceWith(manager));
+    const handler = new DoorHandler(instanceWith(manager) as unknown as MindFlayer);
     handler.ready();
     manager.tick(1_000);
     expect(doors[0].doorControl._onMouseDown).toHaveBeenCalledOnce();
@@ -221,9 +222,18 @@ describe("keypad feature integrations", () => {
     handler.unhook();
   });
 
+  test("ignores door input from an unassigned keypad", () => {
+    const keypad = { player: null, isJustDown: vi.fn(() => true) };
+    const manager = managerWith([keypad]);
+    const handler = new DoorHandler(instanceWith(manager) as unknown as MindFlayer);
+    handler.ready();
+    expect(() => manager.tick(Date.now())).not.toThrow();
+    handler.unhook();
+  });
+
   test("door handling does not subscribe when Foundry canvas support is disabled", () => {
     const manager = managerWith([]);
-    const handler = new DoorHandler(instanceWith(manager, { core: { noCanvas: true } }));
+    const handler = new DoorHandler(instanceWith(manager, { core: { noCanvas: true } }) as unknown as MindFlayer);
     handler.ready();
     expect(manager.registerTickListener).not.toHaveBeenCalled();
     handler.unhook();

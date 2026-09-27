@@ -19,21 +19,28 @@ import * as TokenUtil from "../../utils/tokenUtil";
 import Keypad from "../ControllerManager/Keypad";
 import { Rectangle, Vector } from "../../utils/2d-geometry";
 import { LOG_PREFIX } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 
 const SUB_LOG_PREFIX = `${LOG_PREFIX}DoorHandler: `;
 
+interface QueuedDoor {
+  player: NonNullable<Keypad["player"]>;
+  token: { name: string };
+  door: { doorControl: { _onMouseDown(event: unknown): void } };
+}
+
 export default class DoorHandler extends AbstractSubModule {
-  #nextDoorTimestamp;
-  #doorQueue = [];
+  #nextDoorTimestamp = 0;
+  #doorQueue: QueuedDoor[] = [];
   #tickHandlerFun;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
     this.#tickHandlerFun = this.#tickHandler.bind(this);
   }
 
   ready() {
-    if (this.instance.settings.core.noCanvas) {
+    if (this.instance!.settings.core.noCanvas) {
       console.info(SUB_LOG_PREFIX + "canvas is disabled, cannot control doors");
       return;
     }
@@ -42,7 +49,7 @@ export default class DoorHandler extends AbstractSubModule {
   }
 
   unhook() {
-    if (!this.instance.settings.core.noCanvas) {
+    if (!this.instance!.settings.core.noCanvas) {
       this.controllerManager.unregisterTickListener(this.#tickHandlerFun);
     }
     super.unhook();
@@ -52,11 +59,8 @@ export default class DoorHandler extends AbstractSubModule {
     return [...super.moduleDependencies, ControllerManager.name];
   }
 
-  /**
-   * @returns {ControllerManager}
-   */
-  get controllerManager() {
-    return this.instance.modules[ControllerManager.name];
+  get controllerManager(): ControllerManager {
+    return Reflect.get(this.instance!.modules, ControllerManager.name) as ControllerManager;
   }
 
   /**
@@ -74,9 +78,10 @@ export default class DoorHandler extends AbstractSubModule {
     this.#processDoorQueue(now);
   }
 
-  #processDoorQueue(now) {
+  #processDoorQueue(now: number): void {
     if (this.#nextDoorTimestamp <= now && this.#doorQueue.length > 0) {
       const doorCR = this.#doorQueue.shift();
+      if (!doorCR) return;
       console.debug(
         SUB_LOG_PREFIX +
           `${doorCR.player.name}[${doorCR.token.name}]: toggling the door `,
@@ -92,8 +97,9 @@ export default class DoorHandler extends AbstractSubModule {
   /**
    * @param {Keypad} keypad
    */
-  #enqueueDoors(keypad) {
+  #enqueueDoors(keypad: Keypad): void {
     const player = keypad.player;
+    if (!player) return;
     const token = TokenUtil.getTokenFor(player);
     const tokenBounds = token.bounds;
 
