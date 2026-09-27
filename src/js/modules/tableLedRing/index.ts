@@ -17,22 +17,22 @@ import { LOG_PREFIX } from "../../settings/constants";
 import AbstractSubModule from "../AbstractSubModule";
 import Socket from "../socket";
 import { createAmbilightMessage } from "../../utils/protocol";
+import type { TableLEDRingHandler } from "./TableLEDRingHandler";
 
 const LOG_SUB_PREFIX = `${LOG_PREFIX}TableLEDRing: `;
 
 export default class TableLEDRing extends AbstractSubModule {
-  #updateLEDsTimer = null;
-  /** @type {import("./TableLEDRingHandler").TableLEDRingHandler[]} */
-  #handlers = [];
+  #updateLEDsTimer: ReturnType<typeof setInterval> | null = null;
+  #handlers: TableLEDRingHandler[] = [];
   #tableLEDsLastSent = "";
 
   ready() {
     // A GM can connect to Socket for controller discovery while table
     // features remain disabled.
-    if (!this.instance.settings.enabled) return;
+    if (!this.instance!.settings.enabled) return;
     this.#updateLEDsTimer = setInterval(
       this.#updateLEDs.bind(this),
-      1000 / this.instance.settings.ambilight.fps,
+      1000 / this.instance!.settings.ambilight.fps,
     );
   }
 
@@ -48,20 +48,16 @@ export default class TableLEDRing extends AbstractSubModule {
     return [...super.moduleDependencies, Socket.name];
   }
 
-  /**
-   * @returns {Socket}
-   */
-  get socket() {
-    return this.instance.modules[Socket.name];
+  get socket(): Socket {
+    return Reflect.get(this.instance!.modules, Socket.name) as Socket;
   }
 
-  async #updateLEDs() {
+  async #updateLEDs(): Promise<void> {
     this.ensureLoaded();
     // Chill, we don't have a connection.
     if (!this.socket || !this.socket.isConnected) return;
 
-    /** @type {import("./TableLEDRingHandler").TableLEDRingHandler} */
-    let handler = null;
+    let handler: TableLEDRingHandler | null = null;
     let highestPriority = -1;
     for (const h of this.#handlers) {
       const prio = h.priority;
@@ -71,26 +67,27 @@ export default class TableLEDRing extends AbstractSubModule {
       }
     }
 
+    if (!handler) return;
     this.#sendTableLEDData(
-      await handler.updateLEDs(this.instance.settings.ambilight.led.count),
+      await handler.updateLEDs(this.instance!.settings.ambilight.led.count),
     );
   }
 
   /**
    * @param {Uint32Array} ledState
    */
-  #sendTableLEDData(ledState) {
+  #sendTableLEDData(ledState: Uint32Array | null): void {
     this.ensureLoaded();
     // Chill, we don't have a connection.
     if (!this.socket.isConnected) return;
     // enabled and we have data?
-    if (ledState === null || !this.instance.settings.ambilight.enabled) {
+    if (ledState === null || !this.instance!.settings.ambilight.enabled) {
       return;
     }
     const data = JSON.stringify(
       createAmbilightMessage(
-        this.instance.settings.ambilight.target,
-        this.instance.settings.ambilight.universe,
+        this.instance!.settings.ambilight.target,
+        this.instance!.settings.ambilight.universe,
         ledState,
       ),
     );
@@ -110,7 +107,7 @@ export default class TableLEDRing extends AbstractSubModule {
   /**
    * @param {import("./TableLEDRingHandler").TableLEDRingHandler} handler
    */
-  registerHandler(handler) {
+  registerHandler(handler: TableLEDRingHandler): void {
     if (!this.#handlers.includes(handler)) {
       this.#handlers.push(handler);
     }
@@ -119,7 +116,7 @@ export default class TableLEDRing extends AbstractSubModule {
   /**
    * @param {import("./TableLEDRingHandler").TableLEDRingHandler} handler
    */
-  unregisterHandler(handler) {
+  unregisterHandler(handler: TableLEDRingHandler): void {
     this.#handlers = this.#handlers.filter((h) => h !== handler);
   }
 }

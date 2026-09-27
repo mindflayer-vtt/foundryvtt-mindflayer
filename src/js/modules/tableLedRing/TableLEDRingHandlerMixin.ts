@@ -13,13 +13,16 @@
  * see <https://www.gnu.org/licenses/>.
  */
 "use strict";
+import type { TableLEDRingHandler as LEDHandler } from "./TableLEDRingHandler";
+
+type Constructor = new (...args: any[]) => object;
 
 /**
  *
  * @mixin
  */
-export const TableLEDRingHandlerMixin = (S) => {
-  return class TableLEDRingHandler extends S {
+export const TableLEDRingHandlerMixin = <TBase extends Constructor>(S: TBase) => {
+  return class TableLEDRingHandler extends S implements LEDHandler {
     /**
      * @returns {number} >= 0
      */
@@ -32,7 +35,7 @@ export const TableLEDRingHandlerMixin = (S) => {
      * @param {number} count the number of leds in the table
      * @returns {Promise<Uint32Array>} with 3 entries per LED (red, green, blue)
      */
-    async updateLEDs(count) {
+    async updateLEDs(count: number) {
       return new Uint32Array(count * 3);
     }
   };

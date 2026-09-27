@@ -166,13 +166,21 @@ describe("table LED ring arbitration", () => {
     }
   });
 
+  test("waits safely when no LED handler is registered", async () => {
+    const { ring, socket } = createRing();
+    ring.ready();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(socket.send).not.toHaveBeenCalled();
+    ring.unhook();
+  });
+
   test("selects the highest-priority handler and sends only changed states", async () => {
     const { ring, socket } = createRing();
     const low = { priority: 1, updateLEDs: vi.fn(async () => new Uint32Array([1, 2, 3, 4, 5, 6])) };
     const high = { priority: 10, updateLEDs: vi.fn(async () => new Uint32Array([6, 5, 4, 3, 2, 1])) };
-    ring.registerHandler(low as any);
-    ring.registerHandler(high as any);
-    ring.registerHandler(high as any);
+    ring.registerHandler(low);
+    ring.registerHandler(high);
+    ring.registerHandler(high);
     ring.ready();
     await vi.advanceTimersByTimeAsync(100);
     expect(low.updateLEDs).not.toHaveBeenCalled();
@@ -183,7 +191,7 @@ describe("table LED ring arbitration", () => {
     });
     await vi.advanceTimersByTimeAsync(100);
     expect(socket.send).toHaveBeenCalledOnce();
-    ring.unregisterHandler(high as any);
+    ring.unregisterHandler(high);
     await vi.advanceTimersByTimeAsync(100);
     expect(low.updateLEDs).toHaveBeenCalledOnce();
     expect(socket.send).toHaveBeenCalledTimes(2);
@@ -193,7 +201,7 @@ describe("table LED ring arbitration", () => {
   test("does not run without the module connection setting or send while unavailable", async () => {
     const { ring, socket } = createRing(false);
     const handler = { priority: 1, updateLEDs: vi.fn(async () => new Uint32Array([1, 2, 3, 4, 5, 6])) };
-    ring.registerHandler(handler as any);
+    ring.registerHandler(handler);
     ring.ready();
     await vi.advanceTimersByTimeAsync(100);
     expect(handler.updateLEDs).toHaveBeenCalledOnce();
@@ -219,7 +227,7 @@ describe("table LED ring arbitration", () => {
       priority: 1,
       updateLEDs: vi.fn(async () => new Uint32Array([1, 2, 3, 4, 5, 6])),
     };
-    ring.registerHandler(handler as any);
+    ring.registerHandler(handler);
     ring.ready();
     await vi.advanceTimersByTimeAsync(100);
     expect(socket.send).toHaveBeenCalledOnce();
