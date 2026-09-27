@@ -120,6 +120,34 @@ test.describe("real Foundry compatibility", () => {
         "controller-id": "disabled-gm-controller",
       });
     });
+    const disabledLEDState = await page.evaluate(() => {
+      const instance = game.modules.get("mindflayer-token-controller").instance;
+      const keypad = instance.modules.ControllerManager.keypads[0];
+      const before = keypad.getLEDState();
+      instance.modules.Socket._dispatch({
+        type: "led-state",
+        "controller-id": "disabled-gm-controller",
+        deviceAuthenticated: true,
+        appliedLeds: {
+          led1: { r: 1, g: 2, b: 3 },
+          led2: { r: 4, g: 5, b: 6 },
+        },
+      });
+      const confirmed = keypad.getLEDState();
+      instance.modules.Socket._dispatch({
+        type: "led-state",
+        "controller-id": "disabled-gm-controller",
+        deviceAuthenticated: true,
+        appliedLeds: null,
+      });
+      return { before, confirmed, pending: keypad.getLEDState() };
+    });
+    expect(disabledLEDState.before.current).toBeNull();
+    expect(disabledLEDState.confirmed).toMatchObject({
+      current: ["#010203", "#040506"], matches: false,
+    });
+    expect(disabledLEDState.pending.current).toBeNull();
+    expect(disabledLEDState.pending.matches).toBeNull();
 
     await page.evaluate(() => {
       const menu = game.settings.menus.get(

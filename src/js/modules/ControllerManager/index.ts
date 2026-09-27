@@ -38,13 +38,16 @@ export default class ControllerManager extends AbstractSubModule {
 
   #onRegisterFun = null;
   #onKeyEventFun = null;
+  #onLEDStateFun = null;
 
   constructor(instance) {
     super(instance);
     this.#onRegisterFun = this.#onRegisterHandler.bind(this);
     this.#onKeyEventFun = this.#onKeyEventHandler.bind(this);
+    this.#onLEDStateFun = this.#onLEDStateHandler.bind(this);
     this.socket.registerListener("registration", this.#onRegisterFun);
     this.socket.registerListener("key-event", this.#onKeyEventFun);
+    this.socket.registerListener("led-state", this.#onLEDStateFun);
   }
 
   ready() {
@@ -59,6 +62,7 @@ export default class ControllerManager extends AbstractSubModule {
     this.#tickThread = null;
     this.socket.unregisterListener("registration", this.#onRegisterFun);
     this.socket.unregisterListener("key-event", this.#onKeyEventFun);
+    this.socket.unregisterListener("led-state", this.#onLEDStateFun);
     this.#tickListeners = [];
     super.unhook();
   }
@@ -92,6 +96,9 @@ export default class ControllerManager extends AbstractSubModule {
     const controllerId = msg["controller-id"];
     if (msg.status === "connected") {
       this.#keypads[controllerId] = new Keypad(this.instance, controllerId);
+      if (msg.deviceAuthenticated === true && Object.hasOwn(msg, "appliedLeds")) {
+        this.#keypads[controllerId].registerLEDState(msg);
+      }
       ui.notifications.info(
         "Mind Flayer: " +
           game.i18n.format("MindFlayer.Notifications.NewClient", {
@@ -121,6 +128,12 @@ export default class ControllerManager extends AbstractSubModule {
       return;
     }
     this.#keypads[controllerId].registerKeyEvent(msg);
+  }
+
+  #onLEDStateHandler(msg) {
+    if (msg.deviceAuthenticated !== true) return;
+    const keypad = this.#keypads[msg["controller-id"]];
+    keypad?.registerLEDState(msg);
   }
 
   #tick() {

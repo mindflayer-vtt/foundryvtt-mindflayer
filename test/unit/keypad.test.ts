@@ -88,6 +88,39 @@ describe("Keypad state", () => {
     expect(pad.getLEDsIfChanged()).toEqual(["#123456", "#abcdef"]);
   });
 
+  test("reports wanted versus confirmed LED state without exposing mutable arrays", () => {
+    const pad = keypad();
+    expect(pad.getLEDState()).toEqual({
+      wanted: ["#123456", "#123456"], current: null, matches: null,
+    });
+    pad.registerLEDState({
+      appliedLeds: {
+        led1: { r: 18, g: 52, b: 86 },
+        led2: { r: 18, g: 52, b: 86 },
+      },
+    });
+    expect(pad.getLEDState()).toEqual({
+      wanted: ["#123456", "#123456"],
+      current: ["#123456", "#123456"], matches: true,
+    });
+    const snapshot = pad.getLEDState();
+    snapshot.current[0] = "#000000";
+    snapshot.wanted[0] = "#000000";
+    expect(pad.getLEDState().matches).toBe(true);
+    pad.registerLEDState({ appliedLeds: { led1: { r: -1, g: 0, b: 0 }, led2: { r: 0, g: 0, b: 0 } } });
+    expect(pad.getLEDState().matches).toBe(true);
+
+    pad.setLED(1, "#ABCDEF");
+    expect(pad.getLEDState()).toEqual({
+      wanted: ["#123456", "#ABCDEF"],
+      current: ["#123456", "#123456"], matches: false,
+    });
+    pad.registerLEDState({ appliedLeds: null });
+    expect(pad.getLEDState()).toEqual({
+      wanted: ["#123456", "#ABCDEF"], current: null, matches: null,
+    });
+  });
+
   test("uses legacy player colors, unassigned defaults, and rejects unknown LED indexes", () => {
     const instance = { settings: { settings: { mappings: { player: "controller" } } } };
     game.users.contents = [{ id: "player", name: "Player", data: { color: "#654321" } }];

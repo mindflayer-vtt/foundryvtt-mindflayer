@@ -47,6 +47,8 @@ export default class Keypad {
    * @returns {[string, string]}
    */
   #ledState = ["#000000", "#000000"];
+  /** Confirmed by the server after device acknowledgement; null means unknown. */
+  #currentLEDState: [string, string] | null = null;
 
   constructor(instance: any, controllerId: string) {
     this.#instance = instance;
@@ -243,7 +245,7 @@ export default class Keypad {
   }
 
   /**
-   * Get the current LED state, if they were changed since the last call to this method
+   * Get wanted LED colours, if changed since the last send.
    *
    * @returns {string[] | null} null if the values have not changed
    */
@@ -256,11 +258,47 @@ export default class Keypad {
   }
 
   /**
-   * Get the current LED state
+   * Get wanted LED colours. Use getLEDState() to compare with confirmation.
    *
    * @returns {string[]}
    */
   peekLEDs() {
     return this.#ledState;
+  }
+
+  /**
+   * Record the server's latest device-confirmed LED state. A null report
+   * means the command is pending or the device cannot confirm it.
+   */
+  registerLEDState({ appliedLeds }) {
+    if (appliedLeds === null) {
+      this.#currentLEDState = null;
+      return;
+    }
+    const colors = [appliedLeds?.led1, appliedLeds?.led2];
+    if (!colors.every((color) =>
+      color && [color.r, color.g, color.b].every((channel) =>
+        Number.isInteger(channel) && channel >= 0 && channel <= 255,
+      ))) return;
+    this.#currentLEDState = colors.map((color) =>
+      `#${[color.r, color.g, color.b]
+        .map((channel) => channel.toString(16).padStart(2, "0"))
+        .join("")}`.toUpperCase(),
+    ) as [string, string];
+  }
+
+  /**
+   * Snapshot wanted colours and confirmed colours. `matches` is null while
+   * the current physical state has not been confirmed by the server.
+   */
+  getLEDState() {
+    const wanted = [...this.#ledState];
+    const current = this.#currentLEDState === null ? null : [...this.#currentLEDState];
+    return {
+      wanted,
+      current,
+      matches: current === null ? null :
+        current.every((color, index) => color === wanted[index].toUpperCase()),
+    };
   }
 }

@@ -49,6 +49,31 @@ describe("Socket to ControllerManager flow", () => {
     expect(manager.keypads).toHaveLength(1);
   });
 
+  test("routes LED acknowledgements to the matching keypad and reads registration snapshots", () => {
+    const { socket, manager } = createSystem();
+    game.users.contents = [{ id: "p1", name: "One", color: "#112233" }, { id: "p2", name: "Two", color: "#445566" }];
+    const appliedLeds = {
+      led1: { r: 17, g: 34, b: 51 },
+      led2: { r: 68, g: 85, b: 102 },
+    };
+    socket._dispatch({ type: "led-state", "controller-id": "unknown", deviceAuthenticated: true, appliedLeds });
+    socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "one", deviceAuthenticated: true, appliedLeds });
+    socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "two" });
+    expect(manager.keypads[0].getLEDState()).toEqual({
+      wanted: ["#112233", "#112233"], current: ["#112233", "#445566"], matches: false,
+    });
+    expect(manager.keypads[1].getLEDState().current).toBeNull();
+    socket._dispatch({ type: "led-state", "controller-id": "one", deviceAuthenticated: true, appliedLeds: null });
+    expect(manager.keypads[0].getLEDState().current).toBeNull();
+    socket._dispatch({ type: "led-state", "controller-id": "one", deviceAuthenticated: false, appliedLeds });
+    expect(manager.keypads[0].getLEDState().current).toBeNull();
+    socket._dispatch({ type: "led-state", "controller-id": "two", deviceAuthenticated: true, appliedLeds });
+    expect(manager.keypads[1].getLEDState().current).toEqual(["#112233", "#445566"]);
+    expect(manager.keypads[0].getLEDState().current).toBeNull();
+    manager.unhook();
+    expect(() => socket._dispatch({ type: "led-state", "controller-id": "two", deviceAuthenticated: true, appliedLeds })).not.toThrow();
+  });
+
   test("ticks listeners, removes a throwing listener, sends LEDs, and cleans up", () => {
     vi.useFakeTimers();
     const { socket, manager } = createSystem();
@@ -72,7 +97,7 @@ describe("Socket to ControllerManager flow", () => {
     expect(healthy).toHaveBeenCalledTimes(2);
     manager.unregisterTickListener(healthy);
     manager.unhook();
-    expect(unregister.mock.calls.map((call) => call[0])).toEqual(["registration", "key-event"]);
+    expect(unregister.mock.calls.map((call) => call[0])).toEqual(["registration", "key-event", "led-state"]);
     vi.advanceTimersByTime(100);
     expect(healthy).toHaveBeenCalledTimes(2);
     socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "late" });
