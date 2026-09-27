@@ -34,7 +34,7 @@ interface ContextRequire {
 function importAll(contextRequire: ContextRequire): Array<{ default: ModuleClass }> {
   return contextRequire.keys().map((module: string) => contextRequire(module));
 }
-const subModules = importAll((require as any).context("./", true, /\/index\.ts$/) as ContextRequire);
+const subModules = importAll((require as unknown as NodeRequire).context("./", true, /\/index\.ts$/) as ContextRequire);
 
 let modulePlan: ModulePlan<{ default: ModuleClass }> | null = null;
 

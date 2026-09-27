@@ -8,7 +8,7 @@ export default defineConfig({
       transform(code, id) {
         if (id.endsWith("/src/js/modules/loader.ts")) {
           return code.replace(
-            '(require as any).context("./", true, /\\/index\\.ts$/)',
+            '(require as unknown as NodeRequire).context("./", true, /\\/index\\.ts$/)',
             "globalThis.__webpackRequireContext",
           );
         }
