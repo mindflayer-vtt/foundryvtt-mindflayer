@@ -13,18 +13,16 @@
  * see <https://www.gnu.org/licenses/>.
  */
 "use strict";
+import type MindFlayer from "../MindFlayer";
 
 export default class AbstractSubModule {
   #loaded = false;
-  /**
-   * @type {import("../MindFlayer").default | null}
-   */
-  #instance = null;
+  #instance: MindFlayer | null = null;
 
   /**
    * @returns {string[]}
    */
-  static get moduleDependencies() {
+  static get moduleDependencies(): string[] {
     return [];
   }
 
@@ -34,11 +32,11 @@ export default class AbstractSubModule {
    * @param {Mindflayer} instance the instance to start
    * @returns {boolean} if true the module should be loaded
    */
-  static shouldStart(instance) {
+  static shouldStart(instance: MindFlayer): boolean {
     return instance.settings.enabled;
   }
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     this.#instance = instance;
     this.#loaded = true;
   }
@@ -46,7 +44,7 @@ export default class AbstractSubModule {
   /**
    * @returns {MindFlayer}
    */
-  get instance() {
+  get instance(): MindFlayer | null {
     return this.#instance;
   }
 

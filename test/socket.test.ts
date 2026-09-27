@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 vi.mock("../src/js/MindFlayer", () => ({ default: class MindFlayer {} }));
 
 import Socket from "../src/js/modules/socket";
+import type MindFlayer from "../src/js/MindFlayer";
 import protocol from "./fixtures/protocol.json";
+
+function createSocket(instance: object) {
+  return new Socket(instance as MindFlayer);
+}
 
 class FakeWebSocket {
   static instances = [];
@@ -41,7 +46,7 @@ describe("Foundry WebSocket boundary", () => {
   });
 
   test("connects to configured URL and registers the receiver with players", () => {
-    const socket = new Socket({
+    const socket = createSocket({
       settings: {
         enabled: true,
         websocket: { url: "wss://server/ws", host: "server", port: 10443, path: "/ws" },
@@ -61,7 +66,7 @@ describe("Foundry WebSocket boundary", () => {
     { isGM: false, connections: 0 },
   ])("connects with Mindflayer disabled only for GM=$isGM", ({ isGM, connections }) => {
     (globalThis as any).game.user = { isGM };
-    const socket = new Socket({
+    const socket = createSocket({
       settings: { enabled: false, websocket: { url: "wss://server/ws" } },
     });
     socket.ready();
@@ -69,7 +74,7 @@ describe("Foundry WebSocket boundary", () => {
   });
 
   test("dispatches parsed messages, isolates handler errors, and ignores unsupported messages", () => {
-    const socket = new Socket({ settings: { enabled: false } });
+    const socket = createSocket({ settings: { enabled: false } });
     const first = vi.fn(() => { throw new Error("handler failure"); });
     const second = vi.fn();
     socket.registerListener("key-event", first);
@@ -84,7 +89,7 @@ describe("Foundry WebSocket boundary", () => {
   });
 
   test("preserves canonical payloads for every message crossing the Foundry socket", () => {
-    const socket = new Socket({ settings: { enabled: false } });
+    const socket = createSocket({ settings: { enabled: false } });
     for (const message of [
       protocol.controllerRegistration,
       protocol.keyEvent,
@@ -101,12 +106,12 @@ describe("Foundry WebSocket boundary", () => {
   });
 
   test("propagates malformed JSON as the existing implementation does", () => {
-    const socket = new Socket({ settings: { enabled: false } });
+    const socket = createSocket({ settings: { enabled: false } });
     expect(() => socket._onmessage({ data: "{" } as any)).toThrow(SyntaxError);
   });
 
   test("registers, unregisters, and isolates multiple listeners", () => {
-    const socket = new Socket({ settings: { enabled: false } });
+    const socket = createSocket({ settings: { enabled: false } });
     const first = vi.fn();
     const second = vi.fn();
     socket.registerListener("key-event", first);
@@ -119,13 +124,13 @@ describe("Foundry WebSocket boundary", () => {
   });
 
   test("contains dispatch failures raised outside individual handlers", () => {
-    const socket = new Socket({ settings: { enabled: false } });
+    const socket = createSocket({ settings: { enabled: false } });
     vi.spyOn(socket, "_dispatch").mockImplementation(() => { throw new Error("dispatch"); });
     expect(() => socket._onmessage({ data: JSON.stringify({ type: "event" }) } as any)).not.toThrow();
   });
 
   test("sends only while connected and reports connection state", () => {
-    const socket = new Socket({
+    const socket = createSocket({
       settings: { enabled: true, websocket: { url: "wss://server/ws" } },
     });
     socket.ready();
@@ -140,7 +145,7 @@ describe("Foundry WebSocket boundary", () => {
 
   test("reconnects after close but not after unload", () => {
     vi.useFakeTimers();
-    const socket = new Socket({
+    const socket = createSocket({
       settings: { enabled: true, websocket: { url: "wss://server/ws" } },
     });
     socket.ready();
@@ -157,7 +162,7 @@ describe("Foundry WebSocket boundary", () => {
   });
 
   test("closes on connection error and cleans up on unhook", () => {
-    const socket = new Socket({
+    const socket = createSocket({
       settings: { enabled: true, websocket: { url: "wss://server/ws" } },
     });
     socket.ready();

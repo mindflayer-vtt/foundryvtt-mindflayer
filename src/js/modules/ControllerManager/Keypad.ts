@@ -16,7 +16,8 @@
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
 import Key from "./Key";
 import * as TokenUtil from "../../utils/tokenUtil";
-import type { LEDStateReport, RGBColor } from "../../utils/protocol";
+import type { RGBColor } from "../../utils/protocol";
+import type MindFlayer from "../../MindFlayer";
 
 interface KeypadPlayer {
   id: string;
@@ -25,15 +26,11 @@ interface KeypadPlayer {
   data?: { color: string };
 }
 
-interface KeypadInstance {
-  settings: { settings: { mappings: Record<string, string> } };
-}
-
 /**
  * Keypad class representing a keypad
  */
 export default class Keypad {
-  #instance: KeypadInstance;
+  #instance: MindFlayer;
   #controllerId: string;
   #rawState: Record<string, Key> = {
     Q: new Key(),
@@ -59,7 +56,7 @@ export default class Keypad {
   /** Confirmed by the server after device acknowledgement; null means unknown. */
   #currentLEDState: [string, string] | null = null;
 
-  constructor(instance: KeypadInstance, controllerId: string) {
+  constructor(instance: MindFlayer, controllerId: string) {
     this.#instance = instance;
     this.#controllerId = controllerId;
     this.setDefaultLEDColor();
@@ -282,17 +279,22 @@ export default class Keypad {
    * Record the server's latest device-confirmed LED state. A null report
    * means the command is pending or the device cannot confirm it.
    */
-  registerLEDState({ appliedLeds }: LEDStateReport): void {
+  registerLEDState({ appliedLeds }: { appliedLeds?: unknown }): void {
     if (appliedLeds === null) {
       this.#currentLEDState = null;
       return;
     }
-    const led1 = appliedLeds?.led1;
-    const led2 = appliedLeds?.led2;
-    const valid = (color: RGBColor | undefined): color is RGBColor =>
-      color !== undefined && [color.r, color.g, color.b].every((channel) =>
-        Number.isInteger(channel) && channel >= 0 && channel <= 255,
-      );
+    if (typeof appliedLeds !== "object") return;
+    const led1: unknown = Reflect.get(appliedLeds, "led1");
+    const led2: unknown = Reflect.get(appliedLeds, "led2");
+    const valid = (color: unknown): color is RGBColor => {
+      if (typeof color !== "object" || color === null) return false;
+      return ["r", "g", "b"].every((channelName) => {
+        const channel: unknown = Reflect.get(color, channelName);
+        return typeof channel === "number" && Number.isInteger(channel) &&
+          channel >= 0 && channel <= 255;
+      });
+    };
     if (!valid(led1) || !valid(led2)) return;
     const toHex = (color: RGBColor) =>
       `#${[color.r, color.g, color.b]

@@ -8,6 +8,7 @@ import Socket from "../../src/js/modules/socket";
 import TableLEDRing from "../../src/js/modules/tableLedRing";
 import { TableLEDRingHandlerMixin } from "../../src/js/modules/tableLedRing/TableLEDRingHandlerMixin";
 import Timer from "../../src/js/modules/timer";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 describe("combat keypad LED feedback", () => {
   function keypad(playerId: string) {
@@ -134,11 +135,11 @@ describe("combat keypad LED feedback", () => {
 describe("table LED ring arbitration", () => {
   beforeEach(() => vi.useFakeTimers());
 
-  function createRing(enabled = true) {
+  function createRing(enabled = true, moduleEnabled = true) {
     const socket = { isConnected: true, send: vi.fn() };
     const instance = {
       settings: {
-        enabled: true,
+        enabled: moduleEnabled,
         ambilight: {
           enabled,
           fps: 10,
@@ -149,14 +150,13 @@ describe("table LED ring arbitration", () => {
       },
       modules: { [Socket.name]: socket },
     };
-    return { ring: new TableLEDRing(instance), socket };
+    return { ring: new TableLEDRing(instance as unknown as MindFlayer), socket };
   }
 
   test("does not start when a GM only connects for controller discovery", async () => {
-    const { ring } = createRing();
+    const { ring } = createRing(true, false);
     const priorUser = game.user;
     game.user = { isGM: true } as any;
-    ring.instance.settings.enabled = false;
     try {
       ring.ready();
       expect(vi.getTimerCount()).toBe(0);

@@ -23,8 +23,7 @@ const WRAP_Application__activateCoreListeners =
   "foundry.appv1.api.Application.prototype._activateCoreListeners";
 
 export default class MindFlayer {
-  /** @type {settingsObj} */
-  #settings = null;
+  #settings: typeof settingsObj;
   /** @type {AbstractSubModule[]} */
   #modules = [];
 

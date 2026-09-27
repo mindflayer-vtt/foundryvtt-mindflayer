@@ -1,10 +1,11 @@
 import { describe, expect, test } from "vitest";
 import Keypad from "../../src/js/modules/ControllerManager/Keypad";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 function keypad() {
   const instance = { settings: { settings: { mappings: { player: "controller" } } } };
   game.users.contents = [{ id: "player", name: "Player", color: "#123456" }];
-  return new Keypad(instance, "controller");
+  return new Keypad(instance as unknown as MindFlayer, "controller");
 }
 
 describe("Keypad state", () => {
@@ -124,9 +125,9 @@ describe("Keypad state", () => {
   test("uses legacy player colors, unassigned defaults, and rejects unknown LED indexes", () => {
     const instance = { settings: { settings: { mappings: { player: "controller" } } } };
     game.users.contents = [{ id: "player", name: "Player", data: { color: "#654321" } }];
-    const assigned = new Keypad(instance, "controller");
+    const assigned = new Keypad(instance as unknown as MindFlayer, "controller");
     expect(assigned.peekLEDs()).toEqual(["#654321", "#654321"]);
-    const unassigned = new Keypad(instance, "other");
+    const unassigned = new Keypad(instance as unknown as MindFlayer, "other");
     expect(unassigned.peekLEDs()).toEqual(["#00FF00", "#000000"]);
     unassigned.getLEDsIfChanged();
     unassigned.setLED(2, "#ffffff");
@@ -136,7 +137,7 @@ describe("Keypad state", () => {
 
   test("returns no token without a player or initialized canvas", () => {
     const instance = { settings: { settings: { mappings: {} } } };
-    const pad = new Keypad(instance, "controller");
+    const pad = new Keypad(instance as unknown as MindFlayer, "controller");
     expect(pad.player).toBeNull();
     expect(pad.token).toBeNull();
     instance.settings.settings.mappings = { player: "controller" };

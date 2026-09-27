@@ -6,6 +6,7 @@ import PlayerLogin from "../../src/js/modules/playerLogin";
 import Socket from "../../src/js/modules/socket";
 import SocketlibWrapper from "../../src/js/modules/socketlib";
 import { SOCKETLIB_TIMER_ADD } from "../../src/js/modules/timer";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 function createLogin() {
   const listeners = new Map<string, (message: any) => void>();
@@ -27,7 +28,7 @@ function createLogin() {
     modules: { [Socket.name]: socket, [SocketlibWrapper.name]: socketlib },
   };
   return {
-    login: new PlayerLogin(instance), listeners, provided, socket, socketlib, settings,
+    login: new PlayerLogin(instance as unknown as MindFlayer), listeners, provided, socket, socketlib, settings,
   };
 }
 
@@ -44,15 +45,20 @@ describe("legacy player self-login flow", () => {
     );
   });
 
-  test("updates mappings only on the GM client", () => {
+  test("persists mappings only on the GM client", async () => {
     const { login, provided, settings } = createLogin();
     login.ready();
     const registration = provided.get(SOCKETLIB_TIMER_ADD)!;
-    registration("controller-a", "player-a");
-    expect(settings.settings.mappings).toEqual({ "player-a": "controller-a" });
+    await registration("controller-a", "player-a");
+    expect(game.settings.set).toHaveBeenCalledWith(
+      "mindflayer-token-controller",
+      "settings",
+      { mappings: { "player-a": "controller-a" } },
+    );
+    expect(settings.settings.mappings).toEqual({});
     game.user.isGM = false;
-    registration("controller-b", "player-b");
-    expect(settings.settings.mappings).toEqual({ "player-a": "controller-a" });
+    await registration("controller-b", "player-b");
+    expect(game.settings.set).toHaveBeenCalledTimes(1);
   });
 
   test("unregisters the exact socket listener and RPC name on unload", () => {

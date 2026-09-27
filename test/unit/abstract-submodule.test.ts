@@ -1,10 +1,11 @@
 import { describe, expect, test } from "vitest";
 import AbstractSubModule from "../../src/js/modules/AbstractSubModule";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 describe("AbstractSubModule", () => {
   test("retains its instance while loaded and releases it on unhook", () => {
     const owner = { settings: { enabled: true } };
-    const module = new AbstractSubModule(owner);
+    const module = new AbstractSubModule(owner as MindFlayer);
     expect(module.loaded).toBe(true);
     expect(module.instance).toBe(owner);
     expect(() => module.ensureLoaded()).not.toThrow();

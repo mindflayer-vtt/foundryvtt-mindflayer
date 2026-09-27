@@ -1,16 +1,18 @@
 import { describe, expect, test, vi } from "vitest";
 import Socket from "../../src/js/modules/socket";
 import ControllerManager from "../../src/js/modules/ControllerManager";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 function createSystem() {
   const instance = {
     settings: { enabled: false, settings: { mappings: { p1: "one", p2: "two" } } },
     modules: {},
   };
-  const socket = new Socket(instance);
+  const owner = instance as MindFlayer;
+  const socket = new Socket(owner);
   vi.spyOn(socket, "send").mockImplementation(() => {});
   instance.modules[Socket.name] = socket;
-  const manager = new ControllerManager(instance);
+  const manager = new ControllerManager(owner);
   instance.modules[ControllerManager.name] = manager;
   return { instance, socket, manager };
 }

@@ -17,14 +17,17 @@ import { LOG_PREFIX } from "../../settings/constants";
 import { hexToRgb } from "../../utils/color";
 import AbstractSubModule from "../AbstractSubModule";
 import { default as Socket } from "../socket";
+import type { SocketListener, SocketMessage } from "../socket";
 import Keypad from "./Keypad";
 import { createControllerConfiguration } from "../../utils/protocol";
+import type MindFlayer from "../../MindFlayer";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "ControllerManager: ";
 const CONTROLLER_FPS = 60;
+type TickListener = (frameTime: number, keypads: Record<string, Keypad>) => void;
 
 export default class ControllerManager extends AbstractSubModule {
-  static shouldStart(instance) {
+  static shouldStart(instance: MindFlayer): boolean {
     return Socket.shouldStart(instance);
   }
 
@@ -33,14 +36,14 @@ export default class ControllerManager extends AbstractSubModule {
    */
   #keypads: Record<string, Keypad> = {};
 
-  #tickThread = null;
-  #tickListeners = [];
+  #tickThread: number | null = null;
+  #tickListeners: TickListener[] = [];
 
-  #onRegisterFun = null;
-  #onKeyEventFun = null;
-  #onLEDStateFun = null;
+  #onRegisterFun: SocketListener;
+  #onKeyEventFun: SocketListener;
+  #onLEDStateFun: SocketListener;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
     this.#onRegisterFun = this.#onRegisterHandler.bind(this);
     this.#onKeyEventFun = this.#onKeyEventHandler.bind(this);
@@ -58,7 +61,7 @@ export default class ControllerManager extends AbstractSubModule {
   }
 
   unhook() {
-    window.clearInterval(this.#tickThread);
+    if (this.#tickThread !== null) window.clearInterval(this.#tickThread);
     this.#tickThread = null;
     this.socket.unregisterListener("registration", this.#onRegisterFun);
     this.socket.unregisterListener("key-event", this.#onKeyEventFun);
@@ -74,8 +77,10 @@ export default class ControllerManager extends AbstractSubModule {
   /**
    * @returns {Socket}
    */
-  get socket() {
-    return this.instance.modules[Socket.name];
+  get socket(): Socket {
+    const instance = this.instance;
+    if (!instance) throw new ReferenceError("ControllerManager has been unloaded");
+    return (instance.modules as unknown as Record<string, Socket>)[Socket.name];
   }
 
   /**
@@ -85,7 +90,7 @@ export default class ControllerManager extends AbstractSubModule {
     return Object.values(this.#keypads);
   }
 
-  #onRegisterHandler(msg) {
+  #onRegisterHandler(msg: SocketMessage): void {
     if (msg.receiver) {
       console.debug(
         SUB_LOG_PREFIX +
@@ -94,10 +99,13 @@ export default class ControllerManager extends AbstractSubModule {
       return;
     }
     const controllerId = msg["controller-id"];
+    if (typeof controllerId !== "string") return;
     if (msg.status === "connected") {
-      this.#keypads[controllerId] = new Keypad(this.instance, controllerId);
+      const instance = this.instance;
+      if (!instance) return;
+      this.#keypads[controllerId] = new Keypad(instance, controllerId);
       if (msg.deviceAuthenticated === true && Object.hasOwn(msg, "appliedLeds")) {
-        this.#keypads[controllerId].registerLEDState(msg);
+        this.#keypads[controllerId].registerLEDState({ appliedLeds: msg.appliedLeds });
       }
       ui.notifications.info(
         "Mind Flayer: " +
@@ -111,29 +119,32 @@ export default class ControllerManager extends AbstractSubModule {
         "Mind Flayer: " +
           game.i18n.format("MindFlayer.Notifications.ClientDisconnected", {
             controller: controllerId,
-            player: this.#keypads[controllerId].player?.name || "unassigned",
+            player: this.#keypads[controllerId]?.player?.name || "unassigned",
           }),
       );
       delete this.#keypads[controllerId];
     }
   }
 
-  #onKeyEventHandler(msg) {
+  #onKeyEventHandler(msg: SocketMessage): void {
     const controllerId = msg["controller-id"];
-    if (!Object.hasOwn(this.#keypads, controllerId)) {
+    if (typeof controllerId !== "string" || !Object.hasOwn(this.#keypads, controllerId)) {
       console.warn(
         SUB_LOG_PREFIX +
           `Keypad '${controllerId}' sent key-event before registration, ignoring!`,
       );
       return;
     }
-    this.#keypads[controllerId].registerKeyEvent(msg);
+    if (typeof msg.key !== "string" || typeof msg.state !== "string") return;
+    this.#keypads[controllerId].registerKeyEvent({ key: msg.key, state: msg.state });
   }
 
-  #onLEDStateHandler(msg) {
+  #onLEDStateHandler(msg: SocketMessage): void {
     if (msg.deviceAuthenticated !== true) return;
-    const keypad = this.#keypads[msg["controller-id"]];
-    keypad?.registerLEDState(msg);
+    const controllerId = msg["controller-id"];
+    if (typeof controllerId !== "string") return;
+    const keypad = this.#keypads[controllerId];
+    keypad?.registerLEDState({ appliedLeds: msg.appliedLeds });
   }
 
   #tick() {
@@ -163,14 +174,20 @@ export default class ControllerManager extends AbstractSubModule {
       const keypad = this.#keypads[name];
       const leds = keypad.getLEDsIfChanged();
       if (leds) {
+        const led1 = hexToRgb(leds[0]);
+        const led2 = hexToRgb(leds[1]);
+        if (!led1 || !led2) {
+          console.warn(`${SUB_LOG_PREFIX}Invalid LED color for keypad '${keypad.controllerId}'`);
+          continue;
+        }
         console.debug(
           `${SUB_LOG_PREFIX}Sending updated LEDs to keypad '${keypad.controllerId}'`,
         );
         const data = JSON.stringify(
           createControllerConfiguration(
             keypad.controllerId,
-            hexToRgb(leds[0]),
-            hexToRgb(leds[1]),
+            led1,
+            led2,
           ),
         );
         this.socket.send(data);
@@ -178,11 +195,11 @@ export default class ControllerManager extends AbstractSubModule {
     }
   }
 
-  registerTickListener(callback) {
+  registerTickListener(callback: TickListener): void {
     this.#tickListeners.push(callback);
   }
 
-  unregisterTickListener(callback) {
+  unregisterTickListener(callback: TickListener): void {
     this.#tickListeners = this.#tickListeners.filter((c) => c !== callback);
   }
 }

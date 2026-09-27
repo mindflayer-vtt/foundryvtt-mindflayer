@@ -16,25 +16,27 @@
 import { LOG_PREFIX } from "../../settings/constants";
 import AbstractSubModule from "../AbstractSubModule";
 import { createReceiverRegistration } from "../../utils/protocol";
+import type MindFlayer from "../../MindFlayer";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "Socket: ";
+export type SocketMessage = Readonly<Record<string, unknown> & { type: string }>;
+export type SocketListener = (message: SocketMessage) => void;
 
 export default class Socket extends AbstractSubModule {
-  static shouldStart(instance) {
+  static shouldStart(instance: MindFlayer): boolean {
     return super.shouldStart(instance) || game.user?.isGM === true;
   }
 
-  /** @type {WebSocket|null} */
-  #connection = null;
-  #onmessageFun = null;
-  #onopenFun = null;
-  #oncloseFun = null;
-  #onerrorFun = null;
-  #initializeWebsocketFun = null;
-  #reconnectTimeout = null;
-  #handlers = {};
+  #connection: WebSocket | null = null;
+  #onmessageFun: (message: MessageEvent<string>) => void;
+  #onopenFun: (event: Event) => void;
+  #oncloseFun: (event: CloseEvent) => void;
+  #onerrorFun: (event: Event) => void;
+  #initializeWebsocketFun: () => void;
+  #reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  #handlers: Record<string, SocketListener[]> = {};
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
 
     this.#onmessageFun = this._onmessage.bind(this);
@@ -46,7 +48,7 @@ export default class Socket extends AbstractSubModule {
 
   ready() {
     // A dependency can load Socket even when controller discovery is inactive.
-    if (!Socket.shouldStart(this.instance)) return;
+    if (!this.instance || !Socket.shouldStart(this.instance)) return;
     this._initializeWebsocket();
   }
 
@@ -74,56 +76,59 @@ export default class Socket extends AbstractSubModule {
     super.unhook();
   }
 
-  get isConnected() {
+  get isConnected(): boolean {
     return (
       this.#connection !== null &&
       this.#connection.readyState === this.#connection.OPEN
     );
   }
 
-  registerListener(type, callback) {
+  registerListener(type: string, callback: SocketListener): void {
     if (!Array.isArray(this.#handlers[type])) {
       this.#handlers[type] = [];
     }
     this.#handlers[type].push(callback);
   }
 
-  unregisterListener(type, callback) {
+  unregisterListener(type: string, callback: SocketListener): void {
     if (!Array.isArray(this.#handlers[type])) {
       return;
     }
     this.#handlers[type] = this.#handlers[type].filter((c) => c !== callback);
   }
 
-  ensureConnected() {
+  ensureConnected(): WebSocket {
     this.ensureLoaded();
-    if (!this.isConnected) {
+    const connection = this.#connection;
+    if (!connection || connection.readyState !== connection.OPEN) {
       throw new ReferenceError(
         `The module 'Socket' does not have a connection`,
       );
     }
+    return connection;
   }
 
-  send(data) {
-    this.ensureConnected();
-    this.#connection.send(data);
+  send(data: string): void {
+    this.ensureConnected().send(data);
   }
 
-  _initializeWebsocket() {
-    if (!this.loaded) return;
+  _initializeWebsocket(): void {
+    const instance = this.instance;
+    if (!this.loaded || !instance) return;
     this.#reconnectTimeout = null;
-    this.#connection = new WebSocket(this.instance.settings.websocket.url);
-    this.#connection.addEventListener("open", this.#onopenFun);
-    this.#connection.addEventListener("error", this.#onerrorFun);
-    this.#connection.addEventListener("message", this.#onmessageFun);
-    this.#connection.addEventListener("close", this.#oncloseFun);
+    const connection = new WebSocket(instance.settings.websocket.url);
+    this.#connection = connection;
+    connection.addEventListener("open", this.#onopenFun);
+    connection.addEventListener("error", this.#onerrorFun);
+    connection.addEventListener("message", this.#onmessageFun);
+    connection.addEventListener("close", this.#oncloseFun);
   }
 
   /**
    * @param {MessageEvent<any>} message
    */
-  _onmessage(message) {
-    const data = JSON.parse(message.data);
+  _onmessage(message: MessageEvent<string>): void {
+    const data: unknown = JSON.parse(message.data);
     console.debug(SUB_LOG_PREFIX + "Received message: ", data);
     try {
       this._dispatch(data);
@@ -135,13 +140,15 @@ export default class Socket extends AbstractSubModule {
   /**
    * @param {Event} data
    */
-  _onopen(data) {
+  _onopen(data: Event): void {
+    const instance = this.instance;
+    if (!instance) return;
     ui.notifications.info(
       "Mind Flayer: " +
         game.i18n.format("MindFlayer.Notifications.Connected", {
-          host: this.instance.settings.websocket.host,
-          port: this.instance.settings.websocket.port,
-          path: this.instance.settings.websocket.path,
+          host: instance.settings.websocket.host,
+          port: instance.settings.websocket.port,
+          path: instance.settings.websocket.path,
         }),
     );
     console.log(SUB_LOG_PREFIX + "Connected! ", data);
@@ -151,7 +158,7 @@ export default class Socket extends AbstractSubModule {
   /**
    * @param {CloseEvent} evt
    */
-  _onclose(evt) {
+  _onclose(evt: CloseEvent): void {
     this.#connection = null;
     if (this.loaded) {
       ui.notifications.error(
@@ -167,35 +174,41 @@ export default class Socket extends AbstractSubModule {
   /**
    * @param {Event} error
    */
-  _onerror(error) {
+  _onerror(error: Event): void {
     ui.notifications.error(
       "Mind Flayer: " + game.i18n.localize("MindFlayer.Notifications.Error"),
     );
     console.error(SUB_LOG_PREFIX + "Error! ", error);
-    this.#connection.close();
+    this.#connection?.close();
   }
 
-  _dispatch(data) {
-    Object.freeze(data);
-    if (!Object.hasOwn(data, "type")) {
+  _dispatch(data: unknown): void {
+    if (data === null || typeof data !== "object") {
       console.error(SUB_LOG_PREFIX + "Received message without type: ", data);
       return;
     }
-    if (!Array.isArray(this.#handlers[data.type])) {
+    Object.freeze(data);
+    if (!Object.hasOwn(data, "type") || typeof (data as { type?: unknown }).type !== "string") {
+      console.error(SUB_LOG_PREFIX + "Received message without type: ", data);
+      return;
+    }
+    const message = data as SocketMessage;
+    const handlers = this.#handlers[message.type];
+    if (!Array.isArray(handlers)) {
       console.warn(
         SUB_LOG_PREFIX + "Received message with unhandled type: ",
-        data,
+        message,
       );
       return;
     }
-    for (let i = 0; i < this.#handlers[data.type].length; i++) {
-      const callback = this.#handlers[data.type][i];
+    for (let i = 0; i < handlers.length; i++) {
+      const callback = handlers[i];
       try {
-        callback(data);
+        callback(message);
       } catch (err) {
         // ignore and log any errors
         console.warn(
-          SUB_LOG_PREFIX + `Handler [${data.type}][${i}] threw an error: `,
+          SUB_LOG_PREFIX + `Handler [${message.type}][${i}] threw an error: `,
           err,
         );
       }

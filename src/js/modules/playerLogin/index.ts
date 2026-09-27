@@ -17,13 +17,15 @@ import AbstractSubModule from "../AbstractSubModule";
 import { default as Socket } from "../socket";
 import SocketlibWrapper from "../socketlib";
 import { SOCKETLIB_TIMER_ADD } from "../timer";
+import { VTT_MODULE_NAME } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 
 const SOCKETLIB_PLAYER_LOGIN_REGISTER = "PlayerLogin_register";
 
 export default class PlayerLogin extends AbstractSubModule {
   #messageHandlerFun;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
     this.#messageHandlerFun = this.#messageHandler.bind(this);
   }
@@ -63,14 +65,14 @@ export default class PlayerLogin extends AbstractSubModule {
     );
   }
 
-  #register(controllerId, playerId) {
+  async #register(controllerId, playerId) {
     if (!game.user.isGM) {
       return;
     }
     const settings = this.instance.settings.settings;
-
-    settings.mappings[playerId] = controllerId;
-
-    this.instance.settings.settings = settings;
+    await game.settings.set(VTT_MODULE_NAME, "settings", {
+      ...settings,
+      mappings: { ...settings.mappings, [playerId]: controllerId },
+    });
   }
 }
