@@ -25,7 +25,7 @@ describe("token/controller configuration form", () => {
       closeOnSubmit: true,
     });
     const form = new TokenControllerConfig();
-    expect(form.getData({})).toEqual({
+    expect(form.getData({})).toMatchObject({
       playerList: { p1: "One", p2: "Two" },
       mappings: { p1: "controller-a" },
       nested: { keep: true },
@@ -72,6 +72,132 @@ describe("token/controller configuration form", () => {
     resetHandler();
     expect((form as any).reset).toBe(true);
     expect(render).toHaveBeenCalledOnce();
+  });
+
+  test("assigns distinct, stable colors to connected controllers and lights their right LEDs when opened", async () => {
+    const keypads = ["controller-c", "controller-a", "controller-b"].map((controllerId) => ({
+      controllerId,
+      setLED: vi.fn(),
+      setDefaultLEDColor: vi.fn(),
+    }));
+    game.modules.set("mindflayer-token-controller", {
+      instance: { modules: { ControllerManager: { keypads } } },
+    });
+    const form = new TokenControllerConfig();
+    const first = form.getData({}) as any;
+    const colors = first.controllerOptions.map((option: any) => option.color);
+    expect(first.controllerOptions.map((option: any) => option.id)).toEqual([
+      "controller-a", "controller-b", "controller-c",
+    ]);
+    expect(new Set(colors).size).toBe(3);
+    expect(colors).toEqual(["#FF0000", "#00FF00", "#0000FF"]);
+    expect(colors.every((color: string) => /^#[0-9A-F]{6}$/.test(color))).toBe(true);
+    expect(form.getData({}).controllerOptions).toEqual(first.controllerOptions);
+    form.activateListeners({ find: vi.fn(() => ({ click: vi.fn() })) } as any);
+    for (const keypad of keypads) {
+      const color = first.controllerOptions.find((option: any) => option.id === keypad.controllerId).color;
+      expect(keypad.setLED).toHaveBeenCalledWith(1, color);
+      expect(keypad.setLED).not.toHaveBeenCalledWith(0, expect.anything());
+    }
+    await form.close();
+    for (const keypad of keypads) expect(keypad.setDefaultLEDColor).toHaveBeenCalledOnce();
+  });
+
+  test("offers a dropdown row for each user with the selected controller color", () => {
+    game.modules.set("mindflayer-token-controller", {
+      instance: { modules: { ControllerManager: { keypads: [
+        { controllerId: "controller-b", setLED: vi.fn() },
+        { controllerId: "controller-a", setLED: vi.fn() },
+      ] } } },
+    });
+    const data = new TokenControllerConfig().getData({}) as any;
+    expect(data.playerRows).toHaveLength(2);
+    expect(data.playerRows[0]).toMatchObject({ id: "p1", name: "One" });
+    expect(data.playerRows[0].options).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "controller-a", selected: true, color: data.controllerOptions[0].color }),
+      expect.objectContaining({ id: "controller-b", selected: false, color: data.controllerOptions[1].color }),
+    ]));
+    expect(data.playerRows[0].selectedColor).toBe(data.controllerOptions[0].color);
+    expect(data.playerRows[1].selectedColor).toBeNull();
+  });
+
+  test("keeps a saved offline controller available in the dropdown", () => {
+    const data = new TokenControllerConfig().getData({}) as any;
+    expect(data.playerRows[0].options).toContainEqual({
+      id: "controller-a", color: null, label: "controller-a (offline)", selected: true,
+    });
+  });
+
+  test("removes another user's previous assignment when a controller is selected", async () => {
+    const form = new TokenControllerConfig();
+    await (form as any)._updateObject(null, {
+      "mappings[p1]": "controller-a",
+      "mappings[p2]": "controller-a",
+    });
+    expect(game.settings.set).toHaveBeenCalledWith(
+      "mindflayer-token-controller", "settings", { mappings: { p2: "controller-a" } },
+    );
+  });
+
+  test("a newly changed selection wins over a later unchanged dropdown", async () => {
+    game.settings.get.mockImplementation((_scope, key) =>
+      key === "settings" ? { mappings: { p1: "controller-a", p2: "controller-b" } } : undefined,
+    );
+    const form = new TokenControllerConfig();
+    await (form as any)._updateObject(null, {
+      "mappings[p1]": "controller-b",
+      "mappings[p2]": "controller-b",
+    });
+    expect(game.settings.set).toHaveBeenCalledWith(
+      "mindflayer-token-controller", "settings", { mappings: { p1: "controller-b" } },
+    );
+  });
+
+  test("uses the new owner's default LED color after saving a reassignment", async () => {
+    const keypad = {
+      controllerId: "controller-a",
+      peekLEDs: vi.fn(() => ["#123456", "#123456"]),
+      setLED: vi.fn(),
+      setDefaultLEDColor: vi.fn(),
+    };
+    game.modules.set("mindflayer-token-controller", {
+      instance: { modules: { ControllerManager: { keypads: [keypad] } } },
+    });
+    const form = new TokenControllerConfig();
+    form.activateListeners({ find: vi.fn(() => ({ click: vi.fn() })) } as any);
+    await (form as any)._updateObject(null, {
+      "mappings[p1]": "",
+      "mappings[p2]": "controller-a",
+    });
+    keypad.setLED.mockClear();
+    await form.close();
+    expect(keypad.setDefaultLEDColor).toHaveBeenCalledOnce();
+    expect(keypad.setLED).not.toHaveBeenCalledWith(1, "#123456");
+  });
+
+  test("clears another dropdown immediately and updates the visible swatch on reassignment", () => {
+    const listeners = new Map<string, () => void>();
+    const swatches = [
+      { style: { backgroundColor: "" }, hidden: false },
+      { style: { backgroundColor: "" }, hidden: false },
+    ];
+    const selects = [
+      { value: "controller-a", dataset: {}, addEventListener: vi.fn((event, callback) => listeners.set(`p1:${event}`, callback)), closest: () => ({ querySelector: () => swatches[0] }) },
+      { value: "", dataset: {}, addEventListener: vi.fn((event, callback) => listeners.set(`p2:${event}`, callback)), closest: () => ({ querySelector: () => swatches[1] }) },
+    ];
+    game.modules.set("mindflayer-token-controller", {
+      instance: { modules: { ControllerManager: { keypads: [
+        { controllerId: "controller-a", setLED: vi.fn() },
+      ] } } },
+    });
+    const form = new TokenControllerConfig();
+    const html = { find: vi.fn(() => ({ click: vi.fn() })), 0: { querySelectorAll: () => selects } };
+    form.activateListeners(html as any);
+    selects[1].value = "controller-a";
+    listeners.get("p2:change")!();
+    expect(selects[0].value).toBe("");
+    expect(swatches[0].hidden).toBe(true);
+    expect(swatches[1].style.backgroundColor).toMatch(/^#[0-9A-F]{6}$/);
   });
 });
 

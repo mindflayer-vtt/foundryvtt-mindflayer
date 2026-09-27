@@ -106,7 +106,8 @@ test.describe("real Foundry compatibility", () => {
     });
     const config = page.locator("#mindflayer-token-controller-config");
     await expect(config).toBeVisible();
-    await expect(config.locator('input[name^="mappings"]')).toHaveCount(1);
+    await expect(config.locator('select[name^="mappings"]')).toHaveCount(1);
+    await expect(config.locator('input[name^="mappings"]')).toHaveCount(0);
     await page.evaluate(() => globalThis.__mindflayerSmokeConfig.close());
 
     const state = await page.evaluate(async (boundaries) => {
@@ -256,6 +257,40 @@ test.describe("real Foundry compatibility", () => {
           () => instance.modules.ControllerManager.keypads.length === 1,
           "ControllerManager did not register the disposable keypad",
         );
+        const keypad = instance.modules.ControllerManager.keypads[0];
+        const menu = game.settings.menus.get(`${moduleId}.${moduleId}`);
+        const dialog = new menu.type();
+        let controllerDialog;
+        try {
+          dialog.render(true);
+          await waitFor(
+            () => document.querySelector(`#mindflayer-token-controller-config select[name="mappings[${game.user.id}]"]`),
+            "Controller assignment dropdown did not render",
+          );
+          const select = document.querySelector(`#mindflayer-token-controller-config select[name="mappings[${game.user.id}]"]`) as HTMLSelectElement;
+          const option = select.querySelector(`option[value="${controllerId}"]`);
+          const swatch = select.closest(".form-group").querySelector("[data-controller-color]") as HTMLElement;
+          controllerDialog = {
+            selected: select.value,
+            optionLabel: option?.textContent.trim(),
+            optionStyle: option?.getAttribute("style"),
+            swatchColor: swatch?.style.backgroundColor,
+            rightLED: keypad.peekLEDs()[1],
+          };
+          await waitFor(
+            () => globalThis.__mindflayerSockets.some((connection) =>
+              connection.sent.some((payload) => {
+                const message = JSON.parse(payload);
+                return message.type === "configuration" &&
+                  message["controller-id"] === controllerId &&
+                  message.led2?.r === 255 && message.led2?.g === 0 && message.led2?.b === 0;
+              })),
+            "Controller color was not sent to the right LED",
+          );
+        } finally {
+          await dialog.close();
+        }
+        controllerDialog.restoredRightLED = keypad.peekLEDs()[1];
 
         const originalPosition = { x: tokenDocument.x, y: tokenDocument.y };
         socket._dispatch({
@@ -348,6 +383,7 @@ test.describe("real Foundry compatibility", () => {
           tokenMoved:
             movedPosition.x !== originalPosition.x || movedPosition.y !== originalPosition.y,
           keypadCount: instance.modules.ControllerManager.keypads.length,
+          controllerDialog,
           outboundMessages: globalThis.__mindflayerSockets.flatMap((socket) =>
             socket.sent.map((payload) => JSON.parse(payload)),
           ),
@@ -370,7 +406,16 @@ test.describe("real Foundry compatibility", () => {
       torchDisabled: true,
       tokenMoved: true,
       keypadCount: 1,
+      controllerDialog: {
+        selected: "smoke-controller",
+        optionLabel: "● smoke-controller",
+        optionStyle: "color: #FF0000",
+        rightLED: "#FF0000",
+      },
     });
+    expect(behavior.controllerDialog.swatchColor).toBe("rgb(255, 0, 0)");
+    expect(behavior.controllerDialog.restoredRightLED).toMatch(/^#[0-9a-f]{6}$/i);
+    expect(behavior.controllerDialog.restoredRightLED).not.toBe(behavior.controllerDialog.rightLED);
     expect(behavior.cameraAction.x).toEqual(expect.any(Number));
     expect(behavior.cameraAction.y).toEqual(expect.any(Number));
     expect(behavior.cameraAction.scale).toBeGreaterThan(0);

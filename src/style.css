@@ -56,3 +56,16 @@
 #mindflayer-token-controller__start-timer-content .form-fields span {
   flex: 0;
 }
+
+.mindflayer-controller-color {
+  display: inline-block;
+  flex: 0 0 1.1em;
+  width: 1.1em;
+  height: 1.1em;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.mindflayer-controller-color[hidden] {
+  visibility: hidden;
+}

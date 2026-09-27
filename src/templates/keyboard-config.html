@@ -29,16 +29,22 @@
     <div class="tab active" data-tab="general">
       <div class="settings-list">
         <div class="mindflayer-token-controller-settings-container">
-          {{#each playerList as |name key|}}
+          {{#each playerRows as |player|}}
           <div class="form-group">
-            <label>{{name}}</label>
+            <label>{{player.name}}</label>
             <div class="form-fields">
-              <input
-                type="text"
-                name="mappings[{{key}}]"
-                value="{{lookup ../mappings @key }}"
-                data-dtype="String"
-              />
+              <span class="mindflayer-controller-color" data-controller-color
+                {{#unless player.selectedColor}}hidden{{/unless}}
+                {{#if player.selectedColor}}style="background-color: {{player.selectedColor}}"{{/if}}></span>
+              <select name="mappings[{{player.id}}]" data-dtype="String">
+                <option value="">—</option>
+                {{#each player.options as |controller|}}
+                <option value="{{controller.id}}" {{#if controller.selected}}selected{{/if}}
+                  {{#if controller.color}}style="color: {{controller.color}}"{{/if}}>
+                  {{#if controller.color}}● {{/if}}{{controller.label}}
+                </option>
+                {{/each}}
+              </select>
             </div>
           </div>
           {{/each}}
