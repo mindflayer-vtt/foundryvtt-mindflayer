@@ -28,22 +28,24 @@ function managerWith(keypads) {
 }
 
 function instanceWith(manager, extraSettings = {}) {
-  return {
+  const instance = {
     settings: { core: { noCanvas: false }, camera: { control: "focusPlayers" }, ...extraSettings },
     modules: { [ControllerManager.name]: manager },
   };
+  return instance as typeof instance & MindFlayer;
 }
 
 describe("camera control characterization", () => {
   test("starts for enabled clients or the selected managed Beamer", () => {
     const instance = { settings: { enabled: false } };
+    const moduleInstance = instance as typeof instance & MindFlayer;
     game.settings.get.mockReturnValue("display");
     game.user.id = "display";
-    expect(CameraControl.shouldStart(instance)).toBe(true);
+    expect(CameraControl.shouldStart(moduleInstance)).toBe(true);
     game.user.id = "ordinary";
-    expect(CameraControl.shouldStart(instance)).toBe(false);
+    expect(CameraControl.shouldStart(moduleInstance)).toBe(false);
     instance.settings.enabled = true;
-    expect(CameraControl.shouldStart(instance)).toBe(true);
+    expect(CameraControl.shouldStart(moduleInstance)).toBe(true);
   });
 
   test.each([

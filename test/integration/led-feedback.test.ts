@@ -32,7 +32,7 @@ describe("combat keypad LED feedback", () => {
         [Timer.name]: timer,
       },
     };
-    return { indicator: new CombatIndicator(instance), keypads, timer, instance };
+    return { indicator: new CombatIndicator(instance as unknown as MindFlayer), keypads, timer, instance };
   }
 
   test("starts tactical discussion and then marks current, next, and later turns", async () => {
