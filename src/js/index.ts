@@ -1,3 +1,5 @@
+import type MindFlayerInstance from "./MindFlayer";
+
 /**
  * This file is part of the Foundry VTT Module Mindflayer.
  *
@@ -19,18 +21,15 @@
   // Imports
   //
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  const { default: MindFlayer } = require("./MindFlayer");
-  const { setModuleInstance } = require("./utils/module");
+  const { default: MindFlayer } = require("./MindFlayer") as typeof import("./MindFlayer");
+  const { setModuleInstance } = require("./utils/module") as typeof import("./utils/module");
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
   // Globals
   //
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  /**
-   * @type {MindFlayer}
-   */
-  let instance = null;
+  let instance: MindFlayerInstance | null = null;
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -52,6 +51,6 @@
    * Ready hook
    */
   Hooks.once("ready", () => {
-    instance.ready();
+    instance!.ready();
   });
 })();
