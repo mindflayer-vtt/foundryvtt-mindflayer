@@ -34,6 +34,17 @@ function instanceWith(manager, extraSettings = {}) {
 }
 
 describe("camera control characterization", () => {
+  test("starts for enabled clients or the selected managed Beamer", () => {
+    const instance = { settings: { enabled: false } };
+    game.settings.get.mockReturnValue("display");
+    game.user.id = "display";
+    expect(CameraControl.shouldStart(instance)).toBe(true);
+    game.user.id = "ordinary";
+    expect(CameraControl.shouldStart(instance)).toBe(false);
+    instance.settings.enabled = true;
+    expect(CameraControl.shouldStart(instance)).toBe(true);
+  });
+
   test.each([
     ["one player", [{ x: 500, y: 300, w: 100, h: 100 }], { x: 600, y: 600, scale: 1.08 }],
     ["two nearby players", [{ x: 500, y: 300, w: 100, h: 100 }, { x: 700, y: 300, w: 100, h: 100 }], { x: 700, y: 600, scale: 1.08 }],
@@ -109,6 +120,30 @@ describe("camera control characterization", () => {
     expect(libWrapper.unregister).toHaveBeenCalledWith("mindflayer-token-controller", "foundry.canvas.placeables.Token.prototype._onUpdate");
   });
 
+  test("preserves default camera panning in default mode and suppresses it in off mode", async () => {
+    const manager = managerWith([]);
+    const instance = instanceWith(manager);
+    const control = new CameraControl(instance);
+    control.ready();
+    const wrapper = libWrapper.register.mock.calls[0][2];
+    const wrapped = vi.fn(() => "result");
+    instance.settings.camera.control = "default";
+    const defaults = { pan: true };
+    await expect(wrapper(wrapped, {}, defaults, "user")).resolves.toBe("result");
+    expect(defaults.pan).toBe(true);
+    instance.settings.camera.control = "off";
+    const disabled = { pan: true };
+    await wrapper(wrapped, {}, disabled, "user");
+    expect(disabled.pan).toBe(false);
+    expect(canvas.animatePan).not.toHaveBeenCalled();
+  });
+
+  test("does not register the camera wrapper without an initialized canvas", () => {
+    game.canvas.initialized = false;
+    new CameraControl(instanceWith(managerWith([]))).ready();
+    expect(libWrapper.register).not.toHaveBeenCalled();
+  });
+
   test("does nothing when there are no relevant tokens", () => {
     canvas.scene = { dimensions: { sceneRect: { x: 0, y: 0, width: 2000, height: 1000 }, size: 100 } };
     new CameraControl(instanceWith(managerWith([]))).panCamera();
@@ -158,6 +193,41 @@ describe("keypad feature integrations", () => {
     expect(distant.doorControl._onMouseDown).not.toHaveBeenCalled();
     handler.unhook();
     expect(manager.unregisterTickListener).toHaveBeenCalledOnce();
+  });
+
+  test("queues multiple nearby doors and opens at most one every 150ms", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    const token = { id: "hero", name: "Hero", bounds: { left: 100, right: 200, top: 100, bottom: 200 } };
+    const keypad = { player: { id: "player", name: "One" }, isJustDown: vi.fn(() => true) };
+    game.user.getFlag.mockReturnValue("hero");
+    canvas.tokens.placeables = [{ ...token, actor: { testUserPermission: () => true } }];
+    const doors = [0, 1].map(() => ({
+      bounds: { left: 50, right: 70, top: 50, bottom: 70 },
+      doorControl: { _onMouseDown: vi.fn() },
+    }));
+    canvas.walls.doors = doors;
+    const manager = managerWith([keypad]);
+    const handler = new DoorHandler(instanceWith(manager));
+    handler.ready();
+    manager.tick(1_000);
+    expect(doors[0].doorControl._onMouseDown).toHaveBeenCalledOnce();
+    expect(doors[1].doorControl._onMouseDown).not.toHaveBeenCalled();
+    keypad.isJustDown.mockReturnValue(false);
+    manager.tick(1_149);
+    expect(doors[1].doorControl._onMouseDown).not.toHaveBeenCalled();
+    manager.tick(1_150);
+    expect(doors[1].doorControl._onMouseDown).toHaveBeenCalledOnce();
+    handler.unhook();
+  });
+
+  test("door handling does not subscribe when Foundry canvas support is disabled", () => {
+    const manager = managerWith([]);
+    const handler = new DoorHandler(instanceWith(manager, { core: { noCanvas: true } }));
+    handler.ready();
+    expect(manager.registerTickListener).not.toHaveBeenCalled();
+    handler.unhook();
+    expect(manager.unregisterTickListener).not.toHaveBeenCalled();
   });
 
   test("torch input toggles the selected token on and off", async () => {

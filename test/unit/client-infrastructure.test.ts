@@ -125,6 +125,17 @@ describe("fullscreen client shell", () => {
     expect(imageClose).toHaveBeenCalledOnce();
     fullscreen.unhook();
   });
+
+  test("ignores cursor and image-close work when controls or fullscreen are unavailable", () => {
+    const fullscreen = createFullscreen();
+    canvas.controls = null;
+    vi.advanceTimersByTime(1000);
+    const shareImage = game.socket.on.mock.calls[0][1];
+    shareImage();
+    vi.advanceTimersByTime(20_000);
+    expect(imageClose).not.toHaveBeenCalled();
+    fullscreen.unhook();
+  });
 });
 
 describe("wake lock lifecycle", () => {

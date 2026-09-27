@@ -103,6 +103,13 @@ describe("Foundry WebSocket boundary", () => {
     socket._dispatch(protocol.keyEvent);
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledOnce();
+    expect(() => socket.unregisterListener("never-registered", first)).not.toThrow();
+  });
+
+  test("contains dispatch failures raised outside individual handlers", () => {
+    const socket = new Socket({ settings: { enabled: false } });
+    vi.spyOn(socket, "_dispatch").mockImplementation(() => { throw new Error("dispatch"); });
+    expect(() => socket._onmessage({ data: JSON.stringify({ type: "event" }) } as any)).not.toThrow();
   });
 
   test("sends only while connected and reports connection state", () => {
