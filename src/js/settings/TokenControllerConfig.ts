@@ -17,6 +17,39 @@ import { settings } from ".";
 import * as TokenUtil from "../utils/tokenUtil";
 import { VTT_MODULE_NAME } from "./constants";
 
+interface ConnectedKeypad {
+  controllerId: string;
+  peekLEDs?(): [string, string];
+  setLED(index: number, color: string): void;
+  setDefaultLEDColor?(): void;
+}
+
+interface ControllerOption {
+  id: string;
+  color: string | null;
+  label: string;
+}
+
+interface ControllerFormData {
+  playerList: Record<string, string>;
+  mappings: Record<string, string>;
+  controllerOptions: ControllerOption[];
+  playerRows: Array<{
+    id: string;
+    name: string;
+    selectedColor: string | null;
+    options: Array<ControllerOption & { selected: boolean }>;
+  }>;
+  [key: string]: unknown;
+}
+
+type ParsedSettings = Record<string, unknown> & { mappings?: Record<string, string> };
+
+interface FormHtml {
+  0?: HTMLElement;
+  find(selector: string): { click(handler: () => void): void };
+}
+
 function controllerColor(index: number, count: number): string {
   const hue = (index * 360) / count;
   const channel = (offset: number) => {
@@ -35,15 +68,15 @@ export class TokenControllerConfig extends FormApplication {
   reset = false;
   #saved = false;
   #colors = new Map<string, string>();
-  #previousRightLEDs = new Map<any, string | null>();
+  #previousRightLEDs = new Map<ConnectedKeypad, string | null>();
 
-  #connectedKeypads() {
-    return game.modules.get(VTT_MODULE_NAME)?.instance?.modules?.ControllerManager?.keypads ?? [];
+  #connectedKeypads(): ConnectedKeypad[] {
+    return (game.modules.get(VTT_MODULE_NAME)?.instance?.modules?.ControllerManager?.keypads ?? []) as ConnectedKeypad[];
   }
 
-  #controllerOptions(savedMappings: Record<string, string> = {}) {
+  #controllerOptions(savedMappings: Record<string, string> = {}): ControllerOption[] {
     const connected = this.#connectedKeypads()
-      .map((keypad) => keypad.controllerId as string)
+      .map((keypad) => keypad.controllerId)
       .sort((left, right) => left.localeCompare(right));
     this.#colors = new Map(
       connected.map((id, index) => [id, controllerColor(index, connected.length)]),
@@ -74,21 +107,21 @@ export class TokenControllerConfig extends FormApplication {
     });
   }
 
-  getData(options) {
+  getData(_options?: Record<string, unknown>): ControllerFormData {
     const existingSettings = settings.settings;
     const data = foundry.utils.mergeObject(
       {
-        playerList: game.users.contents.reduce((acc, user) => {
+        playerList: game.users.contents.reduce((acc: Record<string, string>, user: { id: string; name: string }) => {
           acc[user.id] = user.name;
           return acc;
         }, {}),
       },
       this.reset ? { mappings: {} } : existingSettings,
-    );
+    ) as ControllerFormData;
     const mappings = data.mappings ?? {};
     const controllerOptions = this.#controllerOptions(mappings);
     data.controllerOptions = controllerOptions;
-    data.playerRows = game.users.contents.map((user) => ({
+    data.playerRows = game.users.contents.map((user: { id: string; name: string }) => ({
       id: user.id,
       name: user.name,
       selectedColor: this.#colors.get(mappings[user.id]) ?? null,
@@ -100,7 +133,7 @@ export class TokenControllerConfig extends FormApplication {
     return data;
   }
 
-  async _updateObject(event, formData) {
+  async _updateObject(_event: Event, formData: Record<string, unknown>): Promise<void> {
     const newSettings = this._parseInputs(formData);
     const previousMappings = settings.settings.mappings ?? {};
     const submitted = Object.entries(newSettings.mappings ?? {}).filter(([, id]) => id);
@@ -127,7 +160,7 @@ export class TokenControllerConfig extends FormApplication {
     TokenUtil.setDefaultTokens();
   }
 
-  activateListeners(html) {
+  activateListeners(html: FormHtml): void {
     super.activateListeners(html);
     html.find('button[name="reset"]').click(this._onReset.bind(this));
     this.#controllerOptions(settings.settings.mappings);
@@ -135,7 +168,8 @@ export class TokenControllerConfig extends FormApplication {
       if (!this.#previousRightLEDs.has(keypad)) {
         this.#previousRightLEDs.set(keypad, keypad.peekLEDs?.()[1] ?? null);
       }
-      keypad.setLED(1, this.#colors.get(keypad.controllerId));
+      const color = this.#colors.get(keypad.controllerId);
+      if (color) keypad.setLED(1, color);
     }
     const selects = Array.from(
       html[0]?.querySelectorAll('select[name^="mappings["]') ?? [],
@@ -163,7 +197,7 @@ export class TokenControllerConfig extends FormApplication {
 
   async close(options = {}) {
     for (const [keypad, color] of this.#previousRightLEDs) {
-      if (this.#saved) keypad.setDefaultLEDColor();
+      if (this.#saved) keypad.setDefaultLEDColor?.();
       else if (color) keypad.setLED(1, color);
       else keypad.setDefaultLEDColor?.();
     }
@@ -176,13 +210,13 @@ export class TokenControllerConfig extends FormApplication {
     this.render();
   }
 
-  _parseInputs(data): Record<string, any> {
-    var ret: Record<string, any> = {};
+  _parseInputs(data: Record<string, unknown>): ParsedSettings {
+    var ret: Record<string, unknown> = {};
     retloop: for (var input in data) {
       var val = data[input];
 
       var parts = input.split("[");
-      var last = ret;
+      var last: Record<string, unknown> = ret;
 
       for (var i in parts) {
         var part = parts[i];
@@ -196,9 +230,9 @@ export class TokenControllerConfig extends FormApplication {
         } else if (!Object.hasOwn(last, part)) {
           last[part] = {};
         }
-        last = last[part];
+        last = last[part] as Record<string, unknown>;
       }
     }
-    return ret;
+    return ret as ParsedSettings;
   }
 }
