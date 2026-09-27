@@ -165,7 +165,7 @@ describe("token selection and combat turns", () => {
       turns: [{ actor: { hasPlayerOwner: true, ownership: { owner: 3 } } }],
       nextTurn,
     };
-    const feature = new CombatEndTurn(featureInstance(manager));
+    const feature = new CombatEndTurn(featureInstance(manager) as unknown as MindFlayer);
     feature.ready();
     const press = (id: string) => ({
       player: { id, name: id },
@@ -189,7 +189,7 @@ describe("token selection and combat turns", () => {
       turns: [{ actor: { hasPlayerOwner: true, ownership: {} } }],
       nextTurn,
     };
-    const feature = new CombatEndTurn(featureInstance(manager));
+    const feature = new CombatEndTurn(featureInstance(manager) as unknown as MindFlayer);
     feature.ready();
     manager.tick(1, { unassigned: { player: null, isJustDown: () => true } });
     expect(nextTurn).not.toHaveBeenCalled();
