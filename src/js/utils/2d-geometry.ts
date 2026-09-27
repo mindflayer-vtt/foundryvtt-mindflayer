@@ -22,16 +22,16 @@ export class Vector {
    * @param {number} x
    * @param {number} y
    */
-  constructor(x, y) {
+  constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
   }
 
-  length() {
+  length(): number {
     return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2));
   }
 
-  normalize() {
+  normalize(): this {
     const length = this.length();
     this.x /= length;
     this.y /= length;
@@ -42,13 +42,13 @@ export class Vector {
    * @param {number} fact factor by which to scale
    * @returns this object
    */
-  scale(fact) {
+  scale(fact: number): this {
     this.x *= fact;
     this.y *= fact;
     return this;
   }
 
-  rotate(rad) {
+  rotate(rad: number): this {
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
     const x = cos * this.x - sin * this.y;
@@ -57,34 +57,34 @@ export class Vector {
     return this;
   }
 
-  subtract(vector) {
+  subtract(vector: Vector): Vector {
     return new Vector(this.x - vector.x, this.y - vector.y);
   }
 
-  add(vector) {
+  add(vector: Vector): Vector {
     return new Vector(this.x + vector.x, this.y + vector.y);
   }
 }
 
 export class Rectangle {
-  p0 = null;
-  p1 = null;
-  center = null;
+  p0: Vector;
+  p1: Vector;
+  center: Vector;
 
-  constructor(p0, p1) {
+  constructor(p0: Vector, p1: Vector) {
     this.p0 = new Vector(Math.min(p0.x, p1.x), Math.min(p0.y, p1.y));
     this.p1 = new Vector(Math.max(p0.x, p1.x), Math.max(p0.y, p1.y));
     this.center = this.p1.subtract(this.p0).scale(0.5).add(this.p0);
   }
 
-  static fromBounds(bounds) {
+  static fromBounds(bounds: { left: number; bottom: number; right: number; top: number }): Rectangle {
     return new Rectangle(
       new Vector(bounds.left, bounds.bottom),
       new Vector(bounds.right, bounds.top),
     );
   }
 
-  intersectionFromCenter(direction) {
+  intersectionFromCenter(direction: Vector): number {
     if (direction.y != 0) {
       const interFact = Math.abs((this.p1.y - this.center.y - 1) / direction.y);
       const interX = direction.x * interFact + this.center.x;
@@ -109,7 +109,7 @@ export class Rectangle {
    * @param {Rectangle} rect2 the second Rectangle
    * @returns true if the given Rectangle intersect with this one
    */
-  intersect(rect2) {
+  intersect(rect2: Rectangle): boolean {
     return !(
       rect2.p0.x > this.p1.x ||
       rect2.p1.x < this.p0.x ||
@@ -119,6 +119,6 @@ export class Rectangle {
   }
 }
 
-export function deg2rad(degrees) {
+export function deg2rad(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
