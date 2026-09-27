@@ -94,9 +94,20 @@ async function preparePackagesAndWorld(page) {
   }
 
   await dismissTour(page);
-  const world = page.locator(`[data-package-id="${worldId}"]`);
-  await world.hover();
-  await world.locator('[data-action="worldLaunch"]').click();
+  const launch = await page.evaluate(async (id) => {
+    const response = await fetch("/setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ action: "launchWorld", world: id }),
+    });
+    return { ok: response.ok, status: response.status, body: await response.text() };
+  }, worldId);
+  if (!launch.ok) {
+    throw new Error(`Foundry could not launch ${worldId}: ${launch.status} ${launch.body}`);
+  }
+  const join = new URL("/join", foundryUrl);
+  join.searchParams.set("world", worldId);
+  await page.goto(join.toString());
   await page.waitForURL((url) => url.pathname === "/join", { timeout: 60_000 });
   return !worldExists;
 }

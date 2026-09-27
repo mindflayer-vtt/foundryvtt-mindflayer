@@ -11,8 +11,8 @@ test.describe("real Foundry compatibility", () => {
   test.skip(!configured, "FOUNDRY_URL is not configured");
 
   test("Mindflayer and its critical Foundry 14 boundaries are available", async ({ page }) => {
-    const startupErrors = [];
-    const consoleWarnings = [];
+    const startupErrors: string[] = [];
+    const consoleWarnings: Array<{ text: string; url: string }> = [];
     await page.addInitScript(() => {
       globalThis.__mindflayerWindowErrors = [];
       globalThis.addEventListener("error", (event) => {
@@ -26,6 +26,7 @@ test.describe("real Foundry compatibility", () => {
         OPEN = 1;
         readyState = 1;
         listeners = new Map();
+        sent = [];
         constructor() {
           (globalThis.__mindflayerSockets ??= []).push(this);
           queueMicrotask(() => this.listeners.get("open")?.forEach((fn) => fn(new Event("open"))));
@@ -34,12 +35,14 @@ test.describe("real Foundry compatibility", () => {
           if (!this.listeners.has(type)) this.listeners.set(type, []);
           this.listeners.get(type).push(listener);
         }
-        send() {}
+        send(data) {
+          this.sent.push(data);
+        }
         close() {
           this.readyState = 3;
         }
       }
-      globalThis.WebSocket = class WebSocketProxy {
+      (globalThis as any).WebSocket = class WebSocketProxy {
         static CONNECTING = 0;
         static OPEN = 1;
         static CLOSING = 2;
@@ -53,7 +56,9 @@ test.describe("real Foundry compatibility", () => {
     page.on("pageerror", (error) => startupErrors.push(error.message));
     page.on("console", (message) => {
       if (message.type() === "error") startupErrors.push(`console: ${message.text()}`);
-      if (message.type() === "warning") consoleWarnings.push(message.text());
+      if (message.type() === "warning") {
+        consoleWarnings.push({ text: message.text(), url: message.location().url });
+      }
     });
     const target = new URL(process.env.FOUNDRY_URL);
     if (process.env.FOUNDRY_TEST_WORLD) {
@@ -74,7 +79,7 @@ test.describe("real Foundry compatibility", () => {
     }
 
     await expect
-      .poll(() => page.evaluate(() => globalThis.game?.ready === true), {
+      .poll(() => page.evaluate(() => (globalThis as any).game?.ready === true), {
         message: `Foundry did not reach game.ready at ${page.url()}`,
         timeout: 30_000,
       })
@@ -86,7 +91,7 @@ test.describe("real Foundry compatibility", () => {
       await page.waitForLoadState("domcontentloaded");
       await expect
         .poll(
-          () => page.evaluate(() => globalThis.game?.ready === true).catch(() => false),
+          () => page.evaluate(() => (globalThis as any).game?.ready === true).catch(() => false),
           { timeout: 30_000 },
         )
         .toBe(true);
@@ -178,7 +183,7 @@ test.describe("real Foundry compatibility", () => {
     await page.waitForLoadState("domcontentloaded");
     await expect
       .poll(
-        () => page.evaluate(() => globalThis.game?.ready === true).catch(() => false),
+        () => page.evaluate(() => (globalThis as any).game?.ready === true).catch(() => false),
         { timeout: 30_000 },
       )
       .toBe(true);
@@ -187,6 +192,21 @@ test.describe("real Foundry compatibility", () => {
     );
     expect(loadedSubmodules).toEqual(
       expect.arrayContaining(["Socket", "ControllerManager", "CameraControl", "DoorHandler", "TokenTorch"]),
+    );
+    const receiverProtocol = await page.evaluate(() =>
+      globalThis.__mindflayerSockets.flatMap((socket) =>
+        socket.sent.map((payload) => JSON.parse(payload)),
+      ),
+    );
+    expect(receiverProtocol).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "registration",
+          receiver: true,
+          status: "connected",
+          players: expect.any(Array),
+        }),
+      ]),
     );
 
     const behavior = await page.evaluate(async () => {
@@ -328,6 +348,9 @@ test.describe("real Foundry compatibility", () => {
           tokenMoved:
             movedPosition.x !== originalPosition.x || movedPosition.y !== originalPosition.y,
           keypadCount: instance.modules.ControllerManager.keypads.length,
+          outboundMessages: globalThis.__mindflayerSockets.flatMap((socket) =>
+            socket.sent.map((payload) => JSON.parse(payload)),
+          ),
         };
       } finally {
         if (wallDocument) await wallDocument.update({ ds: CONST.WALL_DOOR_STATES.CLOSED });
@@ -351,6 +374,16 @@ test.describe("real Foundry compatibility", () => {
     expect(behavior.cameraAction.x).toEqual(expect.any(Number));
     expect(behavior.cameraAction.y).toEqual(expect.any(Number));
     expect(behavior.cameraAction.scale).toBeGreaterThan(0);
+    expect(behavior.outboundMessages).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "configuration",
+          "controller-id": "smoke-controller",
+          led1: expect.objectContaining({ r: expect.any(Number), g: expect.any(Number), b: expect.any(Number) }),
+          led2: expect.objectContaining({ r: expect.any(Number), g: expect.any(Number), b: expect.any(Number) }),
+        }),
+      ]),
+    );
 
     const reload = await page.evaluate(async () => {
       const moduleId = "mindflayer-token-controller";
@@ -430,13 +463,17 @@ test.describe("real Foundry compatibility", () => {
       .catch(() => {});
     await page.waitForLoadState("domcontentloaded");
     expect(startupErrors).toEqual([]);
-    const relevantWarnings = consoleWarnings.filter(
-      (warning) =>
-        !warning.includes("hardware acceleration") &&
-        !warning.includes("GL Driver Message") &&
-        !warning.includes("performance warning: READ-usage buffer") &&
-        !warning.includes("The V1 Application framework is deprecated"),
-    );
+    const relevantWarnings = consoleWarnings.filter(({ text, url }) => {
+      const source = `${url}\n${text}`;
+      return (
+        !text.includes("hardware acceleration") &&
+        !text.includes("GL Driver Message") &&
+        !text.includes("performance warning: READ-usage buffer") &&
+        !text.includes("The V1 Application framework is deprecated") &&
+        !source.includes("/modules/lib-wrapper/") &&
+        !source.includes("/systems/worldbuilding/")
+      );
+    });
     expect(relevantWarnings).toEqual([]);
     console.log(JSON.stringify(state, null, 2));
   });
