@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [
     {
-      name: "test-webpack-require-context",
+      name: "test-webpack-boundaries",
       enforce: "pre",
       transform(code, id) {
         if (id.endsWith("/src/js/modules/loader.js")) {
@@ -11,6 +11,23 @@ export default defineConfig({
             'require.context("./", true, /\\/index\\.js$/)',
             "globalThis.__webpackRequireContext",
           );
+        }
+        if (id.endsWith("/src/js/dependencies/index.js")) {
+          return code.replace(
+            'require("../../module.tmpl.json")',
+            "globalThis.__moduleManifest",
+          );
+        }
+        if (id.endsWith("/src/js/index.js")) {
+          return code
+            .replace(
+              'require("./MindFlayer")',
+              "globalThis.__mindFlayerEntryModule",
+            )
+            .replace(
+              'require("./utils/module")',
+              "globalThis.__moduleUtilityEntryModule",
+            );
         }
       },
     },
