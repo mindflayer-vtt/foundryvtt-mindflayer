@@ -14,30 +14,36 @@
  */
 "use strict";
 import { LOG_PREFIX } from "../settings/constants";
+import type MindFlayer from "../MindFlayer";
 import {
   createModulePlan,
   loadModules,
   readyModules,
   reloadModules,
+  type LifecycleHost,
+  type LifecycleModule,
+  type ModuleClass,
+  type ModulePlan,
 } from "./lifecycle";
 
-function importAll(contextRequire) {
-  return contextRequire.keys().map((module) => contextRequire(module));
+interface ContextRequire {
+  (path: string): { default: ModuleClass };
+  keys(): string[];
 }
-/** @type {({default: AbstractSubModule})[]} */
-const subModules = importAll((require as any).context("./", true, /\/index\.ts$/));
 
-/**
- * @type {ReturnType<typeof createModulePlan> | null}
- */
-let modulePlan = null;
+function importAll(contextRequire: ContextRequire): Array<{ default: ModuleClass }> {
+  return contextRequire.keys().map((module: string) => contextRequire(module));
+}
+const subModules = importAll((require as any).context("./", true, /\/index\.ts$/) as ContextRequire);
+
+let modulePlan: ModulePlan<{ default: ModuleClass }> | null = null;
 
 /**
  * Load all submodules in the order in which they are dependent on one another
  *
  * @param {import("../MindFlayer").default} instance
  */
-export function init(instance) {
+export function init(instance: MindFlayer): void {
   console.debug(LOG_PREFIX + "Sorting submodules");
 
   console.debug(LOG_PREFIX + "Filtering unnecessary modules");
@@ -45,7 +51,7 @@ export function init(instance) {
 
   console.info(LOG_PREFIX + "Starting submodules");
 
-  loadModules(instance, modulePlan.descriptors);
+  loadModules(instance as unknown as LifecycleHost, modulePlan.descriptors);
 
   console.info(LOG_PREFIX + "Submodules initialized");
 }
@@ -56,17 +62,18 @@ export function init(instance) {
  * @param {import("../MindFlayer").default} instance
  * @param {import("./AbstractSubModule").default[]|null} modules
  */
-export function ready(instance, modules = null) {
+export function ready(instance: MindFlayer, modules: LifecycleModule[] | null = null): void {
   if (!modules) {
     // Foundry may not expose game.user until ready. Add modules whose
     // shouldStart policy becomes true once the current user's role is known.
     modulePlan = createModulePlan(subModules, instance);
+    const host = instance as unknown as LifecycleHost;
     loadModules(
-      instance,
-      modulePlan.descriptors.filter((mod) => !instance.modules[mod.default.name]),
+      host,
+      modulePlan.descriptors.filter((mod) => !host.modules[mod.default.name]),
     );
     modules = modulePlan.descriptors
-      .map((mod) => instance.modules[mod.default.name])
+      .map((mod) => host.modules[mod.default.name])
       .filter((mod) => mod !== undefined && mod !== null);
   }
   for (const mod of modules) {
@@ -86,8 +93,9 @@ export function ready(instance, modules = null) {
  * @param {MindFlayer} instance
  * @param {string} module
  */
-function _reload(instance, module) {
-  reloadModules(instance, modulePlan, module, (mod, e) => {
+function _reload(instance: MindFlayer, module: string): void {
+  if (!modulePlan) throw new Error("Cannot reload submodules before initialization");
+  reloadModules(instance as unknown as LifecycleHost, modulePlan, module, (mod, e) => {
     console.warn(
       `${LOG_PREFIX}Failed to ready module '${mod.constructor.name}', continuing...`,
       e,

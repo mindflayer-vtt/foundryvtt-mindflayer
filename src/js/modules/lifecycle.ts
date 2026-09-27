@@ -1,11 +1,38 @@
 import { DepGraph } from "dependency-graph";
 
-function moduleClass(descriptor: any): any {
-  return descriptor.default || descriptor;
+export interface LifecycleModule {
+  ready(): void;
+  unhook(): void;
 }
 
-export function createModulePlan(descriptors: any[], instance: any) {
-  const byName = new Map(
+export type ModuleClass = {
+  new (instance: any): LifecycleModule;
+  readonly name: string;
+  readonly moduleDependencies: string[];
+  shouldStart(instance: any): boolean;
+};
+
+export type ModuleDescriptor = ModuleClass | { default: ModuleClass };
+
+export interface LifecycleHost {
+  modules: Record<string, LifecycleModule>;
+}
+
+export interface ModulePlan<TDescriptor extends ModuleDescriptor = ModuleDescriptor> {
+  descriptors: TDescriptor[];
+  graph: DepGraph<string>;
+  byName: Map<string, TDescriptor>;
+}
+
+export function moduleClass(descriptor: ModuleDescriptor): ModuleClass {
+  return "default" in descriptor ? descriptor.default : descriptor;
+}
+
+export function createModulePlan<TDescriptor extends ModuleDescriptor>(
+  descriptors: TDescriptor[],
+  instance: unknown,
+): ModulePlan<TDescriptor> {
+  const byName = new Map<string, TDescriptor>(
     descriptors.map((descriptor) => [moduleClass(descriptor).name, descriptor]),
   );
   const requested = descriptors
@@ -31,22 +58,22 @@ export function createModulePlan(descriptors: any[], instance: any) {
 
   requested.forEach((name) => include(name));
 
-  const graph = new DepGraph();
+  const graph = new DepGraph<string>();
   selected.forEach((name) => graph.addNode(name));
   selected.forEach((name) => {
-    for (const dependency of moduleClass(byName.get(name)).moduleDependencies) {
+    for (const dependency of moduleClass(byName.get(name)!).moduleDependencies) {
       graph.addDependency(name, dependency);
     }
   });
 
   return {
-    descriptors: graph.overallOrder().map((name) => byName.get(name)),
+    descriptors: graph.overallOrder().map((name) => byName.get(name)!),
     graph,
     byName,
   };
 }
 
-export function loadModules(instance: any, descriptors: any[]) {
+export function loadModules(instance: LifecycleHost, descriptors: ModuleDescriptor[]): LifecycleModule[] {
   return descriptors.map((descriptor) => {
     const Module = moduleClass(descriptor);
     const module = new Module(instance);
@@ -55,10 +82,10 @@ export function loadModules(instance: any, descriptors: any[]) {
   });
 }
 
-export function readyModules(
-  modules: any[],
-  onError: (module: any, error: unknown) => void = () => {},
-) {
+export function readyModules<T extends { ready(): void }>(
+  modules: T[],
+  onError: (module: T, error: unknown) => void = () => {},
+): void {
   for (const module of modules) {
     try {
       module.ready();
@@ -68,12 +95,12 @@ export function readyModules(
   }
 }
 
-export function reloadModules(
-  instance: any,
-  plan: any,
+export function reloadModules<TDescriptor extends ModuleDescriptor>(
+  instance: LifecycleHost,
+  plan: ModulePlan<TDescriptor>,
   moduleName: string,
-  onReadyError: (module: any, error: unknown) => void = () => {},
-) {
+  onReadyError: (module: LifecycleModule, error: unknown) => void = () => {},
+): LifecycleModule[] {
   if (!plan.byName.has(moduleName)) {
     throw new Error(`Cannot reload unknown submodule '${moduleName}'`);
   }
@@ -86,7 +113,7 @@ export function reloadModules(
   }
   const instances = loadModules(
     instance,
-    loadOrder.map((name) => plan.byName.get(name)),
+    loadOrder.map((name) => plan.byName.get(name)!),
   );
   readyModules(instances, onReadyError);
   return instances;
