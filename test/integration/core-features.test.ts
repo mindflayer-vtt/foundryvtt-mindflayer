@@ -245,7 +245,7 @@ describe("keypad feature integrations", () => {
     const token = { name: "Hero", emitsLight: false, document: { update } };
     const keypad = { player: { name: "One" }, token, isJustDown: vi.fn(() => true) };
     const manager = managerWith([keypad]);
-    const torch = new TokenTorch(instanceWith(manager));
+    const torch = new TokenTorch(instanceWith(manager) as unknown as MindFlayer);
     torch.ready();
     manager.tick(1);
     await Promise.resolve();
@@ -264,7 +264,7 @@ describe("keypad feature integrations", () => {
       isJustDown: vi.fn(() => true),
     };
     const manager = managerWith([keypad]);
-    const torch = new TokenTorch(instanceWith(manager));
+    const torch = new TokenTorch(instanceWith(manager) as unknown as MindFlayer);
     torch.ready();
     expect(() => manager.tick(1)).not.toThrow();
   });

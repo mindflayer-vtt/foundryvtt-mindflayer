@@ -6,6 +6,7 @@ import Socket from "../../src/js/modules/socket";
 import TokenBorder from "../../src/js/modules/tokenBorder";
 import TokenMovement from "../../src/js/modules/tokenMovement";
 import TokenSelect from "../../src/js/modules/tokenSelect";
+import type MindFlayer from "../../src/js/MindFlayer";
 
 function managerHarness() {
   let listener: any;
@@ -115,7 +116,7 @@ describe("controller-driven token movement", () => {
 describe("token selection and combat turns", () => {
   test("selects the default token and then cycles owned tokens in stable order", () => {
     const manager = managerHarness();
-    const feature = new TokenSelect(featureInstance(manager));
+    const feature = new TokenSelect(featureInstance(manager) as unknown as MindFlayer);
     const player = { id: "player", name: "Player" };
     const keypad = { player, isJustDown: vi.fn(() => true) };
     canvas.tokens.placeables = ["b", "a"].map((id) => ({
@@ -140,7 +141,7 @@ describe("token selection and combat turns", () => {
 
   test("ignores unassigned keypads and wraps selection to the first token", () => {
     const manager = managerHarness();
-    const feature = new TokenSelect(featureInstance(manager));
+    const feature = new TokenSelect(featureInstance(manager) as unknown as MindFlayer);
     feature.ready();
     manager.tick(1, { unassigned: { player: null, isJustDown: () => true } });
     expect(game.user.setFlag).not.toHaveBeenCalled();

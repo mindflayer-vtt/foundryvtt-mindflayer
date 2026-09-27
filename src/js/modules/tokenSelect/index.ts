@@ -18,18 +18,19 @@ import { default as ControllerManager } from "../ControllerManager";
 import * as TokenUtil from "../../utils/tokenUtil";
 import Keypad from "../ControllerManager/Keypad";
 import { LOG_PREFIX, VTT_MODULE_NAME } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 
 export default class TokenSelect extends AbstractSubModule {
   #tickHandlerFun;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
 
     this.#tickHandlerFun = this.#tickHandler.bind(this);
   }
 
   ready() {
-    this.instance.modules[ControllerManager.name].registerTickListener(
+    this.controllerManager.registerTickListener(
       this.#tickHandlerFun,
     );
   }
@@ -43,11 +44,8 @@ export default class TokenSelect extends AbstractSubModule {
     return [...super.moduleDependencies, ControllerManager.name];
   }
 
-  /**
-   * @returns {ControllerManager}
-   */
-  get controllerManager() {
-    return this.instance.modules[ControllerManager.name];
+  get controllerManager(): ControllerManager {
+    return Reflect.get(this.instance!.modules, ControllerManager.name) as ControllerManager;
   }
 
   /**
@@ -68,7 +66,7 @@ export default class TokenSelect extends AbstractSubModule {
    * Select the next Token associated with the player of the given keypad
    * @param {Keypad} keypad
    */
-  #selectNextToken(keypad) {
+  #selectNextToken(keypad: Keypad): void {
     const player = keypad.player;
     if (player === null) {
       return;

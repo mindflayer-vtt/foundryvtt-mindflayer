@@ -17,20 +17,21 @@ import AbstractSubModule from "../AbstractSubModule";
 import { default as ControllerManager } from "../ControllerManager";
 import Keypad from "../ControllerManager/Keypad";
 import { LOG_PREFIX } from "../../settings/constants";
+import type MindFlayer from "../../MindFlayer";
 
 const SUB_LOG_PREFIX = LOG_PREFIX + "TokenMovement: ";
 
 export default class TokenTorch extends AbstractSubModule {
-  #tickHandlerFun = null;
+  #tickHandlerFun: (now: number, keypads: Record<string, Keypad>) => void;
 
-  constructor(instance) {
+  constructor(instance: MindFlayer) {
     super(instance);
 
     this.#tickHandlerFun = this.#tickHandler.bind(this);
   }
 
   ready() {
-    this.instance.modules[ControllerManager.name].registerTickListener(
+    this.controllerManager.registerTickListener(
       this.#tickHandlerFun,
     );
   }
@@ -44,11 +45,8 @@ export default class TokenTorch extends AbstractSubModule {
     return [...super.moduleDependencies, ControllerManager.name];
   }
 
-  /**
-   * @returns {ControllerManager}
-   */
-  get controllerManager() {
-    return this.instance.modules[ControllerManager.name];
+  get controllerManager(): ControllerManager {
+    return Reflect.get(this.instance!.modules, ControllerManager.name) as ControllerManager;
   }
 
   /**
@@ -71,7 +69,7 @@ export default class TokenTorch extends AbstractSubModule {
    * @param {Keypad} keypad keypad which initiated the torch request
    * @private
    */
-  async #toggleTorch(keypad) {
+  async #toggleTorch(keypad: Keypad): Promise<void> {
     const token = keypad.token;
     if (!token) {
       return;
