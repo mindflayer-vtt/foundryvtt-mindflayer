@@ -112,6 +112,57 @@ describe("Beamer-user configuration form", () => {
     expect(form.getData()).toEqual({ unavailable: true });
   });
 
+  test("switches form modes, selects pairing IDs, and safely reveals the password", () => {
+    installService();
+    const events = (target: any) => {
+      target.listeners = new Map<string, () => void>();
+      target.addEventListener = (name: string, callback: () => void) => target.listeners.set(name, callback);
+      return target;
+    };
+    const pairing = events({ select: vi.fn() });
+    const mode = events({ value: "create" });
+    const createGroup: any = { dataset: { mode: "create" }, hidden: true, disabled: true };
+    const adoptGroup: any = { dataset: { mode: "adopt" }, hidden: true, disabled: true };
+    const error = { textContent: "previous error" };
+    const focusTarget = { focus: vi.fn() };
+    const name = { focus: vi.fn() };
+    const secret: any = { type: "password" };
+    const reveal = events({ textContent: "Show password", setAttribute: vi.fn() });
+    const formElement = {
+      querySelectorAll: (selector: string) => selector === "[data-pairing-id]"
+        ? [pairing]
+        : selector === "[data-mode]" ? [createGroup, adoptGroup] : [],
+      querySelector: (selector: string) => ({
+        '[name="mode"]': mode,
+        "[data-error]": error,
+        'fieldset:not([hidden]) input, fieldset:not([hidden]) select': focusTarget,
+        '[name="password"]': secret,
+        "[data-reveal]": reveal,
+        '[name="name"]': name,
+      })[selector] ?? null,
+    };
+    const form = new BeamerUserConfig();
+    const position = vi.spyOn(form as any, "setPosition");
+    form.activateListeners([formElement] as any);
+    expect(createGroup).toMatchObject({ hidden: false, disabled: false });
+    expect(adoptGroup).toMatchObject({ hidden: true, disabled: true });
+    pairing.listeners.get("click")();
+    pairing.listeners.get("focus")();
+    expect(pairing.select).toHaveBeenCalledTimes(2);
+    reveal.listeners.get("click")();
+    expect(secret.type).toBe("text");
+    expect(reveal.textContent).toBe("Hide password");
+    expect(reveal.setAttribute).toHaveBeenCalledWith("aria-pressed", "true");
+    mode.value = "adopt";
+    mode.listeners.get("change")();
+    expect(createGroup.hidden).toBe(true);
+    expect(adoptGroup.hidden).toBe(false);
+    expect(error.textContent).toBe("");
+    expect(focusTarget.focus).toHaveBeenCalledOnce();
+    expect(position).toHaveBeenCalledWith({ height: "auto" });
+    expect(name.focus).toHaveBeenCalledOnce();
+  });
+
   test.each([
     ["create", { mode: "create", name: "Display", password: "long-password" }],
     ["adopt", { mode: "adopt", userId: "existing", confirm: true }],
@@ -153,6 +204,24 @@ describe("Beamer-user configuration form", () => {
     expect(error.textContent).toContain("Could not configure Beamer");
     expect(error.textContent).not.toContain("secret password leaked");
     expect(error.focus).toHaveBeenCalledOnce();
+    expect(submit.disabled).toBe(false);
+  });
+
+  test("ignores submissions outside an available GM service and handles invalid modes", async () => {
+    game.user.isGM = false;
+    const unavailable = new BeamerUserConfig();
+    await expect((unavailable as any)._updateObject(null, { mode: "create" })).resolves.toBeUndefined();
+
+    game.user.isGM = true;
+    installService();
+    const submit = { disabled: false };
+    const error = { textContent: "", focus: vi.fn() };
+    const form = new BeamerUserConfig();
+    (form as any).form = {
+      querySelector: (selector: string) => selector === '[type="submit"]' ? submit : error,
+    };
+    await (form as any)._updateObject(null, { mode: "unexpected" });
+    expect(error.textContent).toContain("Could not configure Beamer");
     expect(submit.disabled).toBe(false);
   });
 });
