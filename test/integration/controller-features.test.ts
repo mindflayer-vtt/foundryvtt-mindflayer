@@ -176,6 +176,23 @@ describe("token selection and combat turns", () => {
     game.combat.started = false;
     manager.tick(2, { owner: press("owner") });
     expect(nextTurn).toHaveBeenCalledOnce();
+    feature.unhook();
+    expect(manager.unregisterTickListener).toHaveBeenCalledOnce();
+  });
+
+  test("ignores end-turn input from an unassigned keypad", () => {
+    const manager = managerHarness();
+    const nextTurn = vi.fn();
+    game.combat = {
+      started: true, turn: 0,
+      turns: [{ actor: { hasPlayerOwner: true, ownership: {} } }],
+      nextTurn,
+    };
+    const feature = new CombatEndTurn(featureInstance(manager));
+    feature.ready();
+    manager.tick(1, { unassigned: { player: null, isJustDown: () => true } });
+    expect(nextTurn).not.toHaveBeenCalled();
+    expect(ui.notifications.warn).not.toHaveBeenCalled();
   });
 });
 

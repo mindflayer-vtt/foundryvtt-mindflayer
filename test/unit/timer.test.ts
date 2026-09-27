@@ -103,6 +103,26 @@ describe("start timer dialog", () => {
       start: 10_000, end: 10_000, options: { neededRole: 0 },
     });
   });
+
+  test("submitting starts a timer and the static helper resolves when the dialog closes", async () => {
+    const directResolve = vi.fn();
+    const dialog = new StartTimerDialog({ callbackResolve: directResolve });
+    (dialog as any).object.durationSeconds = 2;
+    await (dialog as any)._onSubmit(null, {});
+    await dialog.close();
+    expect(directResolve.mock.calls[0][0].end - directResolve.mock.calls[0][0].start).toBe(2_000);
+
+    const render = vi.spyOn(StartTimerDialog.prototype as any, "render")
+      .mockImplementation(function (this: StartTimerDialog) {
+        (this as any).object.durationSeconds = 3;
+        this.startTimer();
+        void this.close();
+        return this;
+      });
+    const result = await StartTimerDialog.getTimer();
+    expect(result.end - result.start).toBe(3_000);
+    expect(render).toHaveBeenCalledWith(true);
+  });
 });
 
 describe("timer rendering container", () => {
@@ -246,5 +266,31 @@ describe("timer module integration", () => {
     expect(renderingContainer.children).not.toContain(internal);
     await runner.abort();
     timer.unhook();
+  });
+
+  test("filters remote timers above the user role and updates active renderers on interval", async () => {
+    const { timer, socketlib } = createTimer();
+    timer.ready();
+    const rpc = socketlib.provide.mock.calls[0][1];
+    game.user.role = 1;
+    rpc(1_000, 5_000, { neededRole: 2 });
+    expect(timer.priority).toBe(-100);
+    rpc(1_000, 5_000, { neededRole: 1 });
+    expect(timer.priority).toBe(200);
+    const renderingContainer: any = canvas.stage.children[0];
+    const runner = renderingContainer.children[0];
+    const update = vi.spyOn(runner, "update");
+    await vi.advanceTimersByTimeAsync(200);
+    expect(update).toHaveBeenCalled();
+    timer.unhook();
+  });
+
+  test("dialog returns the selected timer and contains dialog failures", async () => {
+    const { timer } = createTimer();
+    const selected = { start: 1, end: 2, options: { neededRole: 1 } };
+    vi.spyOn(StartTimerDialog, "getTimer").mockResolvedValueOnce(selected as any);
+    await expect(timer.dialog()).resolves.toBe(selected);
+    vi.spyOn(StartTimerDialog, "getTimer").mockRejectedValueOnce(new Error("dialog failed"));
+    await expect(timer.dialog()).resolves.toBeNull();
   });
 });

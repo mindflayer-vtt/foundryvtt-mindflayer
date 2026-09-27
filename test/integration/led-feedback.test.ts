@@ -197,4 +197,20 @@ describe("table LED ring arbitration", () => {
     expect(handler.priority).toBe(0);
     expect(await handler.updateLEDs(3)).toEqual(new Uint32Array(9));
   });
+
+  test("contains socket send failures and retries unchanged LED data", async () => {
+    const { ring, socket } = createRing();
+    socket.send.mockImplementationOnce(() => { throw new Error("disconnected during send"); });
+    const handler = {
+      priority: 1,
+      updateLEDs: vi.fn(async () => new Uint32Array([1, 2, 3, 4, 5, 6])),
+    };
+    ring.registerHandler(handler as any);
+    ring.ready();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(socket.send).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(socket.send).toHaveBeenCalledTimes(2);
+    ring.unhook();
+  });
 });
