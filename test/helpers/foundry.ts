@@ -17,9 +17,17 @@ export function installFoundryFakes() {
   runtime.FormApplication = class {
     static defaultOptions = {};
     form: any;
+    object: any;
+    options: any;
+    constructor(object = {}, options = {}) {
+      this.object = object;
+      this.options = { ...(this.constructor as any).defaultOptions, ...options };
+    }
     activateListeners(_html: any) {}
-    render() {}
+    render(_force?: boolean) {}
     setPosition(_position: any) {}
+    async close(_options?: any) {}
+    async _onSubmit(_event?: any, _options?: any) {}
   };
   runtime.Hooks = hooks;
   resetFoundryFakes();
@@ -34,6 +42,7 @@ export function resetFoundryFakes() {
     isNewerVersion: (current, target) => Number(current) > Number(target),
     mergeObject: (left, right) => ({ ...left, ...right }),
   } };
+  runtime.mergeObject = runtime.foundry.utils.mergeObject;
   runtime.game = {
     version: "14.367", canvas: { initialized: true }, combat: null,
     users: { contents: [], players: [] }, scenes: { active: null },
@@ -68,7 +77,38 @@ export function resetFoundryFakes() {
     register: vi.fn((owner, target, callback, mode) => wrappers.set(`${owner}:${target}`, { callback, mode })),
     unregister: vi.fn((owner, target) => wrappers.delete(`${owner}:${target}`)), wrappers,
   };
-  runtime.PIXI = { FederatedMouseEvent: class {}, Container: class {} };
+  class Container {
+    children: any[] = [];
+    parent: any = null;
+    position = { x: 0, y: 0 };
+    scale = { x: 1, y: 1, set: vi.fn((x, y) => { this.scale.x = x; this.scale.y = y; }) };
+    addChild(child: any) { child.parent = this; this.children.push(child); return child; }
+    removeChild(child: any) { this.children = this.children.filter((item) => item !== child); child.parent = null; return child; }
+    destroy = vi.fn();
+  }
+  class Graphics extends Container {
+    beginFill = vi.fn();
+    drawCircle = vi.fn();
+    clear = vi.fn();
+    lineStyle = vi.fn();
+    moveTo = vi.fn();
+    lineTo = vi.fn();
+    arc = vi.fn();
+    alpha = 1;
+  }
+  class Text extends Container {
+    text: string;
+    anchor = { set: vi.fn() };
+    updateText = vi.fn();
+    constructor(text: string) { super(); this.text = text; }
+  }
+  runtime.PIXI = {
+    FederatedMouseEvent: class {}, Container, Graphics,
+    LegacyGraphics: Graphics, Text,
+    Point: class { constructor(public x: number, public y: number) {} },
+  };
+  runtime.canvas.controls = { hud: new Container() };
+  runtime.canvas.stage = new Container();
   Object.defineProperty(globalThis.window, "innerWidth", { configurable: true, value: 1920 });
   Object.defineProperty(globalThis.window, "innerHeight", { configurable: true, value: 1080 });
 }
