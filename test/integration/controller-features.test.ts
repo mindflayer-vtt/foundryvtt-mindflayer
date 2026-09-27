@@ -117,6 +117,23 @@ describe("token selection and combat turns", () => {
     expect(canvas.activeLayer.releaseAll).toHaveBeenCalledTimes(2);
   });
 
+  test("ignores unassigned keypads and wraps selection to the first token", () => {
+    const manager = managerHarness();
+    const feature = new TokenSelect(featureInstance(manager));
+    feature.ready();
+    manager.tick(1, { unassigned: { player: null, isJustDown: () => true } });
+    expect(game.user.setFlag).not.toHaveBeenCalled();
+    const player = { id: "player", name: "Player" };
+    canvas.tokens.placeables = ["a", "b"].map((id) => ({
+      id, name: id, actor: { testUserPermission: () => true }, refresh: vi.fn(),
+    }));
+    game.user.getFlag.mockReturnValue("b");
+    manager.tick(2, { assigned: { player, isJustDown: () => true } });
+    expect(game.user.setFlag).toHaveBeenCalledWith(
+      "mindflayer-token-controller", "selectedToken_player", "a",
+    );
+  });
+
   test("only the owner of the active combatant can advance the turn", () => {
     const manager = managerHarness();
     const nextTurn = vi.fn();

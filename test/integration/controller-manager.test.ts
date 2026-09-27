@@ -24,18 +24,35 @@ describe("Socket to ControllerManager flow", () => {
     socket._dispatch({ type: "key-event", "controller-id": "one", key: "Q", state: "down" });
     expect(manager.keypads).toHaveLength(0);
     socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "one" });
+    expect(ui.notifications.info).toHaveBeenCalledWith("Mind Flayer: MindFlayer.Notifications.NewClient");
     socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "two" });
     socket._dispatch({ type: "key-event", "controller-id": "one", key: "Q", state: "down" });
     expect(manager.keypads[0].player.id).toBe("p1");
     expect(manager.keypads[0].isDown("Q")).toBe(true);
     expect(manager.keypads[1].isDown("Q")).toBe(false);
     socket._dispatch({ type: "registration", receiver: false, status: "disconnected", "controller-id": "one" });
+    expect(ui.notifications.warn).toHaveBeenCalledWith("Mind Flayer: MindFlayer.Notifications.ClientDisconnected");
     expect(manager.keypads.map((keypad) => keypad.controllerId)).toEqual(["two"]);
+  });
+
+  test("re-registration replaces keypad state and unknown statuses are ignored", () => {
+    const { socket, manager } = createSystem();
+    game.users.contents = [{ id: "p1", name: "One", color: "#112233" }];
+    socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "one" });
+    const original = manager.keypads[0];
+    socket._dispatch({ type: "key-event", "controller-id": "one", key: "Q", state: "down" });
+    socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "one" });
+    expect(manager.keypads).toHaveLength(1);
+    expect(manager.keypads[0]).not.toBe(original);
+    expect(manager.keypads[0].isDown("Q")).toBe(false);
+    socket._dispatch({ type: "registration", receiver: false, status: "unexpected", "controller-id": "one" });
+    expect(manager.keypads).toHaveLength(1);
   });
 
   test("ticks listeners, removes a throwing listener, sends LEDs, and cleans up", () => {
     vi.useFakeTimers();
     const { socket, manager } = createSystem();
+    const unregister = vi.spyOn(socket, "unregisterListener");
     game.users.contents = [{ id: "p1", name: "One", color: "#112233" }];
     socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "one" });
     const throwing = vi.fn(() => { throw new Error("listener"); });
@@ -55,6 +72,7 @@ describe("Socket to ControllerManager flow", () => {
     expect(healthy).toHaveBeenCalledTimes(2);
     manager.unregisterTickListener(healthy);
     manager.unhook();
+    expect(unregister.mock.calls.map((call) => call[0])).toEqual(["registration", "key-event"]);
     vi.advanceTimersByTime(100);
     expect(healthy).toHaveBeenCalledTimes(2);
     socket._dispatch({ type: "registration", receiver: false, status: "connected", "controller-id": "late" });

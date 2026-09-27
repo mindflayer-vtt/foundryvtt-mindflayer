@@ -87,6 +87,9 @@ describe("outbound protocol messages", () => {
 describe("key state", () => {
   test("reports initial and repeated presses with the existing 250ms interval", () => {
     const key = new Key();
+    expect(key.down).toBe(false);
+    expect(key.isJustDown(0)).toBe(false);
+    expect(key.isRepeatedDown(0)).toBe(false);
     key.down = true;
     expect(key.isJustDown(100)).toBe(true);
     expect(key.isJustDown(101)).toBe(false);
