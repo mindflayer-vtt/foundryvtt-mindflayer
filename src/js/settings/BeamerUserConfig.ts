@@ -1,4 +1,15 @@
 import { VTT_MODULE_NAME } from "./constants";
+import type BeamerUsers from "../modules/beamerUsers";
+
+type ReviewableUser = NonNullable<Parameters<BeamerUsers["review"]>[0]>;
+
+interface BeamerUserFormData {
+  mode: string;
+  name?: string;
+  password?: string;
+  userId?: string;
+  confirm?: boolean;
+}
 
 /** GM-only presentation; world user policy belongs to the BeamerUsers submodule. */
 export class BeamerUserConfig extends FormApplication {
@@ -10,14 +21,15 @@ export class BeamerUserConfig extends FormApplication {
     });
   }
 
-  get service() { return game.modules.get(VTT_MODULE_NAME)?.instance?.modules.BeamerUsers; }
+  get service(): BeamerUsers | undefined { return game.modules.get(VTT_MODULE_NAME)?.instance?.modules.BeamerUsers; }
 
   getData() {
-    if (!game.user?.isGM || !this.service?.loaded) return { unavailable: true };
-    const status = this.service.status();
-    return { status, selected: Boolean(this.service.selectedId),
-      candidates: game.users.contents.map(user => {
-        const issues = this.service.review(user);
+    const service = this.service;
+    if (!game.user?.isGM || !service?.loaded) return { unavailable: true };
+    const status = service.status();
+    return { status, selected: Boolean(service.selectedId),
+      candidates: game.users.contents.map((user: ReviewableUser) => {
+        const issues = service.review(user);
         return { id: user.id, name: user.name, eligible: !issues.length, review: issues.join("; ") };
       }) };
   }
@@ -55,21 +67,25 @@ export class BeamerUserConfig extends FormApplication {
     form.querySelector('[name="name"]')?.focus();
   }
 
-  async _updateObject(_event, data) {
-    if (!game.user?.isGM || !this.service?.loaded) return;
+  async _updateObject(_event: Event, data: BeamerUserFormData): Promise<void> {
+    const service = this.service;
+    if (!game.user?.isGM || !service?.loaded) return;
     const form = this.form;
     const submit = form.querySelector('[type="submit"]') as HTMLButtonElement;
     submit.disabled = true;
     try {
-      if (data.mode === "create") await this.service.create({ name: data.name, password: data.password });
-      else if (data.mode === "adopt") await this.service.adopt({ userId: data.userId, confirm: data.confirm === true });
+      if (data.mode === "create") await service.create({ name: data.name, password: data.password });
+      else if (data.mode === "adopt") await service.adopt({ userId: data.userId, confirm: data.confirm === true });
       else throw new Error("Invalid mode");
       (form.querySelector('[name="password"]') as HTMLInputElement).value = "";
       await this.render();
     } catch {
       // Foundry exceptions can contain submitted document data. Never display/log them.
-      form.querySelector('[data-error]').textContent = "Could not configure Beamer. Check the user name, password length, adoption confirmation and permissions. If a user was created, review it for explicit adoption; no existing password was reset.";
-      (form.querySelector('[data-error]') as HTMLElement).focus();
+      const error = form.querySelector('[data-error]') as HTMLElement | null;
+      if (error) {
+        error.textContent = "Could not configure Beamer. Check the user name, password length, adoption confirmation and permissions. If a user was created, review it for explicit adoption; no existing password was reset.";
+        error.focus();
+      }
     } finally { submit.disabled = false; }
   }
 }
