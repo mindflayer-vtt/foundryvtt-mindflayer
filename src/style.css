@@ -13,6 +13,10 @@
   margin-left: 0;
 }
 
+.hide-ui #calendar-hud {
+  display: none;
+}
+
 .hide-ui #logo {
   display: none;
 }
